@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdio.h": "c",
-        "digimon.h": "c"
+        "digimon.h": "c",
+        "export.h": "c"
     }
 }

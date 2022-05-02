@@ -1,8 +1,12 @@
 project(digilib C)
 cmake_minimum_required(VERSION 3.16)
 
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+
 include_directories(include)
 
-set(SRCS main.c source/digimon.c source/digiapi.c)
+set(SRCS source/digimon.c source/digiapi.c)
 
-add_executable(digilib ${SRCS})
+add_library(digilib SHARED ${SRCS})
+add_executable(digiterminal digiterminal.c)
+target_link_libraries(digiterminal digilib)
