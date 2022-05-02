@@ -56,21 +56,6 @@
 
 #define MAX_POSSIBLE_EVOLUTIONS 5
 
-// Possible returns
-#define DIGI_RET_OK       0
-#define DIGI_RET_ERROR    (DIGI_RET_OK + 1)
-#define DIGI_NO_EVOLUTION (DIGI_RET_OK + 2)
-#define DIGI_RET_OVERFEED (DIGI_RET_OK + 3)
-#define DIGI_RET_HUNGRY   (DIGI_RET_OK + 4)
-#define DIGI_RET_WEAK     (DIGI_RET_OK + 5)
-#define DIGI_RET_SICK     (DIGI_RET_OK + 6)
-
-// Possible Attributes
-#define ATTRIBUTE_FREE    0
-#define ATTRIBUTE_DATA    1
-#define ATTRIBUTE_VACCINE 2
-#define ATTRIBUTE_VIRUS   3
-
 typedef struct {
     uint8_t uiProgressionNeeded;
     uint8_t uiWinCount;

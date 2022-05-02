@@ -1,4 +1,7 @@
 #include "digimon.h"
+
+#include "enums.h"
+
 #include <stdio.h>
 
 uint8_t DIGI_evolveDigimon(const playing_digimon_t* pstVerifyingDigimon) {

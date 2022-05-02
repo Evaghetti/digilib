@@ -1,4 +1,6 @@
-#include "api.h"
+#include "digiapi.h"
+
+#include "enums.h"
 
 #define TIME_TO_GET_HUNGRY 1
 #define TIME_TO_GET_WEAKER 5

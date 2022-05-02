@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "api.h"
+#include "digiapi.h"
 #include "digimon.h"
+#include "enums.h"
 
 evolution_requirement_t vstPossibleRequirements[] = {{0x3f, 0x0, 0x0a},
                                                      {0x3f, 0x0, 1200}};
@@ -11,18 +12,18 @@ digimon_t vstPossibleDigimon[] = {
     {"Botamon",
      0,
      2359,
-     ATTRIBUTE_FREE,
+     DIGI_ATTRIBUTE_FREE,
      1,
      {&vstPossibleRequirements[0]},
      {&vstPossibleDigimon[1]}},
     {"Koromon",
      0,
      2100,
-     ATTRIBUTE_FREE,
+     DIGI_ATTRIBUTE_FREE,
      1,
      {&vstPossibleRequirements[1]},
      {&vstPossibleDigimon[2]}},
-    {"Agumon", 18, 2100, ATTRIBUTE_VACCINE, 0, {}, {}},
+    {"Agumon", 18, 2100, DIGI_ATTRIBUTE_VACCINE, 0, {}, {}},
 };
 
 static time_t currentTime = -1, lastTime = -1;
