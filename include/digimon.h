@@ -57,10 +57,13 @@
 #define MAX_POSSIBLE_EVOLUTIONS 5
 
 // Possible returns
-#define DIGI_OK           0
-#define DIGI_ERROR        (DIGI_OK - 1)
-#define DIGI_NO_EVOLUTION (DIGI_OK - 2)
-#define DIGI_OVERFEED     (DIGI_OK - 3)
+#define DIGI_RET_OK       0
+#define DIGI_RET_ERROR    (DIGI_RET_OK + 1)
+#define DIGI_NO_EVOLUTION (DIGI_RET_OK + 2)
+#define DIGI_RET_OVERFEED (DIGI_RET_OK + 3)
+#define DIGI_RET_HUNGRY   (DIGI_RET_OK + 4)
+#define DIGI_RET_WEAK     (DIGI_RET_OK + 5)
+#define DIGI_RET_SICK     (DIGI_RET_OK + 6)
 
 // Possible Attributes
 #define ATTRIBUTE_FREE    0
@@ -91,14 +94,17 @@ typedef struct {
     uint8_t uiEvolutionProgression;
     uint8_t uiWeight;
     uint8_t uiWinCount;
+
+    uint16_t uiTimeSinceLastMeal;
+    uint16_t uiTimeSinceLastTraining;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon(const playing_digimon_t* pstVerifyingDigimon);
 
-uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, uint8_t uiAmount);
+uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount);
 
 uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
-                              uint8_t uiAmount);
+                              int16_t uiAmount);
 
 uint8_t DIGI_healDigimon(playing_digimon_t* pstHealedDigimon, uint8_t uiType);
 

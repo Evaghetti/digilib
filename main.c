@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <time.h>
+
+#include "api.h"
 #include "digimon.h"
 
 evolution_requirement_t vstPossibleRequirements[] = {{0x3f, 0x0, 0x0a},
@@ -22,17 +25,47 @@ digimon_t vstPossibleDigimon[] = {
     {"Agumon", 18, 2100, ATTRIBUTE_VACCINE, 0, {}, {}},
 };
 
-int main() {
-    playing_digimon_t stPlayingDigimon = {&vstPossibleDigimon[0], 0x00, 0x00,
-                                          0x00, 0x00};
-    char option;
-    sizeof(vstPossibleDigimon);
+static time_t currentTime = -1, lastTime = -1;
+uint8_t proccessEvents(uint8_t* puiEvents,
+                       playing_digimon_t* pstPlayingDigimon) {
+    currentTime = time(NULL);
+    if (lastTime == -1)
+        lastTime = currentTime;
 
-    printf("%s\nH: %d\nS: %d\n\n", stPlayingDigimon.pstCurrentDigimon->szName,
-           GET_HUNGER_VALUE(stPlayingDigimon.uiStats),
-           GET_STRENGTH_VALUE(stPlayingDigimon.uiStats));
-    printf("E) evolve\nF) Feed\n");
-    while (scanf("%c", &option) != EOF) {
+    uint16_t uiDeltaTime = (currentTime - lastTime) / 60;
+    if (uiDeltaTime > 0)
+        lastTime = currentTime;
+
+    return DIGI_updateEventsDeltaTime(uiDeltaTime, puiEvents,
+                                      pstPlayingDigimon);
+}
+
+int main() {
+    playing_digimon_t stPlayingDigimon = {&vstPossibleDigimon[0], 0b00001111,
+                                          0x00, 0x00, 0x00};
+    char option;
+
+    while (1) {
+        uint8_t uiEvents, uiRet;
+        printf("%s\nH: %d\nS: %d\n\n",
+               stPlayingDigimon.pstCurrentDigimon->szName,
+               GET_HUNGER_VALUE(stPlayingDigimon.uiStats),
+               GET_STRENGTH_VALUE(stPlayingDigimon.uiStats));
+        printf("E) evolve\nF) Feed\n");
+
+        if (scanf("%c", &option) == EOF)
+            break;
+
+        uiRet = proccessEvents(&uiEvents, &stPlayingDigimon);
+        if (uiRet != DIGI_RET_OK) {
+            printf("[DIGILIB] Error during proccessing of events: 0x%x\n",
+                   uiRet);
+            return 1;
+        }
+
+        if (uiEvents & DIGI_EVENT_MASK_CALL)
+            printf("[DIGILIB] Digimon is calling for you!\n");
+
         switch (option) {
             case 'E':
             case 'e': {
@@ -54,12 +87,6 @@ int main() {
             default:
                 break;
         }
-
-        printf("%s\nH: %d\nS: %d\n\n",
-               stPlayingDigimon.pstCurrentDigimon->szName,
-               GET_HUNGER_VALUE(stPlayingDigimon.uiStats),
-               GET_STRENGTH_VALUE(stPlayingDigimon.uiStats));
-        printf("E) evolve\nF) Feed\n");
     }
 
     return 0;
