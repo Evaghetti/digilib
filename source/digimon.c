@@ -58,21 +58,22 @@ uint8_t DIGI_evolveDigimon(const playing_digimon_t* pstVerifyingDigimon) {
 }
 
 uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
-    int8_t iCurrentHungerAmount = GET_HUNGER_VALUE(pstFedDigimon->uiStats);
+    int8_t iCurrentHungerAmount =
+        GET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength);
 
     printf("[DIGILIB] Feeding %s, ", pstFedDigimon->pstCurrentDigimon->szName);
 
     // Deixa o digimon mais cheio (o SET já garante que não vai ser um valor maior que o permitido)
     iCurrentHungerAmount += uiAmount;
     if (iCurrentHungerAmount <= 0) {
-        pstFedDigimon->uiStats &= ~MASK_HUNGER;
+        pstFedDigimon->uiHungerStrength &= ~MASK_HUNGER;
         return DIGI_RET_HUNGRY;
-    } else if (iCurrentHungerAmount < 4) {
-        SET_HUNGER_VALUE(pstFedDigimon->uiStats, iCurrentHungerAmount);
+    } else if (iCurrentHungerAmount <= 4) {
+        SET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength, iCurrentHungerAmount);
     }
 
     printf("new amout %d (real value %d)\n", iCurrentHungerAmount,
-           GET_HUNGER_VALUE(pstFedDigimon->uiStats));
+           GET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength));
 
     // Aumenta o peso, se estiver obeso, deixa doente.
     if (uiAmount > 0) {
@@ -102,15 +103,17 @@ uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
 
 uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
                               int16_t uiAmount) {
-    int8_t iCurrentStrength = GET_STRENGTH_VALUE(pstTreatedDigimon->uiStats);
+    int8_t iCurrentStrength =
+        GET_STRENGTH_VALUE(pstTreatedDigimon->uiHungerStrength);
 
     // Aumenta a força do digimon (o set já garante que não vai ser um valor maior que o permitido)
     iCurrentStrength += uiAmount;
     if (iCurrentStrength <= 0) {
-        pstTreatedDigimon->uiStats &= ~MASK_STRENGTH;
+        pstTreatedDigimon->uiHungerStrength &= ~MASK_STRENGTH;
         return DIGI_RET_WEAK;
-    } else {
-        SET_STRENGTH_VALUE(pstTreatedDigimon->uiStats, iCurrentStrength);
+    } else if (iCurrentStrength <= 4) {
+        SET_STRENGTH_VALUE(pstTreatedDigimon->uiHungerStrength,
+                           iCurrentStrength);
     }
 
     // Aumenta o peso, se estiver obeso, deixa doente.

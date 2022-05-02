@@ -42,7 +42,7 @@ uint8_t proccessEvents(uint8_t* puiEvents,
 }
 
 int main() {
-    playing_digimon_t stPlayingDigimon = {&vstPossibleDigimon[0], 0b00001111,
+    playing_digimon_t stPlayingDigimon = {&vstPossibleDigimon[0], 0b01000100,
                                           0x00, 0x00, 0x00};
     char option;
 
@@ -50,8 +50,8 @@ int main() {
         uint8_t uiEvents, uiRet;
         printf("%s\nH: %d\nS: %d\n\n",
                stPlayingDigimon.pstCurrentDigimon->szName,
-               GET_HUNGER_VALUE(stPlayingDigimon.uiStats),
-               GET_STRENGTH_VALUE(stPlayingDigimon.uiStats));
+               GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength),
+               GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength));
         printf("E) evolve\nF) Feed\n");
 
         if (scanf("%c", &option) == EOF)

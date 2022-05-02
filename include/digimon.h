@@ -4,32 +4,32 @@
 #include <stdint.h>
 
 // Stats
-#define MASK_HUNGER          0b00000011
-#define MASK_STRENGTH        0b00001100
-#define MASK_SICK            0b00010000
-#define MASK_INJURIED        0b00100000
-#define MASK_EVOLUTION_STAGE 0b11000000
+#define MASK_HUNGER          0b00001111
+#define MASK_STRENGTH        0b11110000
+#define MASK_SICK            0b00000001
+#define MASK_INJURIED        0b00000010
+#define MASK_EVOLUTION_STAGE 0b00011100
 
 // Getters
 #define GET_HUNGER_VALUE(x)          ((MASK_HUNGER & x) >> 0)
-#define GET_STRENGTH_VALUE(x)        ((MASK_STRENGTH & x) >> 2)
-#define GET_SICK_VALUE(x)            ((MASK_SICK & x) >> 4)
-#define GET_INJURIED_VALUE(x)        ((MASK_INJURIED & x) >> 5)
-#define GET_EVOLUTION_STAGE_VALUE(x) ((MASK_EVOLUTION_STAGE & x) >> 6)
+#define GET_STRENGTH_VALUE(x)        ((MASK_STRENGTH & x) >> 4)
+#define GET_SICK_VALUE(x)            ((MASK_SICK & x) >> 0)
+#define GET_INJURIED_VALUE(x)        ((MASK_INJURIED & x) >> 1)
+#define GET_EVOLUTION_STAGE_VALUE(x) ((MASK_EVOLUTION_STAGE & x) >> 2)
 
 // Setters
 #define SET_HUNGER_VALUE(variable, value) \
     variable &= ~MASK_HUNGER;             \
-    variable |= ((value & 0b00000011) << 0)
+    variable |= ((value & 0b00001111) << 0)
 #define SET_STRENGTH_VALUE(variable, value) \
     variable &= ~MASK_STRENGTH;             \
-    variable |= ((value & 0b00000011) << 2)
+    variable |= ((value & 0b00001111) << 4)
 #define SET_SICK_VALUE(variable, value) \
     variable &= ~MASK_SICK;             \
-    variable |= ((value & 0b00000001) << 4)
+    variable |= ((value & 0b00000001) << 0)
 #define SET_INJURIED_VALUE(variable, value) \
     variable &= ~MASK_INJURIED;             \
-    variable |= ((value & 0b00000001) << 5)
+    variable |= ((value & 0b00000001) << 1)
 
 // Evolution progression
 #define MASK_CARE_MISTAKES   0b00000011
@@ -75,6 +75,7 @@ typedef struct digimon_t {
 
 typedef struct {
     digimon_t* pstCurrentDigimon;
+    uint8_t uiHungerStrength;
     uint8_t uiStats;
     uint8_t uiEvolutionProgression;
     uint8_t uiWeight;
