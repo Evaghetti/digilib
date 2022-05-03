@@ -4,7 +4,17 @@
 
 #include <stdio.h>
 
-uint8_t DIGI_evolveDigimon(const playing_digimon_t* pstVerifyingDigimon) {
+#define NOT_IN_RANGE(value, min, max) (value < min || value > max)
+
+static uint8_t checkIfValidParameter(const uint16_t uiRange,
+                                     const uint8_t uiCheckValue) {
+    uint8_t uiMinValue = GET_MIN_VALUE(uiRange),
+            uiMaxValue = GET_MAX_VALUE(uiRange);
+
+    return NOT_IN_RANGE(uiCheckValue, uiMinValue, uiMaxValue);
+}
+
+uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
     int i;
     digimon_t* pstDigimonRaised = pstVerifyingDigimon->pstCurrentDigimon;
 
@@ -12,48 +22,76 @@ uint8_t DIGI_evolveDigimon(const playing_digimon_t* pstVerifyingDigimon) {
         evolution_requirement_t* pstCurrentEvolution =
             pstDigimonRaised->vstEvolutionRequirements[i];
 
-        printf("[DIGILIB] Verifying evolution to %s\n",
-               pstDigimonRaised->vstPossibleEvolutions[i]->szName);
-        if (pstCurrentEvolution->uiProgressionNeeded & MASK_NEEDS_OVERFEED) {
-            printf("[DIGILIB] Verifying for amount of overfeeding\n");
-            uint8_t uiCountOverfeed =
-                GET_OVERFEED_VALUE(pstVerifyingDigimon->uiEvolutionProgression);
-            uint8_t uiNeededOverfeed =
-                GET_OVERFEED_VALUE(pstCurrentEvolution->uiProgressionNeeded);
+        printf("[DIGILIB] Testing evolution to %s\n",
+               pstVerifyingDigimon->pstCurrentDigimon->vstPossibleEvolutions[i]
+                   ->szName);
 
-            if (uiCountOverfeed < uiNeededOverfeed) {
-                printf("[DIGILIB] Not enough overfeeding (%d < %d)\n",
-                       uiCountOverfeed, uiNeededOverfeed);
+        if (NEEDS_CARE_MISTAKES(pstCurrentEvolution->uiProgressionNeeded)) {
+            printf("[DIGILIB] It has need for care mistakes (%x)\n",
+                   pstCurrentEvolution->uiCareMistakesCount);
+
+            if (checkIfValidParameter(
+                    pstCurrentEvolution->uiCareMistakesCount,
+                    pstVerifyingDigimon->uiCareMistakesCount)) {
+                printf("[DIGILIB] Exceeded care mistakes\n");
+                continue;
+            }
+        }
+        if (NEEDS_TRAINING(pstCurrentEvolution->uiProgressionNeeded)) {
+            printf("[DIGILIB] It has need for training (%x)\n",
+                   pstCurrentEvolution->uiTrainingCount);
+
+            if (checkIfValidParameter(pstCurrentEvolution->uiTrainingCount,
+                                      pstVerifyingDigimon->uiTrainingCount)) {
+                printf("[DIGILIB] Exceeded training\n");
+                continue;
+            }
+        }
+        if (NEEDS_OVERFEED(pstCurrentEvolution->uiProgressionNeeded)) {
+            printf("[DIGILIB] It has need for overfeeding (%x)\n",
+                   pstCurrentEvolution->uiOverfeedingCount);
+
+            if (checkIfValidParameter(
+                    pstCurrentEvolution->uiOverfeedingCount,
+                    pstVerifyingDigimon->uiOverfeedingCount)) {
+                printf("[DIGILIB] Exceeded overfeeding\n");
+                continue;
+            }
+        }
+        if (NEEDS_SLEEP_DISTURBANCE(pstCurrentEvolution->uiProgressionNeeded)) {
+            printf("[DIGILIB] It has need for sleep disturbance (%x)\n",
+                   pstCurrentEvolution->uiSleepDisturbanceCount);
+
+            if (checkIfValidParameter(
+                    pstCurrentEvolution->uiSleepDisturbanceCount,
+                    pstVerifyingDigimon->uiSleepDisturbanceCount)) {
+                printf("[DIGILIB] Exceeded sleep disturbance\n");
+                continue;
+            }
+        }
+        if (NEEDS_WIN_COUNT(pstCurrentEvolution->uiProgressionNeeded)) {
+            printf("[DIGILIB] It has need victories (%x)\n",
+                   pstCurrentEvolution->uiWinCount);
+
+            if (checkIfValidParameter(pstCurrentEvolution->uiWinCount,
+                                      pstVerifyingDigimon->uiWinCount)) {
+                printf("[DIGILIB] Exceeded victories\n");
                 continue;
             }
         }
 
-        if (pstCurrentEvolution->uiProgressionNeeded & MASK_NEEDS_WIN_COUNT) {
-            printf("[DIGILIB] Verifying for amount of wins\n");
-            if (pstVerifyingDigimon->uiWinCount <
-                pstCurrentEvolution->uiWinCount) {
-                printf("[DIGILIB] Not enough wins (%d < %d)\n",
-                       pstVerifyingDigimon->uiWinCount,
-                       pstCurrentEvolution->uiWinCount);
-            }
-            continue;
-        }
+        pstVerifyingDigimon->pstCurrentDigimon =
+            pstVerifyingDigimon->pstCurrentDigimon->vstPossibleEvolutions[i];
+        pstVerifyingDigimon->uiTimeToEvolve = 0;
+        pstVerifyingDigimon->uiCareMistakesCount = 0;
+        pstVerifyingDigimon->uiTrainingCount = 0;
+        pstVerifyingDigimon->uiOverfeedingCount = 0;
+        pstVerifyingDigimon->uiSleepDisturbanceCount = 0;
 
-        if (GET_CARE_MISTAKES_VALUE(
-                pstVerifyingDigimon->uiEvolutionProgression) >
-            GET_CARE_MISTAKES_VALUE(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] Exceeded care mistakes\n");
-            continue;
-        }
-        if (GET_EFFORT_VALUE(pstVerifyingDigimon->uiEvolutionProgression) >
-            GET_EFFORT_VALUE(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] Exceeded effort\n");
-            continue;
-        }
-
-        return i;
+        return DIGI_RET_OK;
     }
 
+    printf("[DIGILIB] No valid evolution");
     return DIGI_NO_EVOLUTION;
 }
 
@@ -88,10 +126,7 @@ uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
 
     // Se foi dado comida apesar dele estar cheio, marca como overfeed.
     if (iCurrentHungerAmount > 3) {
-        iCurrentHungerAmount =
-            GET_OVERFEED_VALUE(pstFedDigimon->uiEvolutionProgression);
-        SET_OVERFEED_VALUE(pstFedDigimon->uiEvolutionProgression,
-                           ++iCurrentHungerAmount);
+        pstFedDigimon->uiOverfeedingCount++;
         printf("[DIGILIB] %s got overfed\n",
                pstFedDigimon->pstCurrentDigimon->szName);
         return DIGI_RET_OVERFEED;

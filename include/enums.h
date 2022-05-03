@@ -23,4 +23,13 @@
 #define DIGI_ATTRIBUTE_VACCINE 2
 #define DIGI_ATTRIBUTE_VIRUS   3
 
+#define DIGI_STAGE_EGG            0
+#define DIGI_STAGE_BABY_1         1
+#define DIGI_STAGE_BABY_2         2
+#define DIGI_STAGE_CHILD          3
+#define DIGI_STAGE_ADULT          4
+#define DIGI_STAGE_PERFECT        5
+#define DIGI_STAGE_ULTIMATE       6
+#define DIGI_STAGE_SUPER_ULTIMATE 7
+
 #endif
