@@ -91,6 +91,7 @@ typedef struct {
 
     uint16_t uiTimeSinceLastMeal;
     uint16_t uiTimeSinceLastTraining;
+    uint16_t uiTimeSinceLastPoop;
     uint16_t uiTimeToEvolve;
 } playing_digimon_t;
 

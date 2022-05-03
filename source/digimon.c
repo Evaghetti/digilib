@@ -138,12 +138,16 @@ uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
 
 uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
                               int16_t uiAmount) {
+    printf("[DIGILIB] Strengthening %s by %d\n",
+           pstTreatedDigimon->pstCurrentDigimon->szName, uiAmount);
+
     int8_t iCurrentStrength =
         GET_STRENGTH_VALUE(pstTreatedDigimon->uiHungerStrength);
 
     // Aumenta a força do digimon (o set já garante que não vai ser um valor maior que o permitido)
     iCurrentStrength += uiAmount;
     if (iCurrentStrength <= 0) {
+        printf("[DIGILIB] Digmon has no strength left\n");
         pstTreatedDigimon->uiHungerStrength &= ~MASK_STRENGTH;
         return DIGI_RET_WEAK;
     } else if (iCurrentStrength <= 4) {
@@ -156,6 +160,7 @@ uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
     if (pstTreatedDigimon->uiWeight >= 99) {
         pstTreatedDigimon->uiWeight = 99;
         SET_SICK_VALUE(pstTreatedDigimon->uiStats, 1);
+        printf("[DIGILIB] Digmon got sick from obesity\n");
         return DIGI_RET_SICK;
     }
 
@@ -163,17 +168,25 @@ uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
 }
 
 uint8_t DIGI_healDigimon(playing_digimon_t* pstHealedDigimon, uint8_t uiType) {
+    printf("[DIGILIB] Healing %s, type %d\n",
+           pstHealedDigimon->pstCurrentDigimon->szName, uiType);
     if (uiType == MASK_SICK) {
         uint8_t uiSickStatus = GET_SICK_VALUE(pstHealedDigimon->uiStats);
-        if (!uiSickStatus)
+        if (!uiSickStatus) {
+            printf("[DIGILIB] Not sick\n");
             return DIGI_RET_ERROR;
+        }
 
+        printf("[DIGILIB] Sickness healed!\n");
         SET_SICK_VALUE(pstHealedDigimon->uiStats, 0);
     } else if (uiType == MASK_INJURIED) {
         uint8_t uiSickStatus = GET_INJURIED_VALUE(pstHealedDigimon->uiStats);
-        if (!uiSickStatus)
+        if (!uiSickStatus) {
+            printf("[DIGILIB] Not injuried\n");
             return DIGI_RET_ERROR;
+        }
 
+        printf("[DIGILIB] Injury healed!\n");
         SET_INJURIED_VALUE(pstHealedDigimon->uiStats, 0);
     }
 
