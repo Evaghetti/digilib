@@ -5,30 +5,95 @@
 #include "digimon.h"
 #include "enums.h"
 
-evolution_requirement_t vstPossibleRequirements[] = {{0x3f, 0x0, 0x0a},
-                                                     {0x3f, 0x0, 1200}};
+evolution_requirement_t vstPossibleRequirements[] = {
+    {0b00000000},
+    {MASK_NEEDS_CARE_MISTAKES, 0x0003},
+    {MASK_NEEDS_CARE_MISTAKES | MASK_NEEDS_TRAINING, 0x0003, 0x20FF},
+    {
+        MASK_NEEDS_WIN_COUNT,
+        0x0000,
+        0x0000,
+        0x0000,
+        0x0000,
+        0x0C0F,
+    }};
 
 digimon_t vstPossibleDigimon[] = {
-    {"Botamon",
-     0,
-     2359,
-     DIGI_ATTRIBUTE_FREE,
-     1,
-     {&vstPossibleRequirements[0]},
-     {&vstPossibleDigimon[1]}},
-    {"Koromon",
-     0,
-     2100,
-     DIGI_ATTRIBUTE_FREE,
-     1,
-     {&vstPossibleRequirements[1]},
-     {&vstPossibleDigimon[2]}},
-    {"Agumon", 18, 2100, DIGI_ATTRIBUTE_VACCINE, 0, {}, {}},
-};
+    {
+        "Digitama 1",  // Nome
+        0b0000,        // Slot
+        0x0000,        // Hora que acorda
+        0x0000,        // Hora que dorme
+        0x00,          // Digital monster não tem atributo, só slot
+        5,             // Quanto tempo para evoluir
+        DIGI_STAGE_EGG,
+        1,                              // Quantas possiveis evoluções,
+        {&vstPossibleRequirements[0]},  // Requesitos para evoluir.
+        {&vstPossibleDigimon[1]}        // Digimons que evolui
+    },
+    {
+        "Botamon",  // Nome
+        0b0001,     // Slot
+        0x0000,     // Hora que acorda
+        0x2359,     // Hora que dorme
+        0x00,       // Digital monster não tem atributo, só slot
+        5,          // Quanto tempo para evoluir
+        DIGI_STAGE_BABY_1,
+        1,                              // Quantas possiveis evoluções
+        {&vstPossibleRequirements[0]},  // Requesitos para evoluir.
+        {&vstPossibleDigimon[2]}        // Digimons que evolui
+    },
+    {
+        "Koromon",  // Nome
+        0b0010,     // Slot
+        0x0800,     // Hora que acorda
+        0x1900,     // Hora que dorme
+        0x00,       // Digital monster não tem atributo, só slot
+        5,          // Quanto tempo para evoluir
+        DIGI_STAGE_BABY_2,
+        1,                              // Quantas possiveis evoluções
+        {&vstPossibleRequirements[1]},  // Requesitos para evoluir.
+        {&vstPossibleDigimon[3]}        // Digimons que evolui
+    },
+    {
+        "Agumon",  // Nome
+        0b0011,    // Slot
+        0x0800,    // Hora que acorda
+        0x2100,    // Hora que dorme
+        0x00,      // Digital monster não tem atributo, só slot
+        5,         // Quanto tempo para evoluir
+        DIGI_STAGE_CHILD,
+        1,                              // Quantas possiveis evoluções
+        {&vstPossibleRequirements[2]},  // Requesitos para evoluir.
+        {&vstPossibleDigimon[4]}        // Digimons que evolui
+    },
+    {
+        "Greymon",  // Nome
+        0b0101,     // Slot
+        0x0800,     // Hora que acorda
+        0x2000,     // Hora que dorme
+        0x00,       // Digital monster não tem atributo, só slot
+        5,          // Quanto tempo para evoluir
+        DIGI_STAGE_ADULT,
+        1,                              // Quantas possiveis evoluções
+        {&vstPossibleRequirements[3]},  // Requesitos para evoluir.
+        {&vstPossibleDigimon[5]}        // Digimons que evolui
+    },
+    {
+        "Metal Greymon",  // Nome
+        0b1100,           // Slot
+        0x0800,           // Hora que acorda
+        0x2100,           // Hora que dorme
+        0x00,             // Digital monster não tem atributo, só slot
+        5,                // Quanto tempo para evoluir
+        DIGI_STAGE_PERFECT,
+        0,   // Quantas possiveis evoluções
+        {},  // Requesitos para evoluir.
+        {}   // Digimons que evolui
+    }};
 
 static time_t currentTime = -1, lastTime = -1;
-uint8_t proccessEvents(uint8_t* puiEvents,
-                       playing_digimon_t* pstPlayingDigimon) {
+uint8_t proccessEvents(uint8_t* puiEvents) {
     currentTime = time(NULL);
     if (lastTime == -1)
         lastTime = currentTime;
@@ -37,27 +102,25 @@ uint8_t proccessEvents(uint8_t* puiEvents,
     if (uiDeltaTime > 0)
         lastTime = currentTime;
 
-    return DIGI_updateEventsDeltaTime(uiDeltaTime, puiEvents,
-                                      pstPlayingDigimon);
+    return DIGI_updateEventsDeltaTime(1, puiEvents);
 }
 
 int main() {
-    playing_digimon_t stPlayingDigimon = {&vstPossibleDigimon[0], 0b01000100,
-                                          0x00, 0x00, 0x00};
     char option;
+
+    DIGI_init("ENZO");
 
     while (1) {
         uint8_t uiEvents, uiRet;
-        printf("%s\nH: %d\nS: %d\n\n",
-               stPlayingDigimon.pstCurrentDigimon->szName,
-               GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength),
-               GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength));
-        printf("E) evolve\nF) Feed\n");
+        printf(
+            "F) Feed\nS) Strengthen\nI) Heal Injury\nH) Heal Sickness\nC) "
+            "Clean "
+            "Waste\n");
 
         if (scanf("%c", &option) == EOF)
             break;
 
-        uiRet = proccessEvents(&uiEvents, &stPlayingDigimon);
+        uiRet = proccessEvents(&uiEvents);
         if (uiRet != DIGI_RET_OK) {
             printf("[DIGILIB] Error during proccessing of events: 0x%x\n",
                    uiRet);
@@ -68,21 +131,28 @@ int main() {
             printf("[DIGILIB] Digimon is calling for you!\n");
 
         switch (option) {
-            case 'E':
-            case 'e': {
-                int newForm = DIGI_evolveDigimon(&stPlayingDigimon);
-                printf("[DIGITEST] Result evolution: %d\n", newForm);
-
-                if (newForm >= 0)
-                    stPlayingDigimon.pstCurrentDigimon =
-                        stPlayingDigimon.pstCurrentDigimon
-                            ->vstPossibleEvolutions[newForm];
-            } break;
-
             case 'F':
             case 'f':
-                printf("[DIGITEST] Result Feeding: %d\n",
-                       DIGI_feedDigimon(&stPlayingDigimon, 1));
+                printf("[DIGITEST] Result Feeding: %d\n", DIGI_feedDigimon(1));
+                break;
+            case 's':
+            case 'S':
+                printf("[DIGITEST] Result Strength: %d\n",
+                       DIGI_stregthenDigimon(1));
+                break;
+            case 'i':
+            case 'I':
+                printf("[DIGITEST] Result healing: %d\n",
+                       DIGI_healDigimon(MASK_INJURIED));
+                break;
+            case 'h':
+            case 'H':
+                printf("[DIGITEST] Result healing: %d\n",
+                       DIGI_healDigimon(MASK_SICK));
+                break;
+            case 'c':
+            case 'C':
+                DIGI_cleanWaste();
                 break;
 
             default:

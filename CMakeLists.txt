@@ -5,7 +5,7 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 include_directories(include)
 
-set(SRCS source/digimon.c source/digiapi.c)
+set(SRCS source/digimon.c source/digiapi.c source/platform/pc/digihardware.c)
 
 add_library(digilib SHARED ${SRCS})
 add_executable(digiterminal digiterminal.c)

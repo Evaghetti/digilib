@@ -1,5 +1,6 @@
 #include "digiapi.h"
 
+#include "digihardware.h"
 #include "enums.h"
 
 #include <stdio.h>
@@ -14,7 +15,16 @@ static uint8_t guiAmountPoop = 0;
 playing_digimon_t stPlayingDigimon;
 
 int DIGI_init(const char* szSaveFile) {
-    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[0];
+    char szRealFileName[24] = {0};
+    snprintf(szRealFileName, sizeof(szRealFileName), "%s.mon", szSaveFile);
+
+    if (DIGIHW_readFile(szRealFileName, &stPlayingDigimon,
+                        sizeof(stPlayingDigimon)) <= 0) {
+        stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[0];
+
+        DIGIHW_saveFile(szRealFileName, &stPlayingDigimon,
+                        sizeof(stPlayingDigimon));
+    }
 }
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
