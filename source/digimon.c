@@ -6,6 +6,8 @@
 
 #define NOT_IN_RANGE(value, min, max) (value < min || value > max)
 
+extern playing_digimon_t stPlayingDigimon;
+
 static uint8_t checkIfValidParameter(const uint16_t uiRange,
                                      const uint8_t uiCheckValue) {
     uint8_t uiMinValue = GET_MIN_VALUE(uiRange),
@@ -14,25 +16,24 @@ static uint8_t checkIfValidParameter(const uint16_t uiRange,
     return NOT_IN_RANGE(uiCheckValue, uiMinValue, uiMaxValue);
 }
 
-uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
+uint8_t DIGI_evolveDigimon() {
     int i;
-    digimon_t* pstDigimonRaised = pstVerifyingDigimon->pstCurrentDigimon;
+    digimon_t* pstDigimonRaised = stPlayingDigimon.pstCurrentDigimon;
 
     for (i = 0; i < pstDigimonRaised->uiCountPossibleEvolutions; i++) {
         evolution_requirement_t* pstCurrentEvolution =
             pstDigimonRaised->vstEvolutionRequirements[i];
 
         printf("[DIGILIB] Testing evolution to %s\n",
-               pstVerifyingDigimon->pstCurrentDigimon->vstPossibleEvolutions[i]
+               stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i]
                    ->szName);
 
         if (NEEDS_CARE_MISTAKES(pstCurrentEvolution->uiProgressionNeeded)) {
             printf("[DIGILIB] It has need for care mistakes (%x)\n",
                    pstCurrentEvolution->uiCareMistakesCount);
 
-            if (checkIfValidParameter(
-                    pstCurrentEvolution->uiCareMistakesCount,
-                    pstVerifyingDigimon->uiCareMistakesCount)) {
+            if (checkIfValidParameter(pstCurrentEvolution->uiCareMistakesCount,
+                                      stPlayingDigimon.uiCareMistakesCount)) {
                 printf("[DIGILIB] Exceeded care mistakes\n");
                 continue;
             }
@@ -42,7 +43,7 @@ uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
                    pstCurrentEvolution->uiTrainingCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiTrainingCount,
-                                      pstVerifyingDigimon->uiTrainingCount)) {
+                                      stPlayingDigimon.uiTrainingCount)) {
                 printf("[DIGILIB] Exceeded training\n");
                 continue;
             }
@@ -51,9 +52,8 @@ uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
             printf("[DIGILIB] It has need for overfeeding (%x)\n",
                    pstCurrentEvolution->uiOverfeedingCount);
 
-            if (checkIfValidParameter(
-                    pstCurrentEvolution->uiOverfeedingCount,
-                    pstVerifyingDigimon->uiOverfeedingCount)) {
+            if (checkIfValidParameter(pstCurrentEvolution->uiOverfeedingCount,
+                                      stPlayingDigimon.uiOverfeedingCount)) {
                 printf("[DIGILIB] Exceeded overfeeding\n");
                 continue;
             }
@@ -64,7 +64,7 @@ uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
 
             if (checkIfValidParameter(
                     pstCurrentEvolution->uiSleepDisturbanceCount,
-                    pstVerifyingDigimon->uiSleepDisturbanceCount)) {
+                    stPlayingDigimon.uiSleepDisturbanceCount)) {
                 printf("[DIGILIB] Exceeded sleep disturbance\n");
                 continue;
             }
@@ -74,19 +74,19 @@ uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
                    pstCurrentEvolution->uiWinCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiWinCount,
-                                      pstVerifyingDigimon->uiWinCount)) {
+                                      stPlayingDigimon.uiWinCount)) {
                 printf("[DIGILIB] Exceeded victories\n");
                 continue;
             }
         }
 
-        pstVerifyingDigimon->pstCurrentDigimon =
-            pstVerifyingDigimon->pstCurrentDigimon->vstPossibleEvolutions[i];
-        pstVerifyingDigimon->uiTimeToEvolve = 0;
-        pstVerifyingDigimon->uiCareMistakesCount = 0;
-        pstVerifyingDigimon->uiTrainingCount = 0;
-        pstVerifyingDigimon->uiOverfeedingCount = 0;
-        pstVerifyingDigimon->uiSleepDisturbanceCount = 0;
+        stPlayingDigimon.pstCurrentDigimon =
+            stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i];
+        stPlayingDigimon.uiTimeToEvolve = 0;
+        stPlayingDigimon.uiCareMistakesCount = 0;
+        stPlayingDigimon.uiTrainingCount = 0;
+        stPlayingDigimon.uiOverfeedingCount = 0;
+        stPlayingDigimon.uiSleepDisturbanceCount = 0;
 
         return DIGI_RET_OK;
     }
@@ -95,40 +95,42 @@ uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon) {
     return DIGI_NO_EVOLUTION;
 }
 
-uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
+uint8_t DIGI_feedDigimon(int16_t uiAmount) {
     int8_t iCurrentHungerAmount =
-        GET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength);
+        GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength);
 
-    printf("[DIGILIB] Feeding %s, ", pstFedDigimon->pstCurrentDigimon->szName);
+    printf("[DIGILIB] Feeding %s, ",
+           stPlayingDigimon.pstCurrentDigimon->szName);
 
     // Deixa o digimon mais cheio (o SET já garante que não vai ser um valor maior que o permitido)
     iCurrentHungerAmount += uiAmount;
     if (iCurrentHungerAmount <= 0) {
-        pstFedDigimon->uiHungerStrength &= ~MASK_HUNGER;
+        stPlayingDigimon.uiHungerStrength &= ~MASK_HUNGER;
         return DIGI_RET_HUNGRY;
     } else if (iCurrentHungerAmount <= 4) {
-        SET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength, iCurrentHungerAmount);
+        SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength,
+                         iCurrentHungerAmount);
     }
 
     printf("new amout %d (real value %d)\n", iCurrentHungerAmount,
-           GET_HUNGER_VALUE(pstFedDigimon->uiHungerStrength));
+           GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength));
 
     // Aumenta o peso, se estiver obeso, deixa doente.
     if (uiAmount > 0) {
-        pstFedDigimon->uiWeight++;
+        stPlayingDigimon.uiWeight++;
 
-        if (pstFedDigimon->uiWeight >= 99) {
-            pstFedDigimon->uiWeight = 99;
-            SET_SICK_VALUE(pstFedDigimon->uiStats, 1);
+        if (stPlayingDigimon.uiWeight >= 99) {
+            stPlayingDigimon.uiWeight = 99;
+            SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
             printf("[DIGILIB] Digimon got sick from being obese\n");
         }
     }
 
     // Se foi dado comida apesar dele estar cheio, marca como overfeed.
     if (iCurrentHungerAmount > 3) {
-        pstFedDigimon->uiOverfeedingCount++;
+        stPlayingDigimon.uiOverfeedingCount++;
         printf("[DIGILIB] %s got overfed\n",
-               pstFedDigimon->pstCurrentDigimon->szName);
+               stPlayingDigimon.pstCurrentDigimon->szName);
         return DIGI_RET_OVERFEED;
     }
 
@@ -136,30 +138,28 @@ uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount) {
     return DIGI_RET_OK;
 }
 
-uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
-                              int16_t uiAmount) {
+uint8_t DIGI_stregthenDigimon(int16_t uiAmount) {
     printf("[DIGILIB] Strengthening %s by %d\n",
-           pstTreatedDigimon->pstCurrentDigimon->szName, uiAmount);
+           stPlayingDigimon.pstCurrentDigimon->szName, uiAmount);
 
     int8_t iCurrentStrength =
-        GET_STRENGTH_VALUE(pstTreatedDigimon->uiHungerStrength);
+        GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength);
 
     // Aumenta a força do digimon (o set já garante que não vai ser um valor maior que o permitido)
     iCurrentStrength += uiAmount;
     if (iCurrentStrength <= 0) {
         printf("[DIGILIB] Digmon has no strength left\n");
-        pstTreatedDigimon->uiHungerStrength &= ~MASK_STRENGTH;
+        stPlayingDigimon.uiHungerStrength &= ~MASK_STRENGTH;
         return DIGI_RET_WEAK;
     } else if (iCurrentStrength <= 4) {
-        SET_STRENGTH_VALUE(pstTreatedDigimon->uiHungerStrength,
-                           iCurrentStrength);
+        SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, iCurrentStrength);
     }
 
     // Aumenta o peso, se estiver obeso, deixa doente.
-    pstTreatedDigimon->uiWeight++;
-    if (pstTreatedDigimon->uiWeight >= 99) {
-        pstTreatedDigimon->uiWeight = 99;
-        SET_SICK_VALUE(pstTreatedDigimon->uiStats, 1);
+    stPlayingDigimon.uiWeight++;
+    if (stPlayingDigimon.uiWeight >= 99) {
+        stPlayingDigimon.uiWeight = 99;
+        SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
         printf("[DIGILIB] Digmon got sick from obesity\n");
         return DIGI_RET_SICK;
     }
@@ -167,27 +167,27 @@ uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
     return DIGI_RET_OK;
 }
 
-uint8_t DIGI_healDigimon(playing_digimon_t* pstHealedDigimon, uint8_t uiType) {
+uint8_t DIGI_healDigimon(uint8_t uiType) {
     printf("[DIGILIB] Healing %s, type %d\n",
-           pstHealedDigimon->pstCurrentDigimon->szName, uiType);
+           stPlayingDigimon.pstCurrentDigimon->szName, uiType);
     if (uiType == MASK_SICK) {
-        uint8_t uiSickStatus = GET_SICK_VALUE(pstHealedDigimon->uiStats);
+        uint8_t uiSickStatus = GET_SICK_VALUE(stPlayingDigimon.uiStats);
         if (!uiSickStatus) {
             printf("[DIGILIB] Not sick\n");
             return DIGI_RET_ERROR;
         }
 
         printf("[DIGILIB] Sickness healed!\n");
-        SET_SICK_VALUE(pstHealedDigimon->uiStats, 0);
+        SET_SICK_VALUE(stPlayingDigimon.uiStats, 0);
     } else if (uiType == MASK_INJURIED) {
-        uint8_t uiSickStatus = GET_INJURIED_VALUE(pstHealedDigimon->uiStats);
+        uint8_t uiSickStatus = GET_INJURIED_VALUE(stPlayingDigimon.uiStats);
         if (!uiSickStatus) {
             printf("[DIGILIB] Not injuried\n");
             return DIGI_RET_ERROR;
         }
 
         printf("[DIGILIB] Injury healed!\n");
-        SET_INJURIED_VALUE(pstHealedDigimon->uiStats, 0);
+        SET_INJURIED_VALUE(stPlayingDigimon.uiStats, 0);
     }
 
     return DIGI_RET_OK;

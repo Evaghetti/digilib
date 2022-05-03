@@ -3,8 +3,9 @@
 
 #include "digimon.h"
 
-uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents,
-                                   playing_digimon_t* pstPlayingDigimon);
+int DIGI_init(const char* szSaveFile);
+
+uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents);
 
 void DIGI_cleanWaste();
 

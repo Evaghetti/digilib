@@ -95,13 +95,12 @@ typedef struct {
     uint16_t uiTimeToEvolve;
 } playing_digimon_t;
 
-uint8_t DIGI_evolveDigimon(playing_digimon_t* pstVerifyingDigimon);
+uint8_t DIGI_evolveDigimon();
 
-uint8_t DIGI_feedDigimon(playing_digimon_t* pstFedDigimon, int16_t uiAmount);
+uint8_t DIGI_feedDigimon(int16_t uiAmount);
 
-uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstTreatedDigimon,
-                              int16_t uiAmount);
+uint8_t DIGI_stregthenDigimon(int16_t uiAmount);
 
-uint8_t DIGI_healDigimon(playing_digimon_t* pstHealedDigimon, uint8_t uiType);
+uint8_t DIGI_healDigimon(uint8_t uiType);
 
 #endif  // DIGIMON_H

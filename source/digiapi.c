@@ -8,60 +8,66 @@
 #define TIME_TO_GET_WEAKER 10
 #define TIME_TO_POOP       15
 
-static uint8_t guiAmountPoop = 3;
+extern digimon_t vstPossibleDigimon[];
 
-uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents,
-                                   playing_digimon_t* pstPlayingDigimon) {
+static uint8_t guiAmountPoop = 0;
+playing_digimon_t stPlayingDigimon;
+
+int DIGI_init(const char* szSaveFile) {
+    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[0];
+}
+
+uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     *puiEvents = 0;
 
-    if (pstPlayingDigimon->pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1) {
-        pstPlayingDigimon->uiTimeSinceLastMeal += uiDeltaTime;
-        pstPlayingDigimon->uiTimeSinceLastTraining += uiDeltaTime;
-        pstPlayingDigimon->uiTimeSinceLastPoop += uiDeltaTime;
+    if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1) {
+        stPlayingDigimon.uiTimeSinceLastMeal += uiDeltaTime;
+        stPlayingDigimon.uiTimeSinceLastTraining += uiDeltaTime;
+        stPlayingDigimon.uiTimeSinceLastPoop += uiDeltaTime;
     }
 
-    pstPlayingDigimon->uiTimeToEvolve += uiDeltaTime;
+    stPlayingDigimon.uiTimeToEvolve += uiDeltaTime;
 
-    while (pstPlayingDigimon->uiTimeSinceLastMeal >= TIME_TO_GET_HUNGRY) {
-        uint8_t iRet = DIGI_feedDigimon(pstPlayingDigimon, -1);
+    while (stPlayingDigimon.uiTimeSinceLastMeal >= TIME_TO_GET_HUNGRY) {
+        uint8_t iRet = DIGI_feedDigimon(-1);
         if (iRet == DIGI_RET_HUNGRY)
             *puiEvents |= DIGI_EVENT_MASK_CALL;
 
-        pstPlayingDigimon->uiTimeSinceLastMeal -= TIME_TO_GET_HUNGRY;
+        stPlayingDigimon.uiTimeSinceLastMeal -= TIME_TO_GET_HUNGRY;
     }
 
-    while (pstPlayingDigimon->uiTimeSinceLastTraining >= TIME_TO_GET_WEAKER) {
-        uint8_t iRet = DIGI_stregthenDigimon(pstPlayingDigimon, -1);
+    while (stPlayingDigimon.uiTimeSinceLastTraining >= TIME_TO_GET_WEAKER) {
+        uint8_t iRet = DIGI_stregthenDigimon(-1);
         if (iRet == DIGI_RET_WEAK)
             *puiEvents |= DIGI_EVENT_MASK_CALL;
 
-        pstPlayingDigimon->uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
+        stPlayingDigimon.uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
     }
 
-    while (pstPlayingDigimon->uiTimeSinceLastPoop >= TIME_TO_POOP &&
+    while (stPlayingDigimon.uiTimeSinceLastPoop >= TIME_TO_POOP &&
            guiAmountPoop < 4) {
         guiAmountPoop++;
 
-        pstPlayingDigimon->uiTimeSinceLastPoop -= TIME_TO_POOP;
+        stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
 
         printf("[DIGILIB] %s has pooped!\n",
-               pstPlayingDigimon->pstCurrentDigimon->szName);
+               stPlayingDigimon.pstCurrentDigimon->szName);
     }
 
     if (guiAmountPoop >= 4) {
-        SET_SICK_VALUE(pstPlayingDigimon->uiStats, 1);
+        SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
         *puiEvents |= DIGI_EVENT_MASK_SICK;
 
         printf("[DIGILIB] %s got sick from all the waste around it.\n",
-               pstPlayingDigimon->pstCurrentDigimon->szName);
+               stPlayingDigimon.pstCurrentDigimon->szName);
     }
 
-    if (pstPlayingDigimon->uiTimeToEvolve >=
-        pstPlayingDigimon->pstCurrentDigimon->uiNeededTimeEvolution) {
-        uint8_t uiResult = DIGI_evolveDigimon(pstPlayingDigimon);
+    if (stPlayingDigimon.uiTimeToEvolve >=
+        stPlayingDigimon.pstCurrentDigimon->uiNeededTimeEvolution) {
+        uint8_t uiResult = DIGI_evolveDigimon();
 
         if (uiResult == DIGI_NO_EVOLUTION) {
-            SET_DYING_VALUE(pstPlayingDigimon->uiStats, 1);
+            SET_DYING_VALUE(stPlayingDigimon.uiStats, 1);
             *puiEvents |= DIGI_EVENT_MASK_DIE;
         } else {
             *puiEvents |= DIGI_EVENT_MASK_EVOLVE;
