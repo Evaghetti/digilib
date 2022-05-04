@@ -3,11 +3,22 @@
 #include <stdio.h>
 #include <time.h>
 
-uint16_t DIGIHW_timeMinutes() {
+static uint16_t guiTime = 0xffff;
+
+uint16_t DIGIHW_setTime() {
     time_t uiNow = time(NULL);
     struct tm* pstCurrentTime = localtime(&uiNow);
 
-    return (uint16_t)(pstCurrentTime->tm_hour * 60 + pstCurrentTime->tm_min);
+    guiTime = (uint16_t)(pstCurrentTime->tm_hour * 60 + pstCurrentTime->tm_min);
+    return guiTime;
+}
+
+uint16_t DIGIHW_timeMinutes() {
+    return guiTime;
+}
+
+void DIGIHW_addTime(uint16_t uiAddingAmount) {
+    guiTime = (guiTime + uiAddingAmount) % 1440;
 }
 
 int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,

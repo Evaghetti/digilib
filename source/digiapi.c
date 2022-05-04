@@ -25,10 +25,15 @@ int DIGI_init(const char* szSaveFile) {
         DIGIHW_saveFile(szRealFileName, &stPlayingDigimon,
                         sizeof(stPlayingDigimon));
     }
+    DIGIHW_setTime();
 }
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
+    uint16_t uiCurrentTime = DIGIHW_timeMinutes();
     *puiEvents = 0;
+
+    printf("[DIGILIB] Current Time: %d:%d\n", uiCurrentTime / 60,
+           uiCurrentTime % 60);
 
     if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1) {
         stPlayingDigimon.uiTimeSinceLastMeal += uiDeltaTime;
@@ -89,6 +94,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         *puiEvents |= DIGI_EVENT_MASK_CALL | DIGI_EVENT_MASK_SLEEPY;
     }
 
+    DIGIHW_addTime(uiDeltaTime);
     return DIGI_RET_OK;
 }
 

@@ -92,19 +92,6 @@ digimon_t vstPossibleDigimon[] = {
         {}   // Digimons que evolui
     }};
 
-static time_t currentTime = -1, lastTime = -1;
-uint8_t proccessEvents(uint8_t* puiEvents) {
-    currentTime = time(NULL);
-    if (lastTime == -1)
-        lastTime = currentTime;
-
-    uint16_t uiDeltaTime = (currentTime - lastTime) / 60;
-    if (uiDeltaTime > 0)
-        lastTime = currentTime;
-
-    return DIGI_updateEventsDeltaTime(1, puiEvents);
-}
-
 int main() {
     char option;
 
@@ -120,7 +107,7 @@ int main() {
         if (scanf("%c", &option) == EOF)
             break;
 
-        uiRet = proccessEvents(&uiEvents);
+        uiRet = DIGI_updateEventsDeltaTime(1, &uiEvents);
         if (uiRet != DIGI_RET_OK) {
             printf("[DIGILIB] Error during proccessing of events: 0x%x\n",
                    uiRet);
