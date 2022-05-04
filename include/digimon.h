@@ -10,6 +10,7 @@
 #define MASK_INJURIED        0b00000010
 #define MASK_EVOLUTION_STAGE 0b00011100
 #define MASK_DYING_STAGE     0b00100000
+#define MASK_SLEEPING        0b01000000
 
 // Getters
 #define GET_HUNGER_VALUE(x)          ((MASK_HUNGER & x) >> 0)
@@ -17,6 +18,7 @@
 #define GET_SICK_VALUE(x)            ((MASK_SICK & x) >> 0)
 #define GET_INJURIED_VALUE(x)        ((MASK_INJURIED & x) >> 1)
 #define GET_EVOLUTION_STAGE_VALUE(x) ((MASK_EVOLUTION_STAGE & x) >> 2)
+#define GET_SLEEPING_VALUE(x)        ((MASK_SLEEPING & x) >> 6)
 
 // Setters
 #define SET_HUNGER_VALUE(variable, value) \
@@ -34,6 +36,9 @@
 #define SET_DYING_VALUE(variable, value) \
     variable &= ~MASK_DYING_STAGE;       \
     variable |= ((value & 0b00000001) << 5)
+#define SET_SLEEPING_VALUE(variable, value) \
+    variable &= ~MASK_SLEEPING;             \
+    variable |= ((value & 0b00000001) << 6)
 
 // Evolution progression
 #define MASK_NEEDS_CARE_MISTAKES     0b00000001
@@ -102,5 +107,9 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount);
 uint8_t DIGI_stregthenDigimon(int16_t uiAmount);
 
 uint8_t DIGI_healDigimon(uint8_t uiType);
+
+uint8_t DIGI_putSleep(uint8_t uiSleepMode);
+
+uint8_t DIGI_shouldSleep();
 
 #endif  // DIGIMON_H

@@ -1,5 +1,6 @@
 #include "digimon.h"
 
+#include "digihardware.h"
 #include "enums.h"
 
 #include <stdio.h>
@@ -190,5 +191,27 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
         SET_INJURIED_VALUE(stPlayingDigimon.uiStats, 0);
     }
 
+    return DIGI_RET_OK;
+}
+
+uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
+    printf("[DIGILIB] Putting %s to sleep -> %d\n",
+           stPlayingDigimon.pstCurrentDigimon->szName, uiSleepMode);
+    SET_SLEEPING_VALUE(stPlayingDigimon.uiStats, uiSleepMode);
+}
+
+uint8_t DIGI_shouldSleep() {
+    const digimon_t* pstCurrentDigimon = stPlayingDigimon.pstCurrentDigimon;
+    const uint16_t uiCurrentTime = DIGIHW_timeMinutes();
+
+    if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1)
+        return DIGI_RET_ERROR;
+    else if (GET_SLEEPING_VALUE(stPlayingDigimon.uiStats) == 1)
+        return DIGI_RET_ERROR;
+
+    if (uiCurrentTime > pstCurrentDigimon->uiTimeSleep)
+        return DIGI_RET_OK;
+    if (uiCurrentTime > pstCurrentDigimon->uiTimeWakeUp)
+        return DIGI_RET_ERROR;
     return DIGI_RET_OK;
 }

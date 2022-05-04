@@ -84,6 +84,11 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         }
     }
 
+    if (DIGI_shouldSleep() == DIGI_RET_OK) {
+        printf("[DIGILIB] Bedtime for digimon\n");
+        *puiEvents |= DIGI_EVENT_MASK_CALL | DIGI_EVENT_MASK_SLEEPY;
+    }
+
     return DIGI_RET_OK;
 }
 
