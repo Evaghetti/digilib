@@ -7,7 +7,7 @@ uint16_t DIGIHW_timeMinutes() {
     time_t uiNow = time(NULL);
     struct tm* pstCurrentTime = localtime(&uiNow);
 
-    return (uint16_t)(pstCurrentTime->tm_hour + pstCurrentTime->tm_min * 60);
+    return (uint16_t)(pstCurrentTime->tm_hour * 60 + pstCurrentTime->tm_min);
 }
 
 int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,
