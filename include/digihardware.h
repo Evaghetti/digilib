@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-uint32_t DIGIHW_timeSeconds();
+uint16_t DIGIHW_timeMinutes();
 
 int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,
                         const uint16_t uiMaxDestSize);
