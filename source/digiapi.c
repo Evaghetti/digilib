@@ -79,7 +79,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     }
 
     if (guiAmountPoop >= 4) {
-        SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
+        stPlayingDigimon.uiStats |= MASK_SICK;
         *puiEvents |= DIGI_EVENT_MASK_SICK;
 
         printf("[DIGILIB] %s got sick from all the waste around it.\n",

@@ -13,12 +13,8 @@
 #define MASK_SLEEPING    0b01000000
 
 // Getters
-#define GET_HUNGER_VALUE(x)        ((MASK_HUNGER & x) >> 0)
-#define GET_STRENGTH_VALUE(x)      ((MASK_STRENGTH & x) >> 4)
-#define GET_SICK_VALUE(x)          ((MASK_SICK & x) >> 0)
-#define GET_INJURIED_VALUE(x)      ((MASK_INJURIED & x) >> 1)
-#define GET_CALLED_STATUS_VALUE(x) ((MASK_CALLED & x) >> 2)
-#define GET_SLEEPING_VALUE(x)      ((MASK_SLEEPING & x) >> 6)
+#define GET_HUNGER_VALUE(x)   ((MASK_HUNGER & x) >> 0)
+#define GET_STRENGTH_VALUE(x) ((MASK_STRENGTH & x) >> 4)
 
 // Setters
 #define SET_HUNGER_VALUE(variable, value) \
@@ -27,21 +23,6 @@
 #define SET_STRENGTH_VALUE(variable, value) \
     variable &= ~MASK_STRENGTH;             \
     variable |= ((value & 0b00001111) << 4)
-#define SET_SICK_VALUE(variable, value) \
-    variable &= ~MASK_SICK;             \
-    variable |= ((value & 0b00000001) << 0)
-#define SET_INJURIED_VALUE(variable, value) \
-    variable &= ~MASK_INJURIED;             \
-    variable |= ((value & 0b00000001) << 1)
-#define SET_CALLED_STATUS_VALUE(variable, value) \
-    variable &= ~MASK_CALLED;                    \
-    variable |= ((value & 0b00000001) << 1)
-#define SET_DYING_VALUE(variable, value) \
-    variable &= ~MASK_DYING_STAGE;       \
-    variable |= ((value & 0b00000001) << 5)
-#define SET_SLEEPING_VALUE(variable, value) \
-    variable &= ~MASK_SLEEPING;             \
-    variable |= ((value & 0b00000001) << 6)
 
 // Evolution progression
 #define MASK_NEEDS_CARE_MISTAKES     0b00000001

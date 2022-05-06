@@ -132,7 +132,7 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
 
         if (stPlayingDigimon.uiWeight >= 99) {
             stPlayingDigimon.uiWeight = 99;
-            SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
+            stPlayingDigimon.uiStats |= MASK_SICK;
             printf("[DIGILIB] Digimon got sick from being obese\n");
         }
     }
@@ -170,7 +170,7 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount) {
     stPlayingDigimon.uiWeight++;
     if (stPlayingDigimon.uiWeight >= 99) {
         stPlayingDigimon.uiWeight = 99;
-        SET_SICK_VALUE(stPlayingDigimon.uiStats, 1);
+        stPlayingDigimon.uiStats |= MASK_SICK;
         printf("[DIGILIB] Digmon got sick from obesity\n");
         return DIGI_RET_SICK;
     }
@@ -182,23 +182,21 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
     printf("[DIGILIB] Healing %s, type %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName, uiType);
     if (uiType == MASK_SICK) {
-        uint8_t uiSickStatus = GET_SICK_VALUE(stPlayingDigimon.uiStats);
-        if (!uiSickStatus) {
+        if ((stPlayingDigimon.uiStats & MASK_SICK) == 0) {
             printf("[DIGILIB] Not sick\n");
             return DIGI_RET_ERROR;
         }
 
         printf("[DIGILIB] Sickness healed!\n");
-        SET_SICK_VALUE(stPlayingDigimon.uiStats, 0);
+        stPlayingDigimon.uiStats &= ~MASK_SICK;
     } else if (uiType == MASK_INJURIED) {
-        uint8_t uiSickStatus = GET_INJURIED_VALUE(stPlayingDigimon.uiStats);
-        if (!uiSickStatus) {
+        if ((stPlayingDigimon.uiStats & MASK_INJURIED) == 0) {
             printf("[DIGILIB] Not injuried\n");
             return DIGI_RET_ERROR;
         }
 
         printf("[DIGILIB] Injury healed!\n");
-        SET_INJURIED_VALUE(stPlayingDigimon.uiStats, 0);
+        stPlayingDigimon.uiStats &= ~MASK_INJURIED;
     }
 
     return DIGI_RET_OK;
@@ -207,7 +205,8 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
 uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
     printf("[DIGILIB] Putting %s to sleep -> %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName, uiSleepMode);
-    SET_SLEEPING_VALUE(stPlayingDigimon.uiStats, uiSleepMode);
+    stPlayingDigimon.uiStats &= ~MASK_SLEEPING;
+    stPlayingDigimon.uiStats |= ((uiSleepMode & 1) << 6);
 }
 
 uint8_t DIGI_shouldSleep() {
@@ -216,7 +215,7 @@ uint8_t DIGI_shouldSleep() {
 
     if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1)
         return DIGI_RET_ERROR;
-    else if (GET_SLEEPING_VALUE(stPlayingDigimon.uiStats) == 1)
+    else if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0)
         return DIGI_RET_ERROR;
 
     if (uiCurrentTime > pstCurrentDigimon->uiTimeSleep)
