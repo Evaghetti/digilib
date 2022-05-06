@@ -4,21 +4,21 @@
 #include <stdint.h>
 
 // Stats
-#define MASK_HUNGER          0b00001111
-#define MASK_STRENGTH        0b11110000
-#define MASK_SICK            0b00000001
-#define MASK_INJURIED        0b00000010
-#define MASK_EVOLUTION_STAGE 0b00011100
-#define MASK_DYING_STAGE     0b00100000
-#define MASK_SLEEPING        0b01000000
+#define MASK_HUNGER      0b00001111
+#define MASK_STRENGTH    0b11110000
+#define MASK_SICK        0b00000001
+#define MASK_INJURIED    0b00000010
+#define MASK_CALLED      0b00000100
+#define MASK_DYING_STAGE 0b00100000
+#define MASK_SLEEPING    0b01000000
 
 // Getters
-#define GET_HUNGER_VALUE(x)          ((MASK_HUNGER & x) >> 0)
-#define GET_STRENGTH_VALUE(x)        ((MASK_STRENGTH & x) >> 4)
-#define GET_SICK_VALUE(x)            ((MASK_SICK & x) >> 0)
-#define GET_INJURIED_VALUE(x)        ((MASK_INJURIED & x) >> 1)
-#define GET_EVOLUTION_STAGE_VALUE(x) ((MASK_EVOLUTION_STAGE & x) >> 2)
-#define GET_SLEEPING_VALUE(x)        ((MASK_SLEEPING & x) >> 6)
+#define GET_HUNGER_VALUE(x)        ((MASK_HUNGER & x) >> 0)
+#define GET_STRENGTH_VALUE(x)      ((MASK_STRENGTH & x) >> 4)
+#define GET_SICK_VALUE(x)          ((MASK_SICK & x) >> 0)
+#define GET_INJURIED_VALUE(x)      ((MASK_INJURIED & x) >> 1)
+#define GET_CALLED_STATUS_VALUE(x) ((MASK_CALLED & x) >> 2)
+#define GET_SLEEPING_VALUE(x)      ((MASK_SLEEPING & x) >> 6)
 
 // Setters
 #define SET_HUNGER_VALUE(variable, value) \
@@ -32,6 +32,9 @@
     variable |= ((value & 0b00000001) << 0)
 #define SET_INJURIED_VALUE(variable, value) \
     variable &= ~MASK_INJURIED;             \
+    variable |= ((value & 0b00000001) << 1)
+#define SET_CALLED_STATUS_VALUE(variable, value) \
+    variable &= ~MASK_CALLED;                    \
     variable |= ((value & 0b00000001) << 1)
 #define SET_DYING_VALUE(variable, value) \
     variable &= ~MASK_DYING_STAGE;       \
@@ -102,6 +105,8 @@ typedef struct {
 
 uint8_t DIGI_evolveDigimon();
 
+uint8_t DIGI_shouldEvolve();
+
 uint8_t DIGI_feedDigimon(int16_t uiAmount);
 
 uint8_t DIGI_stregthenDigimon(int16_t uiAmount);
@@ -111,5 +116,9 @@ uint8_t DIGI_healDigimon(uint8_t uiType);
 uint8_t DIGI_putSleep(uint8_t uiSleepMode);
 
 uint8_t DIGI_shouldSleep();
+
+uint8_t DIGI_setCalled();
+
+void DIGI_addCareMistakes();
 
 #endif  // DIGIMON_H

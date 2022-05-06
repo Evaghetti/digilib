@@ -93,7 +93,17 @@ uint8_t DIGI_evolveDigimon() {
     }
 
     printf("[DIGILIB] No valid evolution");
+    stPlayingDigimon.uiStats |= MASK_DYING_STAGE;
     return DIGI_NO_EVOLUTION;
+}
+
+uint8_t DIGI_shouldEvolve() {
+    return stPlayingDigimon.uiTimeToEvolve >=
+                       stPlayingDigimon.pstCurrentDigimon
+                           ->uiNeededTimeEvolution &&
+                   (stPlayingDigimon.uiStats & MASK_DYING_STAGE) == 0
+               ? DIGI_RET_OK
+               : DIGI_RET_ERROR;
 }
 
 uint8_t DIGI_feedDigimon(int16_t uiAmount) {
@@ -214,4 +224,27 @@ uint8_t DIGI_shouldSleep() {
     if (uiCurrentTime > pstCurrentDigimon->uiTimeWakeUp)
         return DIGI_RET_ERROR;
     return DIGI_RET_OK;
+}
+
+uint8_t DIGI_setCalled() {
+    stPlayingDigimon.uiStats &= ~MASK_CALLED;
+
+    if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+        stPlayingDigimon.uiStats |= MASK_CALLED;
+    else if (GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+        stPlayingDigimon.uiStats |= MASK_CALLED;
+    else if (DIGI_shouldSleep() == DIGI_RET_OK)
+        stPlayingDigimon.uiStats |= MASK_CALLED;
+
+    return stPlayingDigimon.uiStats & MASK_CALLED ? DIGI_RET_OK
+                                                  : DIGI_RET_ERROR;
+}
+
+void DIGI_addCareMistakes() {
+    if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+        stPlayingDigimon.uiCareMistakesCount++;
+    else if (GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+        stPlayingDigimon.uiCareMistakesCount++;
+    else if (DIGI_shouldSleep() == DIGI_RET_OK)
+        stPlayingDigimon.uiCareMistakesCount++;
 }
