@@ -48,7 +48,8 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
            GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength),
            stPlayingDigimon.uiCareMistakesCount);
 
-    if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1) {
+    if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
+        (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {
         stPlayingDigimon.uiTimeSinceLastMeal += uiDeltaTime;
         stPlayingDigimon.uiTimeSinceLastTraining += uiDeltaTime;
         stPlayingDigimon.uiTimeSinceLastPoop += uiDeltaTime;

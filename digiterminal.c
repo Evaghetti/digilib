@@ -94,6 +94,7 @@ digimon_t vstPossibleDigimon[] = {
 
 int main() {
     char option;
+    uint8_t sleeping = 0;
 
     DIGI_init("ENZO");
 
@@ -102,7 +103,7 @@ int main() {
         printf(
             "F) Feed\nS) Strengthen\nI) Heal Injury\nH) Heal Sickness\nC) "
             "Clean "
-            "Waste\n");
+            "Waste\nP) Put to sleep\n");
 
         if (scanf("%c", &option) == EOF)
             break;
@@ -140,6 +141,10 @@ int main() {
             case 'c':
             case 'C':
                 DIGI_cleanWaste();
+                break;
+            case 'p':
+            case 'P':
+                DIGI_putSleep(!sleeping);
                 break;
 
             default:

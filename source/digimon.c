@@ -205,8 +205,16 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
 uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
     printf("[DIGILIB] Putting %s to sleep -> %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName, uiSleepMode);
+
+    uiSleepMode &= 1;
+
+    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 && uiSleepMode) {
+        printf("[DIGILIB] It is a sleep disturbance\n");
+        stPlayingDigimon.uiSleepDisturbanceCount++;
+    }
+
     stPlayingDigimon.uiStats &= ~MASK_SLEEPING;
-    stPlayingDigimon.uiStats |= ((uiSleepMode & 1) << 6);
+    stPlayingDigimon.uiStats |= uiSleepMode << 6;
 }
 
 uint8_t DIGI_shouldSleep() {
