@@ -19,19 +19,10 @@ static uint8_t guiAmountPoop = 0;
 playing_digimon_t stPlayingDigimon;
 
 int DIGI_init(const char* szSaveFile) {
-    char szRealFileName[24] = {0};
-    snprintf(szRealFileName, sizeof(szRealFileName), "%s.mon", szSaveFile);
+    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[3];
+    SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+    SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
 
-    if (DIGIHW_readFile(szRealFileName, &stPlayingDigimon,
-                        sizeof(stPlayingDigimon)) <= 0) {
-
-        stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[3];
-        SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
-        SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
-
-        DIGIHW_saveFile(szRealFileName, &stPlayingDigimon,
-                        sizeof(stPlayingDigimon));
-    }
     DIGIHW_setTime();
 }
 

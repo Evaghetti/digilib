@@ -27,7 +27,7 @@ int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,
     if (pstFileHandle == NULL)
         return -1;
 
-    const uint16_t iBytesRead = fread(pbDest, uiMaxDestSize, 1, pstFileHandle);
+    const uint16_t iBytesRead = fread(pbDest, 1, uiMaxDestSize, pstFileHandle);
     fclose(pstFileHandle);
     return iBytesRead;
 }
