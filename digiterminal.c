@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "digiapi.h"
+#include "digibattle.h"
 #include "digimon.h"
 #include "enums.h"
 
@@ -146,7 +147,10 @@ int main() {
             case 'P':
                 DIGI_putSleep(!sleeping);
                 break;
-
+            case 'b':
+            case 'B':
+                DIGIBATTLE_initiate();
+                break;
             default:
                 break;
         }
