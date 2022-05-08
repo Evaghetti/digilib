@@ -76,6 +76,7 @@ typedef struct {
     uint8_t uiTrainingCount;
     uint8_t uiOverfeedingCount;
     uint8_t uiSleepDisturbanceCount;
+    uint8_t uiBattleCount;
     uint8_t uiWinCount;
 
     uint16_t uiTimeSinceLastMeal;

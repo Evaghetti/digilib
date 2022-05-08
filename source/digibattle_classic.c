@@ -61,6 +61,19 @@ uint8_t DIGI_battle(uint8_t uiInitiate) {
         return DIGIBATTLE_RET_OK;
     }
 
+    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
+        DIGI_shouldSleep() == DIGI_RET_OK) {
+        printf("[DIGILIB] Digimon is too tired to battle\n");
+        return DIGIBATTLE_RET_OK;
+    }
+
+    if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0 ||
+        GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
+        printf(
+            "[DIGILIB] You have to take care of you digimon before battle\n");
+        return DIGIBATTLE_RET_OK;
+    }
+
     DIGICOMM_setup();
 
     // First, see if the other side already has started communcating.
@@ -69,6 +82,10 @@ uint8_t DIGI_battle(uint8_t uiInitiate) {
     if (uiResult == DIGIBATTLE_RET_ERROR && uiInitiate) {
         uiResult = DIGIBATTLE_initiate();
     }
+
+    stPlayingDigimon.uiBattleCount++;
+    if (uiResult == DIGIBATTLE_RET_WIN)
+        stPlayingDigimon.uiWinCount++;
 
     DIGICOMM_close();
     return uiResult;
