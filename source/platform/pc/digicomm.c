@@ -44,25 +44,20 @@ void connectTo(int socketDescriptor) {
     config.sin_addr.s_addr = inet_addr(ADDRESS);
     config.sin_port = htons(SERVER_PORT);
 
-    printf("Tryng to connect to %s on port %d...\n", ADDRESS, SERVER_PORT);
-
     int result =
         connect(socketDescriptor, (struct sockaddr*)&config, sizeof(config));
     if (result != 0) {
         fprintf(stderr, "Erro %d:%s\n", errno, strerror(errno));
         return;
     }
-
-    printf("Connected\n");
 }
 
 void* serverLogic() {
     int sockets[2] = {0, 0}, i, maxSocket;
-    uint16_t uiPacket;
+    uint16_t uiPacket, uiBufferizedPacket = 0;
     fd_set readfds;
 
     while (1) {
-        int hasEmpty = 0;
         FD_ZERO(&readfds);
 
         FD_SET(gSocketServer, &readfds);
@@ -70,7 +65,6 @@ void* serverLogic() {
 
         for (i = 0; i < 2; i++) {
             if (sockets[i] == 0) {
-                hasEmpty = 1;
                 continue;
             }
 
@@ -83,7 +77,6 @@ void* serverLogic() {
         select(maxSocket + 1, &readfds, NULL, NULL, NULL);
 
         if (FD_ISSET(gSocketServer, &readfds)) {
-            printf("Conectaram\n");
             for (i = 0; i < 2; i++) {
                 if (sockets[i] == 0)
                     break;
@@ -92,22 +85,25 @@ void* serverLogic() {
             int sizeConfig = sizeof(gServerconfig);
             sockets[i] = accept(gSocketServer, (struct sockaddr*)&gServerconfig,
                                 &sizeConfig);
-        }
 
-        if (hasEmpty)
-            continue;
+            if (uiBufferizedPacket) {
+                write(sockets[i], &uiBufferizedPacket,
+                      sizeof(uiBufferizedPacket));
+                uiBufferizedPacket = 0;
+            }
+        }
 
         for (i = 0; i < 2; i++) {
             int currentSocket = sockets[i], nextSocket = sockets[(i + 1) % 2];
             if (FD_ISSET(currentSocket, &readfds)) {
                 if (recv(currentSocket, &uiPacket, sizeof(uiPacket),
                          MSG_DONTWAIT) == 0) {
-                    printf("Fechou\n");
                     close(currentSocket);
                     sockets[i] = 0;
                 } else if (nextSocket) {
-                    printf("Enviando pro próximo %04x\n", uiPacket);
                     write(nextSocket, &uiPacket, sizeof(uiPacket));
+                } else {
+                    uiBufferizedPacket = uiPacket;
                 }
             }
         }
@@ -127,14 +123,13 @@ uint16_t DIGICOMM_setup() {
         // Coloca o socket oficialmente nas configurações acima.
         int result = bind(gSocketServer, (struct sockaddr*)&gServerconfig,
                           sizeof(gServerconfig));
-        printf("Listening on address %s:%d\n", ADDRESS, SERVER_PORT);
-        result =
-            listen(gSocketServer, 2);  // Aceita apenas uma conexão por vez.
-        if (result != 0)
-            return DIGICOMM_ERROR_POLLING;
+        if (result == 0) {
+            result =
+                listen(gSocketServer, 2);  // Aceita apenas uma conexão por vez.
 
-        pthread_t ulThreadServer;
-        pthread_create(&ulThreadServer, NULL, &serverLogic, NULL);
+            pthread_t ulThreadServer;
+            pthread_create(&ulThreadServer, NULL, &serverLogic, NULL);
+        }
     }
 
     gSocketClient = createSocket();
