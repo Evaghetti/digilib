@@ -2,6 +2,8 @@
 #include <time.h>
 
 #include "digiapi.h"
+#include "digibattle_classic.h"
+#include "digicomm.h"
 #include "digimon.h"
 #include "enums.h"
 
@@ -99,14 +101,16 @@ int main() {
     DIGI_init("ENZO");
 
     while (1) {
-        uint8_t uiEvents, uiRet;
+        uint8_t uiEvents, uiRet, uiInitiate = 0;
         printf(
             "F) Feed\nS) Strengthen\nI) Heal Injury\nH) Heal Sickness\nC) "
             "Clean "
-            "Waste\nP) Put to sleep\n");
+            "Waste\nP) Put to sleep\nB) Initiate Battle\nL) Listen for "
+            "Battle\n");
 
-        if (scanf("%c", &option) == EOF)
-            break;
+        fflush(stdin);
+        option = getchar();
+        printf("Selected option -> %c\n", option);
 
         uiRet = DIGI_updateEventsDeltaTime(1, &uiEvents);
         if (uiRet != DIGI_RET_OK) {
@@ -146,7 +150,18 @@ int main() {
             case 'P':
                 DIGI_putSleep(!sleeping);
                 break;
-
+            case 'b':
+            case 'B':
+                DIGICOMM_setup();
+                DIGIBATTLE_initiate();
+                DIGICOMM_close();
+                break;
+            case 'l':
+            case 'L':
+                DIGICOMM_setup();
+                DIGIBATTLE_continue();
+                DIGICOMM_close();
+                break;
             default:
                 break;
         }

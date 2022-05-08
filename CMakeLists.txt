@@ -5,7 +5,7 @@ set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 include_directories(include)
 
-set(SRCS source/digimon.c source/digiapi.c source/platform/pc/digihardware.c source/platform/pc/digicomm.c)
+set(SRCS source/digimon.c source/digiapi.c source/digibattle_classic.c source/platform/pc/digihardware.c source/platform/pc/digicomm.c)
 
 add_library(digilib SHARED ${SRCS})
 target_link_libraries(digilib pthread)
