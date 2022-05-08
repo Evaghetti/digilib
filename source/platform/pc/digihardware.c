@@ -1,6 +1,7 @@
 #include "digihardware.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 static uint16_t guiTime = 0xffff;
@@ -41,4 +42,10 @@ uint16_t DIGIHW_saveFile(const char* szFileName, const void* pbData,
     const uint16_t iBytesRead = fwrite(pbData, uiSizeData, 1, pstFileHandle);
     fclose(pstFileHandle);
     return iBytesRead;
+}
+
+uint8_t DIGIHW_randomNumber() {
+    srand(time(NULL));
+
+    return rand() % 16 + 1;
 }
