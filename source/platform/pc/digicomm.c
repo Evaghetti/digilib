@@ -100,6 +100,9 @@ void* serverLogic() {
                          MSG_DONTWAIT) == 0) {
                     close(currentSocket);
                     sockets[i] = 0;
+
+                    if (uiBufferizedPacket)
+                        uiBufferizedPacket = 0;
                 } else if (nextSocket) {
                     write(nextSocket, &uiPacket, sizeof(uiPacket));
                 } else {
@@ -145,7 +148,6 @@ uint16_t DIGICOMM_pollData() {
         return DIGICOMM_ERROR_POLLING;
     else if (iRet != sizeof(uiData))
         return DIGICOMM_ERROR_READING;
-
     return uiData;
 }
 

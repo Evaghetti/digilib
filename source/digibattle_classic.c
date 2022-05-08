@@ -2,6 +2,7 @@
 #include "digicomm.h"
 #include "digihardware.h"
 #include "digimon.h"
+#include "enums.h"
 
 #include <stdio.h>
 
@@ -55,12 +56,28 @@ uint8_t getBattleResult(uint8_t uiMySlot, uint8_t uiEnemySlot) {
 }
 
 uint8_t DIGI_battle(uint8_t uiInitiate) {
-    return 0;
+    if (stPlayingDigimon.pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_2) {
+        printf("[DIGILIB] Digimon is too young to fight\n");
+        return DIGIBATTLE_RET_OK;
+    }
+
+    DIGICOMM_setup();
+
+    // First, see if the other side already has started communcating.
+    // Then if it didn't, and this side should initiate, do so
+    uint8_t uiResult = DIGIBATTLE_continue();
+    if (uiResult == DIGIBATTLE_RET_ERROR && uiInitiate) {
+        uiResult = DIGIBATTLE_initiate();
+    }
+
+    DIGICOMM_close();
+    return uiResult;
 }
 
 uint8_t DIGIBATTLE_initiate() {
-    uint16_t uiPacket = createFirstPacket();
+    printf("[DIGILIB] Initiating battle\n");
 
+    uint16_t uiPacket = createFirstPacket();
     printf("[DIGILIB] First packet sent -> 0x%04x\n", uiPacket);
     if (DIGICOMM_sendData(uiPacket)) {
         printf("[DIGILIB] Error trying to send data 0x%04x\n", uiPacket);

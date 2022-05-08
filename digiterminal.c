@@ -101,7 +101,7 @@ int main() {
     DIGI_init("ENZO");
 
     while (1) {
-        uint8_t uiEvents, uiRet, uiInitiate = 0;
+        uint8_t uiEvents, uiRet, uiInitiate = 0, uiTry = 0;
         printf(
             "F) Feed\nS) Strengthen\nI) Heal Injury\nH) Heal Sickness\nC) "
             "Clean "
@@ -122,49 +122,53 @@ int main() {
         if (uiEvents & DIGI_EVENT_MASK_CALL)
             printf("[DIGILIB] Digimon is calling for you!\n");
 
-        switch (option) {
-            case 'F':
-            case 'f':
-                printf("[DIGITEST] Result Feeding: %d\n", DIGI_feedDigimon(1));
-                break;
-            case 's':
-            case 'S':
-                printf("[DIGITEST] Result Strength: %d\n",
-                       DIGI_stregthenDigimon(1));
-                break;
-            case 'i':
-            case 'I':
-                printf("[DIGITEST] Result healing: %d\n",
-                       DIGI_healDigimon(MASK_INJURIED));
-                break;
-            case 'h':
-            case 'H':
-                printf("[DIGITEST] Result healing: %d\n",
-                       DIGI_healDigimon(MASK_SICK));
-                break;
-            case 'c':
-            case 'C':
-                DIGI_cleanWaste();
-                break;
-            case 'p':
-            case 'P':
-                DIGI_putSleep(!sleeping);
-                break;
-            case 'b':
-            case 'B':
-                DIGICOMM_setup();
-                DIGIBATTLE_initiate();
-                DIGICOMM_close();
-                break;
-            case 'l':
-            case 'L':
-                DIGICOMM_setup();
-                DIGIBATTLE_continue();
-                DIGICOMM_close();
-                break;
-            default:
-                break;
-        }
+        do {
+            switch (option) {
+                case 'F':
+                case 'f':
+                    printf("[DIGITEST] Result Feeding: %d\n",
+                           DIGI_feedDigimon(1));
+                    break;
+                case 's':
+                case 'S':
+                    printf("[DIGITEST] Result Strength: %d\n",
+                           DIGI_stregthenDigimon(1));
+                    break;
+                case 'i':
+                case 'I':
+                    printf("[DIGITEST] Result healing: %d\n",
+                           DIGI_healDigimon(MASK_INJURIED));
+                    break;
+                case 'h':
+                case 'H':
+                    printf("[DIGITEST] Result healing: %d\n",
+                           DIGI_healDigimon(MASK_SICK));
+                    break;
+                case 'c':
+                case 'C':
+                    DIGI_cleanWaste();
+                    break;
+                case 'p':
+                case 'P':
+                    DIGI_putSleep(!sleeping);
+                    break;
+                case 'b':
+                case 'B':
+                    uiInitiate = 1;
+                    // Fallthrough
+                case 'l':
+                case 'L':
+                    uiRet = DIGI_battle(uiInitiate);
+                    if (uiRet == DIGIBATTLE_RET_WIN ||
+                        uiRet == DIGIBATTLE_RET_LOSE)
+                        uiTry = 10;
+                    uiTry++;
+                    break;
+                default:
+                    break;
+            }
+        } while (uiTry < 5 && (option == 'b' || option == 'B' ||
+                               option == 'l' || option == 'L'));
     }
 
     return 0;
