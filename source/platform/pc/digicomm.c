@@ -1,52 +1,163 @@
 #include "digicomm.h"
-#include "digihardware.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
-
-#ifdef WIN32
-#include <windows.h>
-#else
+#include <string.h>
+#include <sys/select.h>
+#include <sys/socket.h>
 #include <unistd.h>
-#define Sleep(x) usleep((x)*1000)
-#endif
 
-#define SECONDS_WAITING_POOL 60
-#define COMMUNICATION_FILE   "data.comm"
+#define ADDRESS     "127.0.0.1"
+#define SERVER_PORT 1997
 
-int16_t DIGICOMM_pollData() {
-    uint16_t uiBytesRead = 0;
-    uint8_t uiTries;
+static int gSocketServer = 0, gSocketClient = 0;
+static struct sockaddr_in gServerconfig;
 
-    for (uiTries = SECONDS_WAITING_POOL; uiTries && !uiBytesRead; uiTries--) {
-        printf("[DIGILIB] Looking for data...\n");
-        if (DIGIHW_readFile(COMMUNICATION_FILE, &uiBytesRead,
-                            sizeof(uiBytesRead)) == sizeof(uiBytesRead)) {
-            printf("[DIGILIB] Found! %04x\n", uiBytesRead);
-            remove(COMMUNICATION_FILE);
-            return uiBytesRead;
-        }
+int createSocket() {
+    // Cria o socket.
+    int createdSocket = socket(AF_INET, SOCK_STREAM, 0), opt = 1;
+    // Caso tenha algum problema ao criar o socket;
+    if (createdSocket == -1)
+        return 0;
+    // Configura o socket para que ele possa reaproveitar o endereço e porta.
+    int result =
+        setsockopt(createdSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if (result != 0)
+        return 0;
 
-        Sleep(1000);
-    }
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    setsockopt(createdSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv,
+               sizeof(tv));
 
-    return DIGICOMM_ERROR_POLLING;
+    return createdSocket;
 }
 
-int16_t DIGICOMM_sendData(uint16_t uiData) {
-    uint8_t uiTries, uiBytesRead = 1;
+void connectTo(int socketDescriptor) {
+    struct sockaddr_in config;
 
-    printf("[DIGLIB] Sending data %04x\n", uiData);
-    DIGIHW_saveFile(COMMUNICATION_FILE, &uiData, sizeof(uiData));
+    // Configura pra fazer a conexão.
+    config.sin_family = AF_INET;
+    config.sin_addr.s_addr = inet_addr(ADDRESS);
+    config.sin_port = htons(SERVER_PORT);
 
-    for (uiTries = SECONDS_WAITING_POOL; uiTries && uiBytesRead; uiTries--) {
-        printf("[DIGILIB] Verifying for data being received by target...\n");
-        if (DIGIHW_readFile(COMMUNICATION_FILE, &uiBytesRead,
-                            sizeof(uiBytesRead)) == -1) {
-            printf("[DIGILIB] Received!");
-            return DIGICOMM_OK;
+    int result =
+        connect(socketDescriptor, (struct sockaddr*)&config, sizeof(config));
+    if (result != 0) {
+        fprintf(stderr, "Erro %d:%s\n", errno, strerror(errno));
+        return;
+    }
+}
+
+void* serverLogic() {
+    int sockets[2] = {0, 0}, i, maxSocket;
+    uint16_t uiPacket, uiBufferizedPacket = 0;
+    fd_set readfds;
+
+    while (1) {
+        FD_ZERO(&readfds);
+
+        FD_SET(gSocketServer, &readfds);
+        maxSocket = gSocketServer;
+
+        for (i = 0; i < 2; i++) {
+            if (sockets[i] == 0) {
+                continue;
+            }
+
+            if (sockets[i] > 0)
+                FD_SET(sockets[i], &readfds);
+            if (sockets[i] > maxSocket)
+                maxSocket = sockets[i];
         }
-        Sleep(1000);
+
+        select(maxSocket + 1, &readfds, NULL, NULL, NULL);
+
+        if (FD_ISSET(gSocketServer, &readfds)) {
+            for (i = 0; i < 2; i++) {
+                if (sockets[i] == 0)
+                    break;
+            }
+
+            int sizeConfig = sizeof(gServerconfig);
+            sockets[i] = accept(gSocketServer, (struct sockaddr*)&gServerconfig,
+                                &sizeConfig);
+
+            if (uiBufferizedPacket) {
+                write(sockets[i], &uiBufferizedPacket,
+                      sizeof(uiBufferizedPacket));
+                uiBufferizedPacket = 0;
+            }
+        }
+
+        for (i = 0; i < 2; i++) {
+            int currentSocket = sockets[i], nextSocket = sockets[(i + 1) % 2];
+            if (FD_ISSET(currentSocket, &readfds)) {
+                if (recv(currentSocket, &uiPacket, sizeof(uiPacket),
+                         MSG_DONTWAIT) == 0) {
+                    close(currentSocket);
+                    sockets[i] = 0;
+
+                    if (uiBufferizedPacket)
+                        uiBufferizedPacket = 0;
+                } else if (nextSocket) {
+                    write(nextSocket, &uiPacket, sizeof(uiPacket));
+                } else {
+                    uiBufferizedPacket = uiPacket;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+uint16_t DIGICOMM_setup() {
+    if (gSocketServer == 0) {
+        gSocketServer = createSocket();
+
+        // Configura para esperar uma conexão no localhost porta 1337
+        gServerconfig.sin_family = AF_INET;
+        gServerconfig.sin_addr.s_addr = INADDR_ANY;
+        gServerconfig.sin_port = htons(SERVER_PORT);
+
+        // Coloca o socket oficialmente nas configurações acima.
+        int result = bind(gSocketServer, (struct sockaddr*)&gServerconfig,
+                          sizeof(gServerconfig));
+        if (result == 0) {
+            result =
+                listen(gSocketServer, 2);  // Aceita apenas uma conexão por vez.
+
+            pthread_t ulThreadServer;
+            pthread_create(&ulThreadServer, NULL, &serverLogic, NULL);
+        }
     }
 
-    return DIGICOMM_ERROR_WRITING;
+    gSocketClient = createSocket();
+    connectTo(gSocketClient);
+    return DIGICOMM_OK;
+}
+
+uint16_t DIGICOMM_pollData() {
+    uint16_t uiData;
+
+    int iRet = read(gSocketClient, &uiData, sizeof(uiData));
+    if (iRet == EAGAIN || iRet == EWOULDBLOCK)
+        return DIGICOMM_ERROR_POLLING;
+    else if (iRet != sizeof(uiData))
+        return DIGICOMM_ERROR_READING;
+    return uiData;
+}
+
+uint16_t DIGICOMM_sendData(uint16_t uiData) {
+    if (write(gSocketClient, &uiData, sizeof(uiData)) != sizeof(uiData))
+        return DIGICOMM_ERROR_WRITING;
+    return DIGICOMM_OK;
+}
+
+void DIGICOMM_close() {
+    close(gSocketClient);
+    gSocketClient = 0;
 }

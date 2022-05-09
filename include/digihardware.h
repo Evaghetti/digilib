@@ -15,4 +15,6 @@ int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,
 uint16_t DIGIHW_saveFile(const char* szFileName, const void* pbData,
                          const uint16_t uiSizeData);
 
+uint8_t DIGIHW_randomNumber();
+
 #endif

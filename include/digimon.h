@@ -41,16 +41,7 @@
 #define GET_MIN_VALUE(variable) ((uint8_t)(variable >> 8))
 #define GET_MAX_VALUE(variable) ((uint8_t)variable)
 
-#define MAX_POSSIBLE_EVOLUTIONS 5
-
-typedef struct {
-    uint8_t uiProgressionNeeded;
-    uint16_t uiCareMistakesCount;
-    uint16_t uiTrainingCount;
-    uint16_t uiOverfeedingCount;
-    uint16_t uiSleepDisturbanceCount;
-    uint16_t uiWinCount;
-} evolution_requirement_t;
+#define MAX_POSSIBLE_EVOLUTIONS 10
 
 typedef struct digimon_t {
     char szName[50];
@@ -62,9 +53,19 @@ typedef struct digimon_t {
     uint8_t uiStage;
 
     uint8_t uiCountPossibleEvolutions;
-    evolution_requirement_t* vstEvolutionRequirements[MAX_POSSIBLE_EVOLUTIONS];
-    struct digimon_t* vstPossibleEvolutions[MAX_POSSIBLE_EVOLUTIONS];
+    struct evolution_requirement_t*
+        vstEvolutionRequirements[MAX_POSSIBLE_EVOLUTIONS];
 } digimon_t;
+
+typedef struct evolution_requirement_t {
+    uint8_t uiProgressionNeeded;
+    uint16_t uiCareMistakesCount;
+    uint16_t uiTrainingCount;
+    uint16_t uiOverfeedingCount;
+    uint16_t uiSleepDisturbanceCount;
+    uint16_t uiWinCount;
+    uint16_t uiIndexEvolution;
+} evolution_requirement_t;
 
 typedef struct {
     digimon_t* pstCurrentDigimon;
@@ -76,12 +77,14 @@ typedef struct {
     uint8_t uiTrainingCount;
     uint8_t uiOverfeedingCount;
     uint8_t uiSleepDisturbanceCount;
+    uint8_t uiBattleCount;
     uint8_t uiWinCount;
 
     uint16_t uiTimeSinceLastMeal;
     uint16_t uiTimeSinceLastTraining;
     uint16_t uiTimeSinceLastPoop;
     uint16_t uiTimeToEvolve;
+    uint16_t uiIndexCurrentDigimon;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();

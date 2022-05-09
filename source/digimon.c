@@ -1,6 +1,7 @@
 #include "digimon.h"
 
 #include "digihardware.h"
+#include "digiworld.h"
 #include "enums.h"
 
 #include <stdio.h>
@@ -25,9 +26,9 @@ uint8_t DIGI_evolveDigimon() {
         evolution_requirement_t* pstCurrentEvolution =
             pstDigimonRaised->vstEvolutionRequirements[i];
 
-        printf("[DIGILIB] Testing evolution to %s\n",
-               stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i]
-                   ->szName);
+        printf(
+            "[DIGILIB] Testing evolution to %s\n",
+            vstPossibleDigimon[pstCurrentEvolution->uiIndexEvolution].szName);
 
         if (NEEDS_CARE_MISTAKES(pstCurrentEvolution->uiProgressionNeeded)) {
             printf("[DIGILIB] It has need for care mistakes (%x)\n",
@@ -81,8 +82,10 @@ uint8_t DIGI_evolveDigimon() {
             }
         }
 
+        stPlayingDigimon.uiIndexCurrentDigimon =
+            pstCurrentEvolution->uiIndexEvolution;
         stPlayingDigimon.pstCurrentDigimon =
-            stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i];
+            &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
         stPlayingDigimon.uiTimeToEvolve = 0;
         stPlayingDigimon.uiCareMistakesCount = 0;
         stPlayingDigimon.uiTrainingCount = 0;
