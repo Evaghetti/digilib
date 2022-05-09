@@ -91,7 +91,7 @@ class EvolutionRequirement:
                 f"Win Count -> {getMin(self.winCount)} - {getMax(self.winCount)}")
 
     def __str__(self) -> str:
-        return f"{{{self.progression}, {hex(self.careMistakes)}, {hex(self.trainingCount)}, {hex(self.overFeedingCount)}, {hex(self.sleepDisturbanceCount)}, {hex(self.winCount)}, &vstPossibleDigimon[{self.indexTarget}]}}"
+        return f"{{{self.progression}, {hex(self.careMistakes)}, {hex(self.trainingCount)}, {hex(self.overFeedingCount)}, {hex(self.sleepDisturbanceCount)}, {hex(self.winCount)}, {self.indexTarget}}}"
 
 
 if __name__ == "__main__":

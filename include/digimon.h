@@ -64,7 +64,7 @@ typedef struct evolution_requirement_t {
     uint16_t uiOverfeedingCount;
     uint16_t uiSleepDisturbanceCount;
     uint16_t uiWinCount;
-    digimon_t* pstDigimonToEvolve;
+    uint16_t uiIndexEvolution;
 } evolution_requirement_t;
 
 typedef struct {
@@ -84,6 +84,7 @@ typedef struct {
     uint16_t uiTimeSinceLastTraining;
     uint16_t uiTimeSinceLastPoop;
     uint16_t uiTimeToEvolve;
+    uint16_t uiIndexCurrentDigimon;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();

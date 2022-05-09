@@ -1,6 +1,7 @@
 #include "digiapi.h"
 
 #include "digihardware.h"
+#include "digiworld.h"
 #include "enums.h"
 
 #include <stdio.h>
@@ -24,16 +25,28 @@
 
 #define NOT_COUNTING_FOR_CARE_MISTAKE (TIME_TO_GET_CARE_MISTAKE + 1)
 
-extern digimon_t vstPossibleDigimon[];
-
 static int16_t guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
+static const char* gszSaveFile = NULL;
 static uint8_t guiAmountPoop = 0;
+
 playing_digimon_t stPlayingDigimon;
 
 int DIGI_init(const char* szSaveFile) {
-    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[0];
-    SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
-    SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+    gszSaveFile = szSaveFile;
+
+    if (DIGIHW_readFile(szSaveFile, &stPlayingDigimon,
+                        sizeof(stPlayingDigimon)) == -1) {
+        stPlayingDigimon.pstCurrentDigimon = NULL;
+        stPlayingDigimon.uiIndexCurrentDigimon = 0;
+        SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+        SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+
+        DIGIHW_saveFile(szSaveFile, &stPlayingDigimon,
+                        sizeof(stPlayingDigimon));
+    }
+
+    stPlayingDigimon.pstCurrentDigimon =
+        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
 
     DIGIHW_setTime();
 }
@@ -123,6 +136,13 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
 
     DIGIHW_addTime(uiDeltaTime);
+
+    // TODO: Find another way to save current digimon state
+    // So the NULLing before saving isn't neccessary anymore.
+    stPlayingDigimon.pstCurrentDigimon = NULL;
+    DIGIHW_saveFile(gszSaveFile, &stPlayingDigimon, sizeof(stPlayingDigimon));
+    stPlayingDigimon.pstCurrentDigimon =
+        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
     return DIGI_RET_OK;
 }
 
