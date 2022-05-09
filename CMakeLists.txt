@@ -10,7 +10,7 @@ find_package(Python REQUIRED Interpreter)
 add_custom_command(
     OUTPUT include/digiworld.h source/digiworld.c
     COMMAND ${Python_EXECUTABLE} generate-digimon-header.py
-    DEPENDS import-digimon.csv.example
+    DEPENDS import-digimon.csv
 )
 
 # Build the lib

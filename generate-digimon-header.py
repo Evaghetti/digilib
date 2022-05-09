@@ -1,7 +1,4 @@
-from xml.etree.ElementInclude import include
-
-
-FILE_NAME = "import-digimon.csv.example"
+FILE_NAME = "import-digimon.csv"
 FILE_OUTPUT = "include/digiworld.h"
 FILE_OUTPUT_SOURCE = "source/digiworld.c"
 
