@@ -6,12 +6,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef TIME_TO_GET_HUNGRY
 #define TIME_TO_GET_HUNGRY 5
-#define TIME_TO_GET_WEAKER 10
-#define TIME_TO_POOP       15
+#endif
 
-#define TIME_TO_GET_CARE_MISTAKE      10
+#ifndef TIME_TO_GET_WEAKER
+#define TIME_TO_GET_WEAKER 10
+#endif
+
+#ifndef TIME_TO_POOP
+#define TIME_TO_POOP 15
+#endif
+
+#ifndef TIME_TO_GET_CARE_MISTAKE
+#define TIME_TO_GET_CARE_MISTAKE 10
+#endif
+
 #define NOT_COUNTING_FOR_CARE_MISTAKE (TIME_TO_GET_CARE_MISTAKE + 1)
+
 extern digimon_t vstPossibleDigimon[];
 
 static int16_t guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
@@ -24,6 +36,8 @@ int DIGI_init(const char* szSaveFile) {
     SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
 
     DIGIHW_setTime();
+
+    printf("ENZO %d\n", TIME_TO_GET_CARE_MISTAKE);
 }
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
