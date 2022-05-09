@@ -26,8 +26,7 @@ uint8_t DIGI_evolveDigimon() {
             pstDigimonRaised->vstEvolutionRequirements[i];
 
         printf("[DIGILIB] Testing evolution to %s\n",
-               stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i]
-                   ->szName);
+               pstCurrentEvolution->pstDigimonToEvolve->szName);
 
         if (NEEDS_CARE_MISTAKES(pstCurrentEvolution->uiProgressionNeeded)) {
             printf("[DIGILIB] It has need for care mistakes (%x)\n",
@@ -82,7 +81,7 @@ uint8_t DIGI_evolveDigimon() {
         }
 
         stPlayingDigimon.pstCurrentDigimon =
-            stPlayingDigimon.pstCurrentDigimon->vstPossibleEvolutions[i];
+            pstCurrentEvolution->pstDigimonToEvolve;
         stPlayingDigimon.uiTimeToEvolve = 0;
         stPlayingDigimon.uiCareMistakesCount = 0;
         stPlayingDigimon.uiTrainingCount = 0;
