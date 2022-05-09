@@ -12,3 +12,5 @@ _deps
 digiterminal
 digilib.so
 *.mon
+include/digiworld.h
+source/digiworld.c
