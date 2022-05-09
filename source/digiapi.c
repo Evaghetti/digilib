@@ -31,13 +31,11 @@ static uint8_t guiAmountPoop = 0;
 playing_digimon_t stPlayingDigimon;
 
 int DIGI_init(const char* szSaveFile) {
-    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[3];
+    stPlayingDigimon.pstCurrentDigimon = &vstPossibleDigimon[0];
     SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
     SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
 
     DIGIHW_setTime();
-
-    printf("ENZO %d\n", TIME_TO_GET_CARE_MISTAKE);
 }
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
