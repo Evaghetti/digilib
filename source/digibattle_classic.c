@@ -25,9 +25,8 @@ static const uint8_t vuiChanceTable[12][12] = {
 uint16_t createFirstPacket() {
     uint16_t uiPacket;
 
-    // TODO: Find out what affects the value of effort, using the default 0b0000 of
-    // newer devices
-    uiPacket = (0b0000 << 4) | stPlayingDigimon.pstCurrentDigimon->uiSlotPower;
+    // TODO: Find out what affects the value of effort, using by default the max value
+    uiPacket = (0b0100 << 4) | stPlayingDigimon.pstCurrentDigimon->uiSlotPower;
     uiPacket = (~uiPacket << 8) | uiPacket;
 
     printf("[DIGILIB] First packet generated -> 0x%04x\n", uiPacket);
@@ -61,11 +60,11 @@ uint8_t DIGI_battle(uint8_t uiInitiate) {
         return DIGIBATTLE_RET_OK;
     }
 
-    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
-        DIGI_shouldSleep() == DIGI_RET_OK) {
-        printf("[DIGILIB] Digimon is too tired to battle\n");
-        return DIGIBATTLE_RET_OK;
-    }
+    // if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
+    //     DIGI_shouldSleep() == DIGI_RET_OK) {
+    //     printf("[DIGILIB] Digimon is too tired to battle\n");
+    //     return DIGIBATTLE_RET_OK;
+    // }
 
     if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0 ||
         GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
