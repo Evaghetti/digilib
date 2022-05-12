@@ -152,7 +152,7 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
     return DIGI_RET_OK;
 }
 
-uint8_t DIGI_stregthenDigimon(int16_t uiAmount) {
+uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
     printf("[DIGILIB] Strengthening %s by %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName, uiAmount);
 
@@ -170,7 +170,7 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount) {
     }
 
     // Aumenta o peso, se estiver obeso, deixa doente.
-    stPlayingDigimon.uiWeight++;
+    stPlayingDigimon.uiWeight += iWeightChange;
     if (stPlayingDigimon.uiWeight >= 99) {
         stPlayingDigimon.uiWeight = 99;
         stPlayingDigimon.uiStats |= MASK_SICK;
@@ -218,6 +218,7 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
 
     stPlayingDigimon.uiStats &= ~MASK_SLEEPING;
     stPlayingDigimon.uiStats |= uiSleepMode << 6;
+    return DIGI_RET_OK;
 }
 
 uint8_t DIGI_shouldSleep() {

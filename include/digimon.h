@@ -93,7 +93,7 @@ uint8_t DIGI_shouldEvolve();
 
 uint8_t DIGI_feedDigimon(int16_t uiAmount);
 
-uint8_t DIGI_stregthenDigimon(int16_t uiAmount);
+uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange);
 
 uint8_t DIGI_healDigimon(uint8_t uiType);
 

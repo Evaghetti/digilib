@@ -41,8 +41,7 @@ int DIGI_init(const char* szSaveFile) {
         SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
         SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
 
-        DIGIHW_saveFile(szSaveFile, &stPlayingDigimon,
-                        sizeof(stPlayingDigimon));
+        DIGI_saveGame();
     }
 
     stPlayingDigimon.pstCurrentDigimon =
@@ -80,7 +79,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     }
 
     while (stPlayingDigimon.uiTimeSinceLastTraining >= TIME_TO_GET_WEAKER) {
-        DIGI_stregthenDigimon(-1);
+        DIGI_stregthenDigimon(-1, 0);
 
         stPlayingDigimon.uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
     }
@@ -139,14 +138,39 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
 
     // TODO: Find another way to save current digimon state
     // So the NULLing before saving isn't neccessary anymore.
-    stPlayingDigimon.pstCurrentDigimon = NULL;
-    DIGIHW_saveFile(gszSaveFile, &stPlayingDigimon, sizeof(stPlayingDigimon));
-    stPlayingDigimon.pstCurrentDigimon =
-        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
+    DIGI_saveGame();
     return DIGI_RET_OK;
 }
 
 void DIGI_cleanWaste() {
     printf("[DIGILIB] Cleaning %d poops\n", guiAmountPoop);
     guiAmountPoop = 0;
+}
+
+playing_digimon_t DIGI_playingDigimon() {
+    return stPlayingDigimon;
+}
+
+digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
+    static digimon_t* vstDigitamas[MAX_COUNT_DIGIMON];
+    static uint8_t uiCountEgg = 0;
+
+    if (uiCountEgg == 0) {
+        int i;
+
+        for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
+            if (vstPossibleDigimon[i].uiStage == DIGI_STAGE_EGG)
+                vstDigitamas[uiCountEgg++] = &vstPossibleDigimon[i];
+        }
+    }
+
+    *puiCount = uiCountEgg;
+    return vstDigitamas;
+}
+
+void DIGI_saveGame() {
+    stPlayingDigimon.pstCurrentDigimon = NULL;
+    DIGIHW_saveFile(gszSaveFile, &stPlayingDigimon, sizeof(stPlayingDigimon));
+    stPlayingDigimon.pstCurrentDigimon =
+        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
 }
