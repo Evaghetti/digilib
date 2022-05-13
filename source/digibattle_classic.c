@@ -54,17 +54,24 @@ uint8_t getBattleResult(uint8_t uiMySlot, uint8_t uiEnemySlot) {
                : DIGIBATTLE_RET_LOSE;
 }
 
+uint8_t isValidPacket(uint16_t uiPacket) {
+    uint8_t realValue = uiPacket & 0b11111111;
+    uint8_t reverseValue = uiPacket >> 8;
+
+    return realValue == reverseValue ? DIGIBATTLE_RET_OK : DIGIBATTLE_RET_ERROR;
+}
+
 uint8_t DIGI_battle(uint8_t uiInitiate) {
     if (stPlayingDigimon.pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_2) {
         printf("[DIGILIB] Digimon is too young to fight\n");
         return DIGIBATTLE_RET_OK;
     }
 
-    // if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
-    //     DIGI_shouldSleep() == DIGI_RET_OK) {
-    //     printf("[DIGILIB] Digimon is too tired to battle\n");
-    //     return DIGIBATTLE_RET_OK;
-    // }
+    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
+        DIGI_shouldSleep() == DIGI_RET_OK) {
+        printf("[DIGILIB] Digimon is too tired to battle\n");
+        return DIGIBATTLE_RET_OK;
+    }
 
     if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0 ||
         GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
@@ -82,9 +89,11 @@ uint8_t DIGI_battle(uint8_t uiInitiate) {
         uiResult = DIGIBATTLE_initiate();
     }
 
-    stPlayingDigimon.uiBattleCount++;
-    if (uiResult == DIGIBATTLE_RET_WIN)
-        stPlayingDigimon.uiWinCount++;
+    if (uiResult != DIGIBATTLE_RET_ERROR) {
+        stPlayingDigimon.uiBattleCount++;
+        if (uiResult == DIGIBATTLE_RET_WIN)
+            stPlayingDigimon.uiWinCount++;
+    }
 
     DIGICOMM_close();
     return uiResult;
@@ -105,6 +114,9 @@ uint8_t DIGIBATTLE_initiate() {
         uiPacket == DIGICOMM_ERROR_READING) {
         printf("[DIGILIB] Error receiving data\n");
         return DIGIBATTLE_RET_ERROR;
+    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+        printf("[DIGILIB] Received packet %x isn't valid\n", uiPacket);
+        return DIGIBATTLE_RET_ERROR;
     }
 
     uint8_t uiEnemySlot = uiPacket & 0b1111;
@@ -120,7 +132,12 @@ uint8_t DIGIBATTLE_initiate() {
         return DIGIBATTLE_RET_ERROR;
     }
 
-    DIGICOMM_pollData();  // Last response from the other side does not matter.
+    uiPacket = DIGICOMM_pollData();
+    if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+        printf("[DIGILIB] Second received packet %x isn't valid\n", uiPacket);
+        return DIGIBATTLE_RET_ERROR;
+    }
+
     return uiResult;
 }
 
@@ -130,6 +147,9 @@ uint8_t DIGIBATTLE_continue() {
     if (uiPacket == DIGICOMM_ERROR_POLLING ||
         uiPacket == DIGICOMM_ERROR_READING) {
         printf("[DIGILIB] Error receiving data\n");
+        return DIGIBATTLE_RET_ERROR;
+    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+        printf("[DIGILIB] Received packet %x isn't valid\n", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
@@ -144,6 +164,9 @@ uint8_t DIGIBATTLE_continue() {
     if (uiPacket == DIGICOMM_ERROR_POLLING ||
         uiPacket == DIGICOMM_ERROR_READING) {
         printf("[DIGILIB] Error receiving data\n");
+        return DIGIBATTLE_RET_ERROR;
+    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+        printf("[DIGILIB] Second received packet %x isn't valid\n", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 

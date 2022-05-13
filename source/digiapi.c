@@ -88,6 +88,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
            guiAmountPoop < 4) {
         guiAmountPoop++;
 
+        *puiEvents |= DIGI_EVENT_MASK_POOP;
         stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
 
         printf("[DIGILIB] %s has pooped!\n",
