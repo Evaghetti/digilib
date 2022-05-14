@@ -14,4 +14,14 @@ uint8_t DIGIBATTLE_initiate();
 
 uint8_t DIGIBATTLE_continue();
 
+uint8_t DIGIBATTLE_canBattle();
+
+uint16_t DIGIBATTLE_createFirstPacket();
+
+uint16_t DIGIBATTLE_createSecondPacket(uint8_t uiResult);
+
+uint8_t DIGIBATTLE_getBattleResult(uint8_t uiMySlot, uint8_t uiEnemySlot);
+
+void DIGIBATTLE_changeStats(uint8_t uiResultBattle);
+
 #endif
