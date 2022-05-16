@@ -37,8 +37,8 @@ uint16_t DIGIBATTLE_createFirstPacket() {
 
 uint16_t DIGIBATTLE_createSecondPacket(uint8_t uiResult) {
     uint16_t uiPacket;
-    // By default using version 1.
-    uiPacket = (0b0000 << 4) | uiResult;
+
+    uiPacket = (stPlayingDigimon.pstCurrentDigimon->uiVersion << 4) | uiResult;
     uiPacket = (~uiPacket << 8) | uiPacket;
 
     printf("[DIGILIB] Second packet generated -> 0x%04x\n", uiPacket);

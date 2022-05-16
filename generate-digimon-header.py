@@ -9,7 +9,8 @@ HOUR_TO_SLEEP = 3
 ATTRIBUTE = 4
 TIME_TO_EVOLVE = 5
 STAGE = 6
-END_DIGIMON = STAGE + 1
+VERSION = 7
+END_DIGIMON = VERSION + 1
 
 NAME_TARGET = 0
 PROGRESSION_NEEDED = 1
@@ -44,9 +45,10 @@ class Digimon:
         self.attribute = f"DIGI_ATTRIBUTE_{data[ATTRIBUTE].upper()}"
         self.timeToEvolve = int(data[TIME_TO_EVOLVE])
         self.stage = f"DIGI_STAGE_{data[STAGE].upper()}"
+        self.version = int(data[VERSION])
         self.evolutionRequirements = []
 
-        print(f"New Digimon: {self.name} ({self.attribute}/{self.stage})")
+        print(f"New Digimon: {self.name} ({self.attribute}/{self.stage}), version {self.version}")
         print(
             f"Its slot/power is {self.slotPower}, it takes {self.timeToEvolve} minutes to evolve")
         print(
@@ -60,7 +62,7 @@ class Digimon:
         return ret
 
     def __str__(self) -> str:
-        return f"{{\"{self.name}\", {self.slotPower}, {hex(self.hourToWakeUp)}, {hex(self.hourToSleep)}, {self.attribute}, {self.timeToEvolve}, {self.stage}, {len(self.evolutionRequirements)}, {self.getListRequirements()}}}"
+        return f"{{\"{self.name}\", {self.slotPower}, {hex(self.hourToWakeUp)}, {hex(self.hourToSleep)}, {self.attribute}, {self.timeToEvolve}, {self.stage}, {self.version}, {len(self.evolutionRequirements)}, {self.getListRequirements()}}}"
 
 
 class EvolutionRequirement:

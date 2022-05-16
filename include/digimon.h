@@ -51,6 +51,7 @@ typedef struct digimon_t {
     uint8_t uiAttribute;
     uint16_t uiNeededTimeEvolution;
     uint8_t uiStage;
+    uint8_t uiVersion;
 
     uint8_t uiCountPossibleEvolutions;
     struct evolution_requirement_t*
