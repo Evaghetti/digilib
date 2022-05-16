@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef TIME_TO_GET_HUNGRY
 #define TIME_TO_GET_HUNGRY 5
@@ -36,18 +37,37 @@ int DIGI_init(const char* szSaveFile) {
 
     if (DIGIHW_readFile(szSaveFile, &stPlayingDigimon,
                         sizeof(stPlayingDigimon)) == -1) {
-        stPlayingDigimon.pstCurrentDigimon = NULL;
-        stPlayingDigimon.uiIndexCurrentDigimon = 0;
-        SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
-        SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
-
-        DIGI_saveGame();
+        return DIGI_RET_ERROR;
     }
 
     stPlayingDigimon.pstCurrentDigimon =
         &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
 
+    DIGI_saveGame();
     DIGIHW_setTime();
+    return DIGI_RET_OK;
+}
+
+int DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
+    uint16_t i;
+    uint8_t uiCountDigitama;
+
+    digimon_t** pstPossibleDigitama = DIGI_possibleDigitama(&uiCountDigitama);
+    if (uiDigitamaIndex >= uiCountDigitama)
+        return DIGI_RET_ERROR;
+
+    for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
+        if (memcmp(pstPossibleDigitama[uiDigitamaIndex], &vstPossibleDigimon[i],
+                   sizeof(digimon_t)) == 0)
+            break;
+    }
+
+    stPlayingDigimon.uiIndexCurrentDigimon = i;
+    SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+    SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
+    gszSaveFile = szSaveFile;
+    DIGI_saveGame();
+    return DIGI_init(szSaveFile);
 }
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {

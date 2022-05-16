@@ -5,6 +5,8 @@
 
 int DIGI_init(const char* szSaveFile);
 
+int DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex);
+
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents);
 
 void DIGI_cleanWaste();

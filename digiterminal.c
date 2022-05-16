@@ -11,7 +11,8 @@ int main() {
     char option;
     uint8_t sleeping = 0;
 
-    DIGI_init("ENZO");
+    if (DIGI_init("ENZO") != DIGI_RET_OK)
+        DIGI_initDigitama("ENZO", 0);
 
     while (1) {
         uint8_t uiEvents, uiRet, uiInitiate = 0, uiTry = 0;
@@ -45,7 +46,7 @@ int main() {
                 case 's':
                 case 'S':
                     printf("[DIGITEST] Result Strength: %d\n",
-                           DIGI_stregthenDigimon(1));
+                           DIGI_stregthenDigimon(1, 2));
                     break;
                 case 'i':
                 case 'I':
