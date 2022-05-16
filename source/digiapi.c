@@ -32,7 +32,7 @@ static uint8_t guiAmountPoop = 0;
 
 playing_digimon_t stPlayingDigimon;
 
-int DIGI_init(const char* szSaveFile) {
+uint8_t DIGI_init(const char* szSaveFile) {
     gszSaveFile = szSaveFile;
 
     if (DIGIHW_readFile(szSaveFile, &stPlayingDigimon,
@@ -48,7 +48,7 @@ int DIGI_init(const char* szSaveFile) {
     return DIGI_RET_OK;
 }
 
-int DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
+uint8_t DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
     uint16_t i;
     uint8_t uiCountDigitama;
 
