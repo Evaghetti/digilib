@@ -171,7 +171,9 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
 
     // Aumenta o peso, se estiver obeso, deixa doente.
     stPlayingDigimon.uiWeight += iWeightChange;
-    if (stPlayingDigimon.uiWeight >= 99) {
+    if (stPlayingDigimon.uiWeight < 10) {
+        stPlayingDigimon.uiWeight = 10;
+    } else if (stPlayingDigimon.uiWeight >= 99) {
         stPlayingDigimon.uiWeight = 99;
         stPlayingDigimon.uiStats |= MASK_SICK;
         printf("[DIGILIB] Digmon got sick from obesity\n");
