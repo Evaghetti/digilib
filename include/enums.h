@@ -9,6 +9,7 @@
 #define DIGI_RET_HUNGRY   (DIGI_RET_OK + 4)
 #define DIGI_RET_WEAK     (DIGI_RET_OK + 5)
 #define DIGI_RET_SICK     (DIGI_RET_OK + 6)
+#define DIGI_RET_WAKE_UP  (DIGI_RET_OK + 7)
 
 // Masks representing possible events that happen at each update
 #define DIGI_EVENT_MASK_INJURED 0b00000001
@@ -17,6 +18,7 @@
 #define DIGI_EVENT_MASK_DIE     0b00001000
 #define DIGI_EVENT_MASK_POOP    0b00010000
 #define DIGI_EVENT_MASK_SLEEPY  0b00100000
+#define DIGI_EVENT_MASK_WOKE_UP 0b01000000
 #define DIGI_EVENT_MASK_CALL    0b10000000
 
 // Attributes that each digimon can have

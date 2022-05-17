@@ -237,6 +237,17 @@ uint8_t DIGI_shouldSleep() {
     return DIGI_RET_OK;
 }
 
+uint8_t DIGI_shouldWakeUp() {
+    const digimon_t* pstCurrentDigimon = stPlayingDigimon.pstCurrentDigimon;
+    const uint16_t uiCurrentTime = DIGIHW_timeMinutes();
+
+    if (uiCurrentTime >= pstCurrentDigimon->uiTimeWakeUp &&
+        uiCurrentTime < pstCurrentDigimon->uiTimeSleep &&
+        (stPlayingDigimon.uiStats & MASK_SLEEPING) != 0)
+        return DIGI_RET_OK;
+    return DIGI_RET_ERROR;
+}
+
 uint8_t DIGI_setCalled() {
     stPlayingDigimon.uiStats &= ~MASK_CALLED;
 

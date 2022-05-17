@@ -102,6 +102,8 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode);
 
 uint8_t DIGI_shouldSleep();
 
+uint8_t DIGI_shouldWakeUp();
+
 uint8_t DIGI_setCalled();
 
 void DIGI_addCareMistakes();
