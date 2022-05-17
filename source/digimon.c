@@ -141,7 +141,7 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
     }
 
     // Se foi dado comida apesar dele estar cheio, marca como overfeed.
-    if (iCurrentHungerAmount > 3) {
+    if (iCurrentHungerAmount > 4) {
         stPlayingDigimon.uiOverfeedingCount++;
         printf("[DIGILIB] %s got overfed\n",
                stPlayingDigimon.pstCurrentDigimon->szName);
