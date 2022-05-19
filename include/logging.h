@@ -5,8 +5,8 @@
 
 #include <stdarg.h>
 
-#define LOG(fmt, ...)                                                   \
-    addLog("[DIGILIB@%s:%d - %s/%s] " fmt "\n", __FUNCTION__, __LINE__, \
+#define LOG(fmt, ...)                                                     \
+    addLog("[DIGILIB@%s:%04d - %s/%s] " fmt "\n", __FUNCTION__, __LINE__, \
            getSaveFile(), getTime(), ##__VA_ARGS__)
 
 void addLog(const char* szFmt, ...);
