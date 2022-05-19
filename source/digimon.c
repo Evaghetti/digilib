@@ -247,18 +247,24 @@ uint8_t DIGI_shouldWakeUp() {
 uint8_t DIGI_setCalled() {
     stPlayingDigimon.uiStats &= ~MASK_CALLED;
 
-    if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+    if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
         stPlayingDigimon.uiStats |= MASK_CALLED;
-    else if (GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
+        LOG("Will be calling because of hunger");
+    } else if (GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
         stPlayingDigimon.uiStats |= MASK_CALLED;
-    else if (DIGI_shouldSleep() == DIGI_RET_OK)
+        LOG("Will be calling because of strength");
+    } else if (DIGI_shouldSleep() == DIGI_RET_OK) {
         stPlayingDigimon.uiStats |= MASK_CALLED;
+        LOG("Will be calling because of sleep");
+    }
 
     return stPlayingDigimon.uiStats & MASK_CALLED ? DIGI_RET_OK
                                                   : DIGI_RET_ERROR;
 }
 
 void DIGI_addCareMistakes() {
+    LOG("HungerStrength %04x, shouldSleep() == %d",
+        stPlayingDigimon.uiHungerStrength, DIGI_shouldSleep());
     if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
         stPlayingDigimon.uiCareMistakesCount++;
     else if (GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0)
