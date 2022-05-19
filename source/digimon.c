@@ -3,6 +3,7 @@
 #include "digihardware.h"
 #include "digiworld.h"
 #include "enums.h"
+#include "logging.h"
 
 #include <stdio.h>
 
@@ -26,58 +27,56 @@ uint8_t DIGI_evolveDigimon() {
         evolution_requirement_t* pstCurrentEvolution =
             pstDigimonRaised->vstEvolutionRequirements[i];
 
-        printf(
-            "[DIGILIB] Testing evolution to %s\n",
+        LOG("Testing evolution to %s",
             vstPossibleDigimon[pstCurrentEvolution->uiIndexEvolution].szName);
 
         if (NEEDS_CARE_MISTAKES(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] It has need for care mistakes (%x)\n",
-                   pstCurrentEvolution->uiCareMistakesCount);
+            LOG("It has need for care mistakes (%x)",
+                pstCurrentEvolution->uiCareMistakesCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiCareMistakesCount,
                                       stPlayingDigimon.uiCareMistakesCount)) {
-                printf("[DIGILIB] Exceeded care mistakes\n");
+                LOG("Exceeded care mistakes");
                 continue;
             }
         }
         if (NEEDS_TRAINING(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] It has need for training (%x)\n",
-                   pstCurrentEvolution->uiTrainingCount);
+            LOG("It has need for training (%x)",
+                pstCurrentEvolution->uiTrainingCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiTrainingCount,
                                       stPlayingDigimon.uiTrainingCount)) {
-                printf("[DIGILIB] Exceeded training\n");
+                LOG("Exceeded training");
                 continue;
             }
         }
         if (NEEDS_OVERFEED(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] It has need for overfeeding (%x)\n",
-                   pstCurrentEvolution->uiOverfeedingCount);
+            LOG("It has need for overfeeding (%x)",
+                pstCurrentEvolution->uiOverfeedingCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiOverfeedingCount,
                                       stPlayingDigimon.uiOverfeedingCount)) {
-                printf("[DIGILIB] Exceeded overfeeding\n");
+                LOG("Exceeded overfeeding");
                 continue;
             }
         }
         if (NEEDS_SLEEP_DISTURBANCE(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] It has need for sleep disturbance (%x)\n",
-                   pstCurrentEvolution->uiSleepDisturbanceCount);
+            LOG("It has need for sleep disturbance (%x)",
+                pstCurrentEvolution->uiSleepDisturbanceCount);
 
             if (checkIfValidParameter(
                     pstCurrentEvolution->uiSleepDisturbanceCount,
                     stPlayingDigimon.uiSleepDisturbanceCount)) {
-                printf("[DIGILIB] Exceeded sleep disturbance\n");
+                LOG("Exceeded sleep disturbance");
                 continue;
             }
         }
         if (NEEDS_WIN_COUNT(pstCurrentEvolution->uiProgressionNeeded)) {
-            printf("[DIGILIB] It has need victories (%x)\n",
-                   pstCurrentEvolution->uiWinCount);
+            LOG("It has need victories (%x)", pstCurrentEvolution->uiWinCount);
 
             if (checkIfValidParameter(pstCurrentEvolution->uiWinCount,
                                       stPlayingDigimon.uiWinCount)) {
-                printf("[DIGILIB] Exceeded victories\n");
+                LOG("Exceeded victories");
                 continue;
             }
         }
@@ -95,7 +94,7 @@ uint8_t DIGI_evolveDigimon() {
         return DIGI_RET_OK;
     }
 
-    printf("[DIGILIB] No valid evolution");
+    LOG("No valid evolution");
     stPlayingDigimon.uiStats |= MASK_DYING_STAGE;
     return DIGI_NO_EVOLUTION;
 }
@@ -113,8 +112,8 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
     int8_t iCurrentHungerAmount =
         GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength);
 
-    printf("[DIGILIB] Feeding %s, ",
-           stPlayingDigimon.pstCurrentDigimon->szName);
+    LOG("Feeding %s, amount of ", stPlayingDigimon.pstCurrentDigimon->szName,
+        uiAmount);
 
     // Deixa o digimon mais cheio (o SET já garante que não vai ser um valor maior que o permitido)
     iCurrentHungerAmount += uiAmount;
@@ -125,10 +124,6 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
         SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength,
                          iCurrentHungerAmount);
     }
-
-    printf("new amout %d (real value %d)\n", iCurrentHungerAmount,
-           GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength));
-
     // Aumenta o peso, se estiver obeso, deixa doente.
     if (uiAmount > 0) {
         stPlayingDigimon.uiWeight++;
@@ -136,15 +131,14 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
         if (stPlayingDigimon.uiWeight >= 99) {
             stPlayingDigimon.uiWeight = 99;
             stPlayingDigimon.uiStats |= MASK_SICK;
-            printf("[DIGILIB] Digimon got sick from being obese\n");
+            LOG("Digimon got sick from being obese");
         }
     }
 
     // Se foi dado comida apesar dele estar cheio, marca como overfeed.
     if (iCurrentHungerAmount > 4) {
         stPlayingDigimon.uiOverfeedingCount++;
-        printf("[DIGILIB] %s got overfed\n",
-               stPlayingDigimon.pstCurrentDigimon->szName);
+        LOG("%s got overfed", stPlayingDigimon.pstCurrentDigimon->szName);
         return DIGI_RET_OVERFEED;
     }
 
@@ -153,8 +147,8 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
 }
 
 uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
-    printf("[DIGILIB] Strengthening %s by %d\n",
-           stPlayingDigimon.pstCurrentDigimon->szName, uiAmount);
+    LOG("Strengthening %s by %d", stPlayingDigimon.pstCurrentDigimon->szName,
+        uiAmount);
 
     int8_t iCurrentStrength =
         GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength);
@@ -162,7 +156,7 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
     // Aumenta a força do digimon (o set já garante que não vai ser um valor maior que o permitido)
     iCurrentStrength += uiAmount;
     if (iCurrentStrength <= 0) {
-        printf("[DIGILIB] Digmon has no strength left\n");
+        LOG("Digmon has no strength left");
         stPlayingDigimon.uiHungerStrength &= ~MASK_STRENGTH;
         return DIGI_RET_WEAK;
     } else if (iCurrentStrength <= 4) {
@@ -176,7 +170,7 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
     } else if (stPlayingDigimon.uiWeight >= 99) {
         stPlayingDigimon.uiWeight = 99;
         stPlayingDigimon.uiStats |= MASK_SICK;
-        printf("[DIGILIB] Digmon got sick from obesity\n");
+        LOG("Digmon got sick from obesity");
         return DIGI_RET_SICK;
     }
 
@@ -184,23 +178,23 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
 }
 
 uint8_t DIGI_healDigimon(uint8_t uiType) {
-    printf("[DIGILIB] Healing %s, type %d\n",
-           stPlayingDigimon.pstCurrentDigimon->szName, uiType);
+    LOG("Healing %s, type %d", stPlayingDigimon.pstCurrentDigimon->szName,
+        uiType);
     if (uiType == MASK_SICK) {
         if ((stPlayingDigimon.uiStats & MASK_SICK) == 0) {
-            printf("[DIGILIB] Not sick\n");
+            LOG("Not sick");
             return DIGI_RET_ERROR;
         }
 
-        printf("[DIGILIB] Sickness healed!\n");
+        LOG("Sickness healed!");
         stPlayingDigimon.uiStats &= ~MASK_SICK;
     } else if (uiType == MASK_INJURIED) {
         if ((stPlayingDigimon.uiStats & MASK_INJURIED) == 0) {
-            printf("[DIGILIB] Not injuried\n");
+            LOG("Not injuried");
             return DIGI_RET_ERROR;
         }
 
-        printf("[DIGILIB] Injury healed!\n");
+        LOG("Injury healed!");
         stPlayingDigimon.uiStats &= ~MASK_INJURIED;
     }
 
@@ -208,13 +202,13 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
 }
 
 uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
-    printf("[DIGILIB] Putting %s to sleep -> %d\n",
-           stPlayingDigimon.pstCurrentDigimon->szName, uiSleepMode);
+    LOG("Putting %s to sleep -> %d", stPlayingDigimon.pstCurrentDigimon->szName,
+        uiSleepMode);
 
     uiSleepMode &= 1;
 
     if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 && uiSleepMode) {
-        printf("[DIGILIB] It is a sleep disturbance\n");
+        LOG("It is a sleep disturbance");
         stPlayingDigimon.uiSleepDisturbanceCount++;
     }
 

@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "logging.h"
+
 #ifndef TIME_TO_GET_HUNGRY
 #define TIME_TO_GET_HUNGRY 5
 #endif
@@ -27,9 +29,9 @@
 #define NOT_COUNTING_FOR_CARE_MISTAKE (TIME_TO_GET_CARE_MISTAKE + 1)
 
 static int16_t guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
-static const char* gszSaveFile = NULL;
 static uint8_t guiAmountPoop = 0;
 
+const char* gszSaveFile = NULL;
 playing_digimon_t stPlayingDigimon;
 
 uint8_t DIGI_init(const char* szSaveFile) {
@@ -74,8 +76,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     uint16_t uiCurrentTime = DIGIHW_timeMinutes();
     *puiEvents = 0;
 
-    printf("[DIGILIB] Current Time: %d:%d\n", uiCurrentTime / 60,
-           uiCurrentTime % 60);
+    LOG("Current Time: %d:%d", uiCurrentTime / 60, uiCurrentTime % 60);
 
     printf("%s\nHunger: %d\nStrength: %d\nCare Mistakes: %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName,
@@ -111,16 +112,15 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         *puiEvents |= DIGI_EVENT_MASK_POOP;
         stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
 
-        printf("[DIGILIB] %s has pooped!\n",
-               stPlayingDigimon.pstCurrentDigimon->szName);
+        LOG("%s has pooped!", stPlayingDigimon.pstCurrentDigimon->szName);
     }
 
     if (guiAmountPoop >= 4) {
         stPlayingDigimon.uiStats |= MASK_SICK;
         *puiEvents |= DIGI_EVENT_MASK_SICK;
 
-        printf("[DIGILIB] %s got sick from all the waste around it.\n",
-               stPlayingDigimon.pstCurrentDigimon->szName);
+        LOG("%s got sick from all the waste around it.",
+            stPlayingDigimon.pstCurrentDigimon->szName);
     }
 
     if (DIGI_shouldEvolve() == DIGI_RET_OK) {
@@ -134,7 +134,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     }
 
     if (DIGI_shouldSleep() == DIGI_RET_OK) {
-        printf("[DIGILIB] Bedtime for digimon\n");
+        LOG("Bedtime for digimon");
         *puiEvents |= DIGI_EVENT_MASK_SLEEPY;
     } else if (DIGI_shouldWakeUp() == DIGI_RET_OK) {
         *puiEvents |= DIGI_EVENT_MASK_WOKE_UP;
@@ -167,7 +167,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
 }
 
 void DIGI_cleanWaste() {
-    printf("[DIGILIB] Cleaning %d poops\n", guiAmountPoop);
+    LOG("Cleaning %d poops", guiAmountPoop);
     guiAmountPoop = 0;
 }
 

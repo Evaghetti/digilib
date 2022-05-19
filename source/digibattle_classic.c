@@ -3,6 +3,7 @@
 #include "digihardware.h"
 #include "digimon.h"
 #include "enums.h"
+#include "logging.h"
 
 #define AMOUNT_WEIGHT_REDUCE 4
 
@@ -31,7 +32,7 @@ uint16_t DIGIBATTLE_createFirstPacket() {
     uiPacket = (0b0100 << 4) | stPlayingDigimon.pstCurrentDigimon->uiSlotPower;
     uiPacket = (~uiPacket << 8) | uiPacket;
 
-    printf("[DIGILIB] First packet generated -> 0x%04x\n", uiPacket);
+    LOG("First packet generated -> 0x%04x", uiPacket);
     return uiPacket;
 }
 
@@ -41,7 +42,7 @@ uint16_t DIGIBATTLE_createSecondPacket(uint8_t uiResult) {
     uiPacket = (stPlayingDigimon.pstCurrentDigimon->uiVersion << 4) | uiResult;
     uiPacket = (~uiPacket << 8) | uiPacket;
 
-    printf("[DIGILIB] Second packet generated -> 0x%04x\n", uiPacket);
+    LOG("Second packet generated -> 0x%04x", uiPacket);
     return uiPacket;
 }
 
@@ -65,20 +66,19 @@ uint8_t isValidPacket(uint16_t uiPacket) {
 
 uint8_t DIGIBATTLE_canBattle() {
     if (stPlayingDigimon.pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_2) {
-        printf("[DIGILIB] Digimon is too young to fight\n");
+        LOG("Digimon is too young to fight");
         return DIGIBATTLE_RET_ERROR;
     }
 
     if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 ||
         DIGI_shouldSleep() == DIGI_RET_OK) {
-        printf("[DIGILIB] Digimon is too tired to battle\n");
+        LOG("Digimon is too tired to battle");
         return DIGIBATTLE_RET_ERROR;
     }
 
     if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0 ||
         GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
-        printf(
-            "[DIGILIB] You have to take care of you digimon before battle\n");
+        LOG("[DIGILIB] You have to take care of you digimon before battle");
         return DIGIBATTLE_RET_ERROR;
     }
 
@@ -112,26 +112,23 @@ uint8_t DIGI_battle(uint8_t uiInitiate) {
 }
 
 uint8_t DIGIBATTLE_initiate() {
-    printf("[DIGILIB] Initiating battle\n");
+    LOG("Initiating battle");
 
     uint16_t uiPacket = DIGIBATTLE_createFirstPacket();
-    printf("[DIGILIB] Challenger: First packet sent -> 0x%04x\n", uiPacket);
+    LOG("Challenger: First packet sent -> 0x%04x", uiPacket);
     if (DIGICOMM_sendData(uiPacket)) {
-        printf("[DIGILIB] Challenger: Error trying to send data 0x%04x\n",
-               uiPacket);
+        LOG("Challenger: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
     uiPacket = DIGICOMM_pollData();
     if (uiPacket == DIGICOMM_ERROR_POLLING ||
         uiPacket == DIGICOMM_ERROR_READING) {
-        printf(
-            "[DIGILIB] Challenger: Error receiving first packet as "
-            "challenger\n");
+        LOG("Challenger: Error receiving first packet as "
+            "challenger");
         return DIGIBATTLE_RET_ERROR;
     } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
-        printf("[DIGILIB] Challenger: Received packet %x isn't valid\n",
-               uiPacket);
+        LOG("Challenger: Received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
@@ -139,24 +136,21 @@ uint8_t DIGIBATTLE_initiate() {
     uint8_t uiResult = DIGIBATTLE_getBattleResult(
         stPlayingDigimon.pstCurrentDigimon->uiSlotPower, uiEnemySlot);
 
-    printf(
-        "[DIGILIB] Challenger: Data got -> 0x%04x, Enemy Slot -> 0x%04x, "
-        "Result -> %d\n",
+    LOG("[DIGILIB] Challenger: Data got -> 0x%04x, Enemy Slot -> 0x%04x, "
+        "Result -> %d",
         uiPacket, uiEnemySlot, uiResult);
 
     uiPacket = DIGIBATTLE_createSecondPacket(uiResult);
-    printf("[DIGILIB] Challenger: Sending packet %04x\n", uiPacket);
+    LOG("Challenger: Sending packet %04x", uiPacket);
     if (DIGICOMM_sendData(uiPacket)) {
-        printf("[DIGILIB] Challenger: Error trying to send last data 0x%04x\n",
-               uiPacket);
+        LOG("Challenger: Error trying to send last data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
     uiPacket = DIGICOMM_pollData();
-    printf("{DIGILIB] Challenger: Received last package %04x\n", uiPacket);
+    LOG("Challenger: Received last package %04x", uiPacket);
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
-        printf("[DIGILIB] Challenger: Second received packet %x isn't valid\n",
-               uiPacket);
+        LOG("Challenger: Second received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
@@ -164,45 +158,39 @@ uint8_t DIGIBATTLE_initiate() {
 }
 
 uint8_t DIGIBATTLE_continue() {
-    printf("[DIGILIB] Challenged: Reading data to continue\n");
+    LOG("Challenged: Reading data to continue");
     uint16_t uiPacket = DIGICOMM_pollData();
     if (uiPacket == DIGICOMM_ERROR_POLLING ||
         uiPacket == DIGICOMM_ERROR_READING) {
-        printf(
-            "[DIGILIB] Challenged: Error receiving first packet as "
-            "challenged\n");
+        LOG("Challenged: Error receiving first packet as "
+            "challenged");
         return DIGIBATTLE_RET_ERROR;
     } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
-        printf("[DIGILIB] Challenged: Received packet %x isn't valid\n",
-               uiPacket);
+        LOG("Challenged: Received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    printf("[DIGILIB] Challenged: Got data -> 0x%04x, Sending first packet\n",
-           uiPacket);
+    LOG("Challenged: Got data -> 0x%04x, Sending first packet", uiPacket);
     if (DIGICOMM_sendData(DIGIBATTLE_createFirstPacket())) {
-        printf("[DIGILIB] Challenged: Error trying to send data 0x%04x\n",
-               uiPacket);
+        LOG("Challenged: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    printf("[DIGILIB] Challenged: waiting for second package\n");
+    LOG("Challenged: waiting for second package");
     uiPacket = DIGICOMM_pollData();
     if (uiPacket == DIGICOMM_ERROR_POLLING ||
         uiPacket == DIGICOMM_ERROR_READING) {
-        printf("[DIGILIB] Challenged: Error receiving data\n");
+        LOG("Challenged: Error receiving data");
         return DIGIBATTLE_RET_ERROR;
     } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
-        printf("[DIGILIB] Challenged: Second received packet %x isn't valid\n",
-               uiPacket);
+        LOG("Challenged: Second received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
-    printf("[DIGILIB] Challenged: Second packet %04x, but will be ignored\n",
-           uiPacket);
+    LOG("Challenged: Second packet %04x, but will be ignored", uiPacket);
     // Get inverted result (if the other one won, we lose and vice versa)
     uint8_t uiResult = ~uiPacket & 0b11;
     // Doesn't matter what the other side does with this
-    printf("[DIGILIB] Challenged: Result -> %d\n", uiResult);
+    LOG("Challenged: Result -> %d", uiResult);
     DIGICOMM_sendData(DIGIBATTLE_createSecondPacket(uiResult));
     return uiResult;
 }

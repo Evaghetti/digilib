@@ -20,7 +20,7 @@ add_custom_command(
 )
 
 set(SRCS source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c source/digiworld.c)
-set(SRCS ${SRCS} source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/digicomm.c)
+set(SRCS ${SRCS} source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/digicomm.c source/platform/${PLATFORM}/logging.c)
 
 # Build the lib
 include_directories(include)
