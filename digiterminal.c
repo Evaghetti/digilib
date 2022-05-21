@@ -61,7 +61,7 @@ int main() {
                     break;
                 case 'c':
                 case 'C':
-                    DIGI_cleanWaste();
+                    DIGI_cleanPoop();
                     break;
                 case 'p':
                 case 'P':

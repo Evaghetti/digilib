@@ -293,3 +293,24 @@ void DIGI_addCareMistakes() {
     else if (DIGI_shouldSleep() == DIGI_RET_OK)
         stPlayingDigimon.uiCareMistakesCount++;
 }
+
+uint8_t DIGI_poop(uint8_t uiAmount) {
+    LOG("Pooping %d times (current amount %d)", uiAmount,
+        stPlayingDigimon.uiPoopCount);
+
+    stPlayingDigimon.uiPoopCount += uiAmount;
+    if (stPlayingDigimon.uiPoopCount >= 4) {
+        stPlayingDigimon.uiPoopCount = 4;
+        stPlayingDigimon.uiStats |= MASK_SICK;
+        LOG("%s got sick from too much poop",
+            stPlayingDigimon.pstCurrentDigimon->szName);
+        return DIGI_RET_SICK;
+    }
+
+    return DIGI_RET_OK;
+}
+
+void DIGI_cleanPoop() {
+    LOG("Cleaning %d poops", stPlayingDigimon.uiPoopCount);
+    stPlayingDigimon.uiPoopCount = 0;
+}

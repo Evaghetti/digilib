@@ -29,7 +29,6 @@
 #define NOT_COUNTING_FOR_CARE_MISTAKE (TIME_TO_GET_CARE_MISTAKE + 1)
 
 static int16_t guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
-static uint8_t guiAmountPoop = 0;
 
 const char* gszSaveFile = NULL;
 playing_digimon_t stPlayingDigimon;
@@ -106,21 +105,12 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     }
 
     while (stPlayingDigimon.uiTimeSinceLastPoop >= TIME_TO_POOP &&
-           guiAmountPoop < 4) {
-        guiAmountPoop++;
-
+           stPlayingDigimon.uiPoopCount < 4) {
+        if (DIGI_poop(1) == DIGI_RET_SICK)
+            *puiEvents |= DIGI_EVENT_MASK_SICK;
         *puiEvents |= DIGI_EVENT_MASK_POOP;
+
         stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
-
-        LOG("%s has pooped!", stPlayingDigimon.pstCurrentDigimon->szName);
-    }
-
-    if (guiAmountPoop >= 4) {
-        stPlayingDigimon.uiStats |= MASK_SICK;
-        *puiEvents |= DIGI_EVENT_MASK_SICK;
-
-        LOG("%s got sick from all the waste around it.",
-            stPlayingDigimon.pstCurrentDigimon->szName);
     }
 
     if (DIGI_shouldEvolve() == DIGI_RET_OK) {
@@ -178,11 +168,6 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     // So the NULLing before saving isn't neccessary anymore.
     DIGI_saveGame();
     return DIGI_RET_OK;
-}
-
-void DIGI_cleanWaste() {
-    LOG("Cleaning %d poops", guiAmountPoop);
-    guiAmountPoop = 0;
 }
 
 playing_digimon_t DIGI_playingDigimon() {

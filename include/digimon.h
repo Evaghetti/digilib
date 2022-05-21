@@ -86,6 +86,7 @@ typedef struct {
     uint16_t uiTimeSinceLastPoop;
     uint16_t uiTimeToEvolve;
     uint16_t uiIndexCurrentDigimon;
+    uint8_t uiPoopCount;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();
@@ -109,5 +110,9 @@ uint8_t DIGI_shouldWakeUp();
 uint8_t DIGI_setCalled();
 
 void DIGI_addCareMistakes();
+
+uint8_t DIGI_poop(uint8_t uiAmount);
+
+void DIGI_cleanPoop();
 
 #endif  // DIGIMON_H
