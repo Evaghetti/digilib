@@ -177,6 +177,27 @@ uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange) {
     return DIGI_RET_OK;
 }
 
+// TODO: Implement effort? 4 training == 1 effort?
+uint8_t DIGI_trainDigimon(uint8_t uiAmount) {
+    LOG("Starting to training digimon, strength %d count %d",
+        GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength),
+        stPlayingDigimon.uiTrainingCount);
+    while (uiAmount) {
+        stPlayingDigimon.uiTrainingCount++;
+        if (DIGI_stregthenDigimon(1, -2) != DIGI_RET_OK) {
+            LOG("Error during training");
+            return DIGI_RET_ERROR;
+        }
+
+        uiAmount--;
+    }
+    LOG("Finished training digimon, strength %d count %d",
+        GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength),
+        stPlayingDigimon.uiTrainingCount);
+
+    return DIGI_RET_OK;
+}
+
 uint8_t DIGI_healDigimon(uint8_t uiType) {
     LOG("Healing %s, type %d", stPlayingDigimon.pstCurrentDigimon->szName,
         uiType);

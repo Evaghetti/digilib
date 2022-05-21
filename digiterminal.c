@@ -19,7 +19,8 @@ int main() {
         printf(
             "F) Feed\nS) Strengthen\nI) Heal Injury\nH) Heal Sickness\nC) "
             "Clean "
-            "Waste\nP) Put to sleep\nB) Initiate Battle\nL) Listen for "
+            "Waste\nP) Put to sleep\nT) Train\nB) Initiate Battle\nL) Listen "
+            "for "
             "Battle\n");
 
         fflush(stdin);
@@ -77,6 +78,10 @@ int main() {
                         uiRet == DIGIBATTLE_RET_LOSE)
                         uiTry = 10;
                     uiTry++;
+                    break;
+                case 't':
+                case 'T':
+                    DIGI_trainDigimon(1);
                     break;
                 default:
                     break;

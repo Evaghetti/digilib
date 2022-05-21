@@ -96,6 +96,8 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount);
 
 uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange);
 
+uint8_t DIGI_trainDigimon(uint8_t uiAmount);
+
 uint8_t DIGI_healDigimon(uint8_t uiType);
 
 uint8_t DIGI_putSleep(uint8_t uiSleepMode);
