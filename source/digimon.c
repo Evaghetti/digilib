@@ -9,6 +9,12 @@
 
 #define NOT_IN_RANGE(value, min, max) (value < min || value > max)
 
+#ifndef TIME_TO_GET_CARE_MISTAKE
+#define TIME_TO_GET_CARE_MISTAKE 10
+#endif
+
+#define NOT_COUNTING_FOR_CARE_MISTAKE 0
+
 extern playing_digimon_t stPlayingDigimon;
 
 static uint8_t checkIfValidParameter(const uint16_t uiRange,
@@ -239,6 +245,7 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
 }
 
 uint8_t DIGI_shouldSleep() {
+    return DIGI_RET_ERROR;
     const digimon_t* pstCurrentDigimon = stPlayingDigimon.pstCurrentDigimon;
     const uint16_t uiCurrentTime = DIGIHW_timeMinutes();
 
@@ -279,8 +286,11 @@ uint8_t DIGI_setCalled() {
         LOG("Will be calling because of sleep");
     }
 
-    return stPlayingDigimon.uiStats & MASK_CALLED ? DIGI_RET_OK
-                                                  : DIGI_RET_ERROR;
+    if (stPlayingDigimon.uiStats & MASK_CALLED)
+        return DIGI_RET_OK;
+
+    stPlayingDigimon.iTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
+    return DIGI_RET_ERROR;
 }
 
 void DIGI_addCareMistakes() {
@@ -313,4 +323,24 @@ uint8_t DIGI_poop(uint8_t uiAmount) {
 void DIGI_cleanPoop() {
     LOG("Cleaning %d poops", stPlayingDigimon.uiPoopCount);
     stPlayingDigimon.uiPoopCount = 0;
+}
+
+uint8_t DIGI_proccesCalling(uint8_t uiTimePassed) {
+    if (stPlayingDigimon.iTimeBeingCalled >= TIME_TO_GET_CARE_MISTAKE + 1) {
+        LOG("No response in last call");
+        return DIGI_RET_NOTHING;
+    }
+
+    stPlayingDigimon.iTimeBeingCalled += uiTimePassed;
+
+    if (stPlayingDigimon.iTimeBeingCalled >= TIME_TO_GET_CARE_MISTAKE + 1) {
+        LOG("Enough time has passed without calling, increasing care mistakes");
+        DIGI_addCareMistakes();
+        LOG("Current count -> %d", stPlayingDigimon.uiCareMistakesCount);
+        return DIGI_RET_CARE_MISTAKE;
+    }
+
+    LOG("%d minutes have passed without care",
+        stPlayingDigimon.iTimeBeingCalled - 1);
+    return DIGI_RET_OK;
 }

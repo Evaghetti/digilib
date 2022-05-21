@@ -2,14 +2,16 @@
 #define ENUM_H
 
 // Possible returns
-#define DIGI_RET_OK       0
-#define DIGI_RET_ERROR    (DIGI_RET_OK + 1)
-#define DIGI_NO_EVOLUTION (DIGI_RET_OK + 2)
-#define DIGI_RET_OVERFEED (DIGI_RET_OK + 3)
-#define DIGI_RET_HUNGRY   (DIGI_RET_OK + 4)
-#define DIGI_RET_WEAK     (DIGI_RET_OK + 5)
-#define DIGI_RET_SICK     (DIGI_RET_OK + 6)
-#define DIGI_RET_WAKE_UP  (DIGI_RET_OK + 7)
+#define DIGI_RET_OK           0
+#define DIGI_RET_ERROR        (DIGI_RET_OK + 1)
+#define DIGI_NO_EVOLUTION     (DIGI_RET_OK + 2)
+#define DIGI_RET_OVERFEED     (DIGI_RET_OK + 3)
+#define DIGI_RET_HUNGRY       (DIGI_RET_OK + 4)
+#define DIGI_RET_WEAK         (DIGI_RET_OK + 5)
+#define DIGI_RET_SICK         (DIGI_RET_OK + 6)
+#define DIGI_RET_WAKE_UP      (DIGI_RET_OK + 7)
+#define DIGI_RET_NOTHING      (DIGI_RET_OK + 8)
+#define DIGI_RET_CARE_MISTAKE (DIGI_RET_OK + 9)
 
 // Masks representing possible events that happen at each update
 #define DIGI_EVENT_MASK_INJURED 0b00000001

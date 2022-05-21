@@ -87,6 +87,7 @@ typedef struct {
     uint16_t uiTimeToEvolve;
     uint16_t uiIndexCurrentDigimon;
     uint8_t uiPoopCount;
+    int8_t iTimeBeingCalled;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();
@@ -106,6 +107,8 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode);
 uint8_t DIGI_shouldSleep();
 
 uint8_t DIGI_shouldWakeUp();
+
+uint8_t DIGI_proccesCalling(uint8_t uiTimePassed);
 
 uint8_t DIGI_setCalled();
 

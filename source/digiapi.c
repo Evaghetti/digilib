@@ -22,14 +22,6 @@
 #define TIME_TO_POOP 15
 #endif
 
-#ifndef TIME_TO_GET_CARE_MISTAKE
-#define TIME_TO_GET_CARE_MISTAKE 10
-#endif
-
-#define NOT_COUNTING_FOR_CARE_MISTAKE (TIME_TO_GET_CARE_MISTAKE + 1)
-
-static int16_t guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
-
 const char* gszSaveFile = NULL;
 playing_digimon_t stPlayingDigimon;
 
@@ -133,33 +125,8 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
 
     if (DIGI_setCalled() == DIGI_RET_OK) {
         *puiEvents |= DIGI_EVENT_MASK_CALL;
-
-        if (guiTimeBeingCalled == NOT_COUNTING_FOR_CARE_MISTAKE) {
-            guiTimeBeingCalled = TIME_TO_GET_CARE_MISTAKE;
-            LOG("Starting counting time for care mistake from %d",
-                guiTimeBeingCalled);
-        } else if (guiTimeBeingCalled > 0) {
-            LOG("Decreasing time being called by %d", uiDeltaTime);
-            guiTimeBeingCalled -= uiDeltaTime;
-
-            if (guiTimeBeingCalled <= 0) {
-                LOG("Care mistakes count before %d",
-                    stPlayingDigimon.uiCareMistakesCount);
-                DIGI_addCareMistakes();
-                LOG("Care mistakes count after %d",
-                    stPlayingDigimon.uiCareMistakesCount);
-            }
-        }
-
-        if (guiTimeBeingCalled <= 0) {
-            LOG("Enough time has passed for care mistakes to not count "
-                "anymore");
+        if (DIGI_proccesCalling(uiDeltaTime) != DIGI_RET_OK)
             *puiEvents &= ~DIGI_EVENT_MASK_CALL;
-        }
-    } else {
-        LOG("Not calling anymore, mantaining count at default (%d)",
-            NOT_COUNTING_FOR_CARE_MISTAKE);
-        guiTimeBeingCalled = NOT_COUNTING_FOR_CARE_MISTAKE;
     }
 
     DIGIHW_addTime(uiDeltaTime);
