@@ -245,7 +245,6 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
 }
 
 uint8_t DIGI_shouldSleep() {
-    return DIGI_RET_ERROR;
     const digimon_t* pstCurrentDigimon = stPlayingDigimon.pstCurrentDigimon;
     const uint16_t uiCurrentTime = DIGIHW_timeMinutes();
 
