@@ -2,6 +2,7 @@
 #define DIGIHARDWARE_H
 
 #include <stdint.h>
+#include "digimon.h"
 
 uint16_t DIGIHW_setTime();
 
@@ -9,12 +10,12 @@ uint16_t DIGIHW_timeMinutes();
 
 void DIGIHW_addTime(uint16_t uiAddingAmount);
 
-int16_t DIGIHW_readFile(const char* szFileName, void* pbDest,
-                        const uint16_t uiMaxDestSize);
-
-uint16_t DIGIHW_saveFile(const char* szFileName, const void* pbData,
-                         const uint16_t uiSizeData);
-
 uint8_t DIGIHW_randomNumber();
+
+uint8_t DIGIHW_readDigimon(const char* szFileName,
+                           playing_digimon_t* pstPlayingDigimon);
+
+uint8_t DIGIHW_saveDigimon(const char* szFileName,
+                           playing_digimon_t* pstPlayingDigimon);
 
 #endif

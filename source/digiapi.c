@@ -28,10 +28,8 @@ playing_digimon_t stPlayingDigimon;
 uint8_t DIGI_init(const char* szSaveFile) {
     gszSaveFile = szSaveFile;
 
-    if (DIGIHW_readFile(szSaveFile, &stPlayingDigimon,
-                        sizeof(stPlayingDigimon)) == -1) {
+    if (DIGIHW_readDigimon(gszSaveFile, &stPlayingDigimon) != DIGI_RET_OK)
         return DIGI_RET_ERROR;
-    }
 
     stPlayingDigimon.pstCurrentDigimon =
         &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
@@ -159,8 +157,5 @@ digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
 }
 
 void DIGI_saveGame() {
-    stPlayingDigimon.pstCurrentDigimon = NULL;
-    DIGIHW_saveFile(gszSaveFile, &stPlayingDigimon, sizeof(stPlayingDigimon));
-    stPlayingDigimon.pstCurrentDigimon =
-        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
+    DIGIHW_saveDigimon(gszSaveFile, &stPlayingDigimon);
 }
