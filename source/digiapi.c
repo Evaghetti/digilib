@@ -40,6 +40,9 @@ uint8_t DIGI_init(const char* szSaveFile) {
     stPlayingDigimon.pstCurrentDigimon =
         &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
 
+    LOG("[DIGILIB] Current digimon: %s\n",
+        stPlayingDigimon.pstCurrentDigimon->szName);
+
     DIGI_saveGame();
     DIGIHW_setTime();
     return DIGI_RET_OK;

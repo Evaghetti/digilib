@@ -23,6 +23,9 @@
 #define TLV_TIME_TO_EVOLVE           0x0d
 #define TLV_POOP_COUNT               0x0e
 #define TLV_TIME_BEING_CALLED        0x0f
+#define TLV_TIME_SICK_OR_INJURED     0x10
+#define TLV_INJURED_COUNT            0x11
+#define TLV_SICK_COUNT               0x12
 
 static uint16_t guiTime = 0xffff;
 
@@ -84,7 +87,11 @@ uint8_t DIGIHW_readDigimon(const char* szFileName,
         TLV_FIELD(TLV_INDEX_CURRENT_DIGIMON,
                   pstPlayingDigimon->uiIndexCurrentDigimon),
         TLV_FIELD(TLV_POOP_COUNT, pstPlayingDigimon->uiPoopCount),
-        TLV_FIELD(TLV_TIME_BEING_CALLED, pstPlayingDigimon->iTimeBeingCalled)};
+        TLV_FIELD(TLV_TIME_BEING_CALLED, pstPlayingDigimon->iTimeBeingCalled),
+        TLV_FIELD(TLV_TIME_SICK_OR_INJURED,
+                  pstPlayingDigimon->uiTimeSickOrInjured),
+        TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
+        TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount)};
 
     uint8_t currentTag, currentLen;
     while (fread(&currentTag, sizeof(currentTag), 1, pstFileHandle) == 1) {
@@ -136,7 +143,11 @@ uint8_t DIGIHW_saveDigimon(const char* szFileName,
         TLV_FIELD(TLV_INDEX_CURRENT_DIGIMON,
                   pstPlayingDigimon->uiIndexCurrentDigimon),
         TLV_FIELD(TLV_POOP_COUNT, pstPlayingDigimon->uiPoopCount),
-        TLV_FIELD(TLV_TIME_BEING_CALLED, pstPlayingDigimon->iTimeBeingCalled)};
+        TLV_FIELD(TLV_TIME_BEING_CALLED, pstPlayingDigimon->iTimeBeingCalled),
+        TLV_FIELD(TLV_TIME_SICK_OR_INJURED,
+                  pstPlayingDigimon->uiTimeSickOrInjured),
+        TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
+        TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount)};
 
     unsigned i;
     for (i = 0; i < sizeof(vstDataSave) / sizeof(vstDataSave[0]); i++) {
