@@ -91,6 +91,7 @@ typedef struct {
     uint16_t uiTimeSickOrInjured;
     uint8_t uiInjuredCount;
     uint8_t uiSickCount;
+    uint8_t uiAge;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();

@@ -153,6 +153,8 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     }
 
     DIGIHW_addTime(uiDeltaTime);
+    if (uiCurrentTime + uiDeltaTime >= 1440 && stPlayingDigimon.uiAge < 99)
+        stPlayingDigimon.uiAge++;
 
     // TODO: Find another way to save current digimon state
     // So the NULLing before saving isn't neccessary anymore.
