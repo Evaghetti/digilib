@@ -62,6 +62,7 @@ uint8_t DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
             break;
     }
 
+    memset(&stPlayingDigimon, 0, sizeof(stPlayingDigimon));
     stPlayingDigimon.uiIndexCurrentDigimon = i;
     SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength, 4);
     SET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength, 4);
