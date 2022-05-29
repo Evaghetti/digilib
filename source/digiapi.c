@@ -28,7 +28,13 @@ playing_digimon_t stPlayingDigimon;
 uint8_t DIGI_init(const char* szSaveFile) {
     gszSaveFile = szSaveFile;
 
+    // If no save file exists, needs to choose a digitama
     if (DIGIHW_readDigimon(gszSaveFile, &stPlayingDigimon) != DIGI_RET_OK)
+        return DIGI_RET_ERROR;
+
+    // If true, it means a previous digimon has died, need to select a
+    // new digitama
+    if (stPlayingDigimon.uiIndexCurrentDigimon >= MAX_COUNT_DIGIMON)
         return DIGI_RET_ERROR;
 
     stPlayingDigimon.pstCurrentDigimon =
@@ -63,9 +69,8 @@ uint8_t DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
 
 uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     uint16_t uiCurrentTime = DIGIHW_timeMinutes();
+    uint16_t uiIsDying = (stPlayingDigimon.uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
-
-    LOG("Current Time: %d:%d", uiCurrentTime / 60, uiCurrentTime % 60);
 
     printf("%s\nHunger: %d\nStrength: %d\nCare Mistakes: %d\n",
            stPlayingDigimon.pstCurrentDigimon->szName,
@@ -75,12 +80,28 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
 
     if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
         (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {
-        stPlayingDigimon.uiTimeSinceLastMeal += uiDeltaTime;
-        stPlayingDigimon.uiTimeSinceLastTraining += uiDeltaTime;
-        stPlayingDigimon.uiTimeSinceLastPoop += uiDeltaTime;
+        // If dying, then hearts and deplete twice as fast
+        const uint16_t uiAlteredDeltaTime = uiDeltaTime << uiIsDying;
+
+        stPlayingDigimon.uiTimeSinceLastMeal += uiAlteredDeltaTime;
+        stPlayingDigimon.uiTimeSinceLastTraining += uiAlteredDeltaTime;
+        stPlayingDigimon.uiTimeSinceLastPoop += uiAlteredDeltaTime;
+
+        if ((stPlayingDigimon.uiStats & MASK_SICK) ||
+            (stPlayingDigimon.uiStats & MASK_INJURIED))
+            stPlayingDigimon.uiTimeSickOrInjured += uiDeltaTime;
     }
 
-    stPlayingDigimon.uiTimeToEvolve += uiDeltaTime;
+    if (!uiIsDying)
+        stPlayingDigimon.uiTimeToEvolve += uiDeltaTime;
+
+    if (DIGI_shouldBeKilledOff() == DIGI_RET_OK) {
+        stPlayingDigimon.uiIndexCurrentDigimon = MAX_COUNT_DIGIMON;
+
+        DIGIHW_addTime(uiDeltaTime);
+        DIGI_saveGame();
+        return DIGI_RET_DIED;
+    }
 
     while (stPlayingDigimon.uiTimeSinceLastMeal >= TIME_TO_GET_HUNGRY) {
         DIGI_feedDigimon(-1);

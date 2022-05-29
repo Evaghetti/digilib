@@ -12,6 +12,7 @@
 #define DIGI_RET_WAKE_UP      (DIGI_RET_OK + 7)
 #define DIGI_RET_NOTHING      (DIGI_RET_OK + 8)
 #define DIGI_RET_CARE_MISTAKE (DIGI_RET_OK + 9)
+#define DIGI_RET_DIED         (DIGI_RET_OK + 10)
 
 // Masks representing possible events that happen at each update
 #define DIGI_EVENT_MASK_INJURED 0b00000001

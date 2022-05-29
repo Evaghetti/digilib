@@ -96,6 +96,8 @@ uint8_t DIGI_evolveDigimon() {
         stPlayingDigimon.uiTrainingCount = 0;
         stPlayingDigimon.uiOverfeedingCount = 0;
         stPlayingDigimon.uiSleepDisturbanceCount = 0;
+        stPlayingDigimon.uiSickCount = 0;
+        stPlayingDigimon.uiInjuredCount = 0;
 
         return DIGI_RET_OK;
     }
@@ -225,6 +227,9 @@ uint8_t DIGI_healDigimon(uint8_t uiType) {
         stPlayingDigimon.uiStats &= ~MASK_INJURIED;
     }
 
+    if ((stPlayingDigimon.uiStats & (MASK_INJURIED | MASK_SICK)) == 0)
+        stPlayingDigimon.uiTimeSickOrInjured = 0;
+
     return DIGI_RET_OK;
 }
 
@@ -342,4 +347,37 @@ uint8_t DIGI_proccesCalling(uint8_t uiTimePassed) {
     LOG("%d minutes have passed without care",
         stPlayingDigimon.iTimeBeingCalled - 1);
     return DIGI_RET_OK;
+}
+
+uint8_t DIGI_shouldBeKilledOff() {
+    if (stPlayingDigimon.uiCareMistakesCount >= 20) {
+        LOG("[DIGILIB] Too many care mistakes count (%d)",
+            stPlayingDigimon.uiCareMistakesCount);
+        return DIGI_RET_OK;
+    }
+    if (stPlayingDigimon.uiInjuredCount >= 20) {
+        LOG("[DIGILIB] Too many times injured (%d)",
+            stPlayingDigimon.uiInjuredCount);
+        return DIGI_RET_OK;
+    }
+    if (stPlayingDigimon.uiSickCount >= 20) {
+        LOG("[DIGILIB] Too many times sick(%d)", stPlayingDigimon.uiSickCount);
+        return DIGI_RET_OK;
+    }
+
+    // If it is on a dying stage, only 5 care mistakes are needed for death.
+    if ((stPlayingDigimon.uiStats & MASK_DYING_STAGE) != 0 &&
+        stPlayingDigimon.uiCareMistakesCount >= 5) {
+        LOG("[DIGILIB] Too many care mistakes while dying (%d)",
+            stPlayingDigimon.uiCareMistakesCount);
+        return DIGI_RET_OK;
+    }
+
+    if (stPlayingDigimon.uiTimeSickOrInjured >= 360) {
+        LOG("[DIGILIB] Too much time injured/sick (%d)",
+            stPlayingDigimon.uiTimeSickOrInjured);
+        return DIGI_RET_OK;
+    }
+
+    return DIGI_RET_ERROR;
 }
