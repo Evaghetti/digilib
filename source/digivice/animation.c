@@ -67,7 +67,7 @@ void updateAnimation(AnimationController* animationController,
 }
 
 const SDL_Rect* getAnimationFrameClip(
-    AnimationController* animationController) {
+    const AnimationController* animationController) {
     return &animationController
                 ->animations[animationController->currentAnimation]
                 .currentFrame->frameClip;

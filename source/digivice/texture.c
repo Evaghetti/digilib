@@ -5,12 +5,12 @@
 typedef struct LoadedTexture {
     struct LoadedTexture* next;
     SDL_Texture* texture;
-    const char* filePath;
+    char filePath[256];
 } LoadedTexture;
 
 LoadedTexture* headLoadedTexture;
 
-extern SDL_Renderer* renderer;
+extern SDL_Renderer* gRenderer;
 
 static LoadedTexture* initLoadedTexture(const char* filePath) {
     LoadedTexture* loadedTexture = calloc(1, sizeof(LoadedTexture));
@@ -19,7 +19,7 @@ static LoadedTexture* initLoadedTexture(const char* filePath) {
         return NULL;
     }
 
-    loadedTexture->filePath = filePath;
+    strncpy(loadedTexture->filePath, filePath, sizeof(loadedTexture->filePath));
     SDL_Surface* surface = IMG_Load(filePath);
     if (surface == NULL) {
         SDL_Log("Error while loading %s from memory", filePath);
@@ -27,7 +27,7 @@ static LoadedTexture* initLoadedTexture(const char* filePath) {
         return NULL;
     }
 
-    loadedTexture->texture = SDL_CreateTextureFromSurface(renderer, surface);
+    loadedTexture->texture = SDL_CreateTextureFromSurface(gRenderer, surface);
     if (loadedTexture->texture == NULL) {
         SDL_Log("Error while transforming %s into texture", filePath);
         SDL_FreeSurface(surface);

@@ -1,26 +1,13 @@
-#include "digivice/game.h"
+#include "game.h"
+
 #include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "animation.h"
-#include "texture.h"
+#include "SDL2/SDL_ttf.h"
 
-#define MIN_WIDTH_SCREEN   480
-#define MIN_HEIGHT_SCREEN  320
-#define WIDTH_SCREEN       640
-#define HEIGHT_SCREEN      480
-#define NORMAL_SIZE_SPRITE 16
-
-#define WIDTH_SPRITE \
-    (((NORMAL_SIZE_SPRITE * 12) * WIDTH_SCREEN) / MIN_WIDTH_SCREEN)
-#define HEIGHT_SPRITE \
-    (((NORMAL_SIZE_SPRITE * 12) * HEIGHT_SCREEN) / MIN_HEIGHT_SCREEN)
-#define STEP_SPRITE -(((1) * WIDTH_SPRITE) / NORMAL_SIZE_SPRITE)
+#include "digivice/menu.h"
+#include "globals.h"
 
 SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
-SDL_Texture* test = NULL;
-AnimationController animationController;
-int posX = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2;
+Menu menuTeste;
 
 int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -32,38 +19,32 @@ int initGame() {
         return 0;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
+    gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (gRenderer == NULL) {
         SDL_Log("Failed creating renderer from window");
         cleanUpGame();
         return 0;
     }
 
-    test = loadTexture("resource/metal greymon.gif");
-    if (test == NULL) {
-        SDL_Log("Failed loading texture");
+    if (TTF_Init() == -1) {
+        SDL_Log("Failed to initialize TTF");
         cleanUpGame();
         return 0;
     }
 
-    addAnimation(
-        &animationController, "walking", 9, createRect(0, 0, 16, 16), 1.f,
-        createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                   NORMAL_SIZE_SPRITE),
-        1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
-        createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                   NORMAL_SIZE_SPRITE),
-        1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
-        createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                   NORMAL_SIZE_SPRITE),
-        1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
-        createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                   NORMAL_SIZE_SPRITE),
-        1.f,
-        createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
-                   NORMAL_SIZE_SPRITE),
-        1.f);
-    setCurrentAnimation(&animationController, "walking");
+    gFonte = TTF_OpenFont("resource/font.ttf", 12);
+    if (gFonte == NULL) {
+        SDL_Log("Failed loading font");
+        cleanUpGame();
+        return 0;
+    }
+
+    // SDL_Rect spriteRects[] = {{0, 0, 16, 16}, {0, 0, 16, 16}};
+    // char* pathsMenu[] = {"resource/digitama botamon.gif",
+    //                      "resource/digitama punimon.gif"};
+    // menuTeste = initMenuImage(2, pathsMenu, spriteRects);
+    char* options[] = {"OP. 1", "OP. 2", "OP. 3", "OP. 4", "OP. 5"};
+    menuTeste = initMenuText(5, options);
 
     SDL_Log("Initialized %d", STEP_SPRITE);
     return 1;
@@ -71,13 +52,16 @@ int initGame() {
 
 int updateGame() {
     static int lastTime = -1;
-    static float contador = 0.f;
     SDL_Event e;
 
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
             SDL_Log("Closing game");
             return 0;
+        }
+        if (e.type == SDL_KEYUP) {
+            advanceMenu(&menuTeste,
+                        e.key.keysym.scancode == SDL_SCANCODE_LEFT ? -1 : 1);
         }
     }
 
@@ -89,44 +73,30 @@ int updateGame() {
         (float)(nowTime - lastTime) / (float)SDL_GetPerformanceFrequency();
     lastTime = nowTime;
 
-    contador += deltaTime;
-    if (contador > 1.f) {
-        posX += STEP_SPRITE;
-        contador = 0.f;
-    }
-
-    // TODO: Game Logic.
-    updateAnimation(&animationController, deltaTime);
     return 1;
 }
 
 void drawGame() {
-    SDL_RenderClear(renderer);
+    SDL_RenderClear(gRenderer);
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-    const SDL_Rect* clip = getAnimationFrameClip(&animationController);
-    SDL_Rect position = {posX, HEIGHT_SCREEN / 2 - HEIGHT_SPRITE / 2,
-                         WIDTH_SPRITE, HEIGHT_SPRITE};
+    drawMenu(gRenderer, &menuTeste);
 
-    SDL_RenderCopy(renderer, test, clip, &position);
-
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(gRenderer);
 
     SDL_Delay(1000 / 60);  // 60 fps
 }
 
 void cleanUpGame() {
-    freeAnimationController(&animationController);
+    freeMenu(&menuTeste);
 
-    if (test) {
-        SDL_Log("Freeing texture");
-        freeTexture(test);
-    }
+    if (gFonte)
+        TTF_CloseFont(gFonte);
 
-    if (renderer) {
+    if (gRenderer) {
         SDL_Log("Destroying renderer");
-        SDL_DestroyRenderer(renderer);
+        SDL_DestroyRenderer(gRenderer);
     }
 
     if (window) {
@@ -135,5 +105,6 @@ void cleanUpGame() {
     }
 
     SDL_Log("Qutting SDL");
+    TTF_Quit();
     SDL_Quit();
 }

@@ -1,0 +1,25 @@
+#ifndef GLOBAL_H
+#define GLOBAL_H
+
+#include "SDL2/SDL_ttf.h"
+
+#define MIN_WIDTH_SCREEN   480
+#define MIN_HEIGHT_SCREEN  320
+#define WIDTH_SCREEN       640
+#define HEIGHT_SCREEN      480
+#define NORMAL_SIZE_SPRITE 16
+
+#define WIDTH_SPRITE \
+    (((NORMAL_SIZE_SPRITE * 12) * WIDTH_SCREEN) / MIN_WIDTH_SCREEN)
+#define HEIGHT_SPRITE \
+    (((NORMAL_SIZE_SPRITE * 12) * HEIGHT_SCREEN) / MIN_HEIGHT_SCREEN)
+
+#define WIDTH_SMALL_SPRITE  (WIDTH_SPRITE / 2)
+#define HEIGHT_SMALL_SPRITE (HEIGHT_SPRITE / 2)
+
+#define STEP_SPRITE -(((1) * WIDTH_SPRITE) / NORMAL_SIZE_SPRITE)
+
+SDL_Renderer* gRenderer;
+TTF_Font* gFonte;
+
+#endif

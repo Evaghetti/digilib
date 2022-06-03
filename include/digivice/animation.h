@@ -30,7 +30,8 @@ void setCurrentAnimation(AnimationController* animationController,
 
 void updateAnimation(AnimationController* animationController, float deltaTime);
 
-const SDL_Rect* getAnimationFrameClip(AnimationController* animationController);
+const SDL_Rect* getAnimationFrameClip(
+    const AnimationController* animationController);
 
 void freeAnimationController(AnimationController* animationController);
 
