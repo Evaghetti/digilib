@@ -94,21 +94,23 @@ void freeTexture(SDL_Texture* texture) {
     if (headLoadedTexture == NULL)
         return;
 
-    LoadedTexture *node = headLoadedTexture, *parent = NULL;
-    while (node != NULL) {
-        if (node->texture == texture) {
-            SDL_Log("Destroying %s", node->filePath);
-            SDL_DestroyTexture(node->texture);
-            if (parent != NULL) {
-                SDL_Log("%s has a parent! Putting its next", node->filePath);
-                parent->next = node->next;
-            }
+    LoadedTexture** nodeTree = &headLoadedTexture;
+    while (*nodeTree != NULL) {
+        LoadedTexture* contentNode = *nodeTree;
+
+        if (contentNode->texture == texture) {
+            LoadedTexture* nextNode = contentNode->next;
+
+            SDL_Log("Destroying %s", contentNode->filePath);
+            SDL_DestroyTexture(contentNode->texture);
+
             SDL_Log("Freeing node");
-            free(node);
-            return;
+            free(contentNode);
+
+            *nodeTree = nextNode;
+            break;
         }
 
-        parent = node;
-        node = node->next;
+        nodeTree = &contentNode->next;
     }
 }
