@@ -14,8 +14,9 @@ int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
 
     if (statusInit) {
-        playing_digimon_t info = DIGI_playingDigimon();
-        strncpy(ret->name, info.pstCurrentDigimon->szName, sizeof(ret->name));
+        ret->infoApi = DIGI_playingDigimon();
+        strncpy(ret->name, ret->infoApi.pstCurrentDigimon->szName,
+                sizeof(ret->name));
 
         char spriteSheetFile[270] = {0};
         int i;
@@ -34,6 +35,20 @@ int initAvatar(Avatar* ret) {
         ret->transform.w = WIDTH_SPRITE;
         ret->transform.h = HEIGHT_SPRITE;
 
+        addAnimation(&ret->animationController, "hatching", 2,
+                     createRect(0, 0, 16, 16), 1.f,
+                     createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f);
+        addAnimation(&ret->animationController, "beingBorn", 3,
+                     createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f);
         addAnimation(
             &ret->animationController, "walking", 9, createRect(0, 0, 16, 16),
             1.f,
@@ -53,7 +68,13 @@ int initAvatar(Avatar* ret) {
                        NORMAL_SIZE_SPRITE),
             1.f);
 
-        setCurrentAnimation(&ret->animationController, "walking");
+        if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
+            ret->currentAction = HATCHING;
+            setCurrentAnimation(&ret->animationController, "hatching");
+        } else {
+            ret->currentAction = WALKING;
+            setCurrentAnimation(&ret->animationController, "walking");
+        }
         ret->initiated = 1;
     }
 
@@ -71,14 +92,14 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         if (avatar->secondsPassed >= 60) {
             unsigned char events;
             DIGI_updateEventsDeltaTime(1, &events);
+            avatar->infoApi = DIGI_playingDigimon();
+
             handleEvents(avatar, events);
             avatar->secondsPassed = 0;
         }
 
-        const playing_digimon_t playinData = DIGI_playingDigimon();
-
         if (avatar->currentAction == WALKING &&
-            playinData.pstCurrentDigimon->uiStage > DIGI_STAGE_EGG) {
+            avatar->infoApi.pstCurrentDigimon->uiStage > DIGI_STAGE_EGG) {
             if (rand() % 100 < 50) {
                 avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
                                           ? SDL_FLIP_NONE
@@ -88,6 +109,22 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 avatar->renderFlags & SDL_FLIP_HORIZONTAL ? -1 : 1;
 
             avatar->transform.x += STEP_SPRITE * direction;
+        } else if (avatar->currentAction == EVOLVING) {
+            if (finishedCurrentAnimation(&avatar->animationController)) {
+                char spriteSheetFile[270] = {0};
+                int i;
+                snprintf(spriteSheetFile, sizeof(spriteSheetFile),
+                         "resource/%s.gif",
+                         avatar->infoApi.pstCurrentDigimon->szName);
+                for (i = 0; i < strlen(spriteSheetFile); i++) {
+                    spriteSheetFile[i] = tolower(spriteSheetFile[i]);
+                }
+
+                freeTexture(avatar->spriteSheet);
+                avatar->spriteSheet = loadTexture(spriteSheetFile);
+                setCurrentAnimation(&avatar->animationController, "walking");
+                avatar->currentAction = WALKING;
+            }
         }
 
         avatar->timePassed = 0.f;
@@ -96,7 +133,17 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     updateAnimation(&avatar->animationController, deltaTime);
 }
 
-void handleEvents(Avatar* avatar, const unsigned char events) {}
+void handleEvents(Avatar* avatar, const unsigned char events) {
+    if (events & DIGI_EVENT_MASK_EVOLVE) {
+        avatar->currentAction = EVOLVING;
+
+        SDL_Log("Evolving to %s", avatar->infoApi.pstCurrentDigimon->szName);
+        if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1) {
+            setCurrentAnimation(&avatar->animationController, "beingBorn");
+            SDL_Log("It's a birth");
+        }
+    }
+}
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     if (!avatar->initiated)

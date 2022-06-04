@@ -14,6 +14,7 @@ typedef struct Animation {
     Frame* firstFrame;
     Frame* currentFrame;
     const char* animationName;
+    int finished;
 } Animation;
 
 typedef struct AnimationController {
@@ -32,6 +33,8 @@ void updateAnimation(AnimationController* animationController, float deltaTime);
 
 const SDL_Rect* getAnimationFrameClip(
     const AnimationController* animationController);
+
+int finishedCurrentAnimation(AnimationController* animationController);
 
 void freeAnimationController(AnimationController* animationController);
 

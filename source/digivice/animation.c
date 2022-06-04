@@ -63,6 +63,8 @@ void updateAnimation(AnimationController* animationController,
         animation->currentFrame->timeHoldSecs) {
         animation->currentFrame = animation->currentFrame->nextFrame;
         animationController->timeInCurrentFrame = 0.f;
+
+        animation->finished = animation->currentFrame == animation->firstFrame;
     }
 }
 
@@ -71,6 +73,13 @@ const SDL_Rect* getAnimationFrameClip(
     return &animationController
                 ->animations[animationController->currentAnimation]
                 .currentFrame->frameClip;
+}
+
+int finishedCurrentAnimation(AnimationController* animationController) {
+    const Animation* animation =
+        &animationController->animations[animationController->currentAnimation];
+
+    return animation->finished;
 }
 
 void freeAnimationController(AnimationController* animationController) {

@@ -10,7 +10,7 @@
 
 #define SAVE_FILE "digimon.save"
 
-typedef enum Action { WALKING, EATING, SLEEPING } Action;
+typedef enum Action { HATCHING, EVOLVING, WALKING, EATING, SLEEPING } Action;
 
 typedef struct {
     char name[256];
@@ -25,6 +25,8 @@ typedef struct {
     float timePassed;
     int secondsPassed;
     int initiated;
+
+    playing_digimon_t infoApi;
 } Avatar;
 
 int initAvatar(Avatar* ret);
