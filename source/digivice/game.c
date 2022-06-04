@@ -140,6 +140,8 @@ void drawGame() {
 }
 
 void cleanUpGame() {
+    freeAvatar(&digimon);
+
     if (gFonte)
         TTF_CloseFont(gFonte);
 
