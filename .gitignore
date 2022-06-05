@@ -9,7 +9,7 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-digivice
+./digivice
 digilib.so
 *.save*
 include/digiworld.h

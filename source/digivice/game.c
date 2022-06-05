@@ -9,9 +9,12 @@
 
 #include "digivice/avatar.h"
 #include "digivice/menu.h"
+#include "digivice/texture.h"
 #include "globals.h"
 
 SDL_Window* window = NULL;
+
+SDL_Texture* background;
 Menu currentMenu;
 Avatar digimon;
 
@@ -45,6 +48,7 @@ int initGame() {
         return 0;
     }
 
+    background = loadTexture("resource/background.png");
     initAvatar(&digimon);
 
     SDL_Log("Initialized %d", STEP_SPRITE);
@@ -127,7 +131,7 @@ int updateGame() {
 void drawGame() {
     SDL_RenderClear(gRenderer);
 
-    SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_RenderCopy(gRenderer, background, NULL, NULL);
 
     if (currentMenu.countOptions)
         drawMenu(gRenderer, &currentMenu);
@@ -141,6 +145,7 @@ void drawGame() {
 
 void cleanUpGame() {
     freeAvatar(&digimon);
+    freeTexture(background);
 
     if (gFonte)
         TTF_CloseFont(gFonte);
