@@ -31,9 +31,9 @@ int initAvatar(Avatar* ret) {
             return 0;
 
         ret->transform.x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2;
-        ret->transform.y = HEIGHT_SCREEN / 2 - HEIGHT_SPRITE / 2;
+        ret->transform.y = HEIGHT_BUTTON;
         ret->transform.w = WIDTH_SPRITE;
-        ret->transform.h = HEIGHT_SPRITE;
+        ret->transform.h = HEIGHT_SPRITE + STEP_SPRITE;
 
         addAnimation(&ret->animationController, "hatching", 2,
                      createRect(0, 0, 16, 16), 1.f,

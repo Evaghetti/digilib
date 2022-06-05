@@ -82,7 +82,7 @@ void advanceMenu(Menu* menu, int step) {
 static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
     SDL_Rect currentTransform = {.x = WIDTH_SMALL_SPRITE / 2,
-                                 .y = HEIGHT_SMALL_SPRITE,
+                                 .y = HEIGHT_BUTTON + HEIGHT_SMALL_SPRITE / 2,
                                  .w = WIDTH_SCREEN / 2,
                                  .h = HEIGHT_SMALL_SPRITE / 2};
     SDL_Rect cursorTransform = {
@@ -112,11 +112,10 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
-    static const SDL_Rect transform = {
-        .x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
-        .y = HEIGHT_SCREEN / 2 - HEIGHT_SPRITE / 2,
-        .w = WIDTH_SPRITE,
-        .h = HEIGHT_SPRITE};
+    static const SDL_Rect transform = {.x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
+                                       .y = HEIGHT_BUTTON,
+                                       .w = WIDTH_SPRITE,
+                                       .h = HEIGHT_SPRITE + STEP_SPRITE};
     static const SDL_Point centerCursor = {.x = 0, .y = 4};
 
     const Option* currentOption = &menu->options[menu->currentOption];

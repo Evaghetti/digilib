@@ -8,14 +8,22 @@
 #include "digiapi.h"
 
 #include "digivice/avatar.h"
+#include "digivice/button.h"
 #include "digivice/menu.h"
 #include "digivice/texture.h"
 #include "globals.h"
 
-SDL_Window* window = NULL;
+static const SDL_Rect spritesButtons[] = {
+    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}, {24, 0, 8, 8},
+    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}, {24, 0, 8, 8}};
 
+#define COUNT_OPERATIONS sizeof(spritesButtons) / sizeof(spritesButtons[0])
+
+SDL_Window* window = NULL;
 SDL_Texture* background;
+
 Menu currentMenu;
+Button buttonsOperations[COUNT_OPERATIONS];
 Avatar digimon;
 
 int initGame() {
@@ -50,6 +58,27 @@ int initGame() {
 
     background = loadTexture("resource/background.png");
     initAvatar(&digimon);
+
+    int i;
+    for (i = 0; i < 4; i++) {
+        SDL_Rect transform = {.x = WIDTH_BUTTON * i,
+                              .y = 0,
+                              .w = WIDTH_BUTTON,
+                              .h = HEIGHT_BUTTON};
+        buttonsOperations[i] =
+            initButton("resource/hud.gif", transform, spritesButtons[i]);
+    }
+
+    for (; i < COUNT_OPERATIONS; i++) {
+        SDL_Rect transform = {.x = WIDTH_BUTTON * (i - 4),
+                              .y = HEIGHT_SCREEN - HEIGHT_BUTTON,
+                              .w = WIDTH_BUTTON,
+                              .h = HEIGHT_BUTTON};
+        buttonsOperations[i] =
+            initButton("resource/hud.gif", transform, spritesButtons[i]);
+    }
+
+    SDL_Log("%d", HEIGHT_SPRITE + HEIGHT_BUTTON);
 
     SDL_Log("Initialized %d", STEP_SPRITE);
     return 1;
@@ -137,6 +166,10 @@ void drawGame() {
         drawMenu(gRenderer, &currentMenu);
     else
         drawAvatar(gRenderer, &digimon);
+
+    int i;
+    for (i = 0; i < COUNT_OPERATIONS; i++)
+        drawButton(gRenderer, &buttonsOperations[i]);
 
     SDL_RenderPresent(gRenderer);
 
