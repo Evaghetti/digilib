@@ -15,6 +15,10 @@ typedef struct Buttton {
 Button initButton(const char* texturePath, SDL_Rect transform,
                   SDL_Rect spriteClip);
 
+void setButtonHovering(Button* button, SDL_Point position);
+
+void setButtonClicked(Button* button, SDL_Point position);
+
 void drawButton(SDL_Renderer* renderer, Button* button);
 
 void freeButton(Button* button);

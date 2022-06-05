@@ -12,6 +12,14 @@ Button initButton(const char* texturePath, SDL_Rect transform,
     return ret;
 }
 
+void setButtonHovering(Button* button, SDL_Point position) {
+    button->hovering = SDL_PointInRect(&position, &button->transform);
+}
+
+void setButtonClicked(Button* button, SDL_Point position) {
+    button->clicked = SDL_PointInRect(&position, &button->transform);
+}
+
 void drawButton(SDL_Renderer* renderer, Button* button) {
     SDL_RenderCopy(renderer, button->texture, &button->spriteClip,
                    &button->transform);

@@ -94,8 +94,10 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
         cursorTransform.y += currentTransform.h;
 
     int index = (menu->currentOption / 2) * 2;
-    const int parada = index + 2 >= menu->countOptions ? index + 1 : index + 2;
-    SDL_Log("%d %d", index, parada);
+    const int parada = index + 2 >= menu->countOptions && menu->countOptions > 2
+                           ? index + 1
+                           : index + 2;
+
     for (; index != parada; index++) {
         SDL_Texture* currentText =
             createTextTexture(textColor, "%s", menu->options[index].text);

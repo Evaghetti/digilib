@@ -15,7 +15,7 @@
 
 static const SDL_Rect spritesButtons[] = {
     {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}, {24, 0, 8, 8},
-    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}, {24, 0, 8, 8}};
+    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}};
 
 #define COUNT_OPERATIONS sizeof(spritesButtons) / sizeof(spritesButtons[0])
 
@@ -77,10 +77,6 @@ int initGame() {
         buttonsOperations[i] =
             initButton("resource/hud.gif", transform, spritesButtons[i]);
     }
-
-    SDL_Log("%d", HEIGHT_SPRITE + HEIGHT_BUTTON);
-
-    SDL_Log("Initialized %d", STEP_SPRITE);
     return 1;
 }
 
@@ -130,16 +126,96 @@ static void handleDigitamaMenu(SDL_Scancode scanCode) {
     }
 }
 
+static int handleMenu(SDL_Scancode scanCode) {
+    int buttonClicked = -1, i;
+    for (i = 0; i < COUNT_OPERATIONS; i++) {
+        if (buttonsOperations[i].clicked) {
+            buttonClicked = i;
+            break;
+        }
+    }
+
+    // If there's no current operation.
+    if (buttonClicked == -1) {
+        SDL_Log("No operation to be processed");
+        return -1;
+    }
+
+    switch (scanCode) {
+        case SDL_SCANCODE_LEFT:
+        case SDL_SCANCODE_UP:
+            advanceMenu(&currentMenu, -1);
+            break;
+        case SDL_SCANCODE_RIGHT:
+        case SDL_SCANCODE_DOWN:
+            advanceMenu(&currentMenu, -1);
+            break;
+        case SDL_SCANCODE_RETURN:
+            buttonsOperations[i].clicked = 0;
+            i = currentMenu.currentOption;
+            freeMenu(&currentMenu);
+            return i;
+        case SDL_SCANCODE_ESCAPE:
+            buttonsOperations[i].clicked = 0;
+            freeMenu(&currentMenu);
+            return -2;
+    }
+}
+
+static void updateButtonsHovering(int x, int y) {
+    SDL_Point point = {x, y};
+    int i;
+
+    for (i = 0; i < COUNT_OPERATIONS; i++) {
+        setButtonHovering(&buttonsOperations[i], point);
+
+        if (buttonsOperations[i].hovering)
+            SDL_Log("Hovering over button %d", i);
+    }
+}
+
+static void updateButtonsClick(int x, int y) {
+    SDL_Point point = {x, y};
+    int i;
+
+    for (i = 0; i < COUNT_OPERATIONS; i++) {
+        setButtonClicked(&buttonsOperations[i], point);
+
+        if (buttonsOperations[i].clicked)
+            SDL_Log("Clicked on button %d", i);
+    }
+}
+
 int updateGame() {
     static int lastTime = -1;
     SDL_Event e;
+    int i;
 
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) {
-            SDL_Log("Closing game");
-            return 0;
-        } else if (e.type == SDL_KEYUP) {
-            handleDigitamaMenu(e.key.keysym.scancode);
+        switch (e.type) {
+            case SDL_QUIT:
+                SDL_Log("Closing game");
+                return 0;
+            case SDL_KEYUP:
+                handleDigitamaMenu(e.key.keysym.scancode);
+                handleMenu(e.key.keysym.scancode);
+                break;
+            case SDL_MOUSEMOTION:
+                updateButtonsHovering(e.motion.x, e.motion.y);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                if (e.button.button == SDL_BUTTON_LEFT)
+                    updateButtonsClick(e.button.x, e.button.y);
+                break;
+        }
+    }
+
+    // TODO: Enums for each button
+    if (currentMenu.countOptions == 0 &&
+        digimon.infoApi.pstCurrentDigimon->uiStage > 0) {
+        if (buttonsOperations[1].clicked) {
+            char* ops[] = {"FOOD", "VITAMIN"};
+            currentMenu = initMenuText(sizeof(ops) / sizeof(ops[0]), ops);
         }
     }
 
