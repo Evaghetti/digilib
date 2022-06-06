@@ -14,8 +14,8 @@
 #include "globals.h"
 
 static const SDL_Rect spritesButtons[] = {
-    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}, {24, 0, 8, 8},
-    {0, 0, 8, 8}, {8, 0, 8, 8}, {16, 0, 8, 8}};
+    {0, 8, 16, 16},  {16, 8, 16, 16}, {32, 8, 16, 16}, {48, 8, 16, 16},
+    {64, 8, 16, 16}, {80, 8, 16, 16}, {96, 8, 16, 16}};
 
 #define COUNT_OPERATIONS sizeof(spritesButtons) / sizeof(spritesButtons[0])
 
@@ -66,7 +66,7 @@ int initGame() {
                               .w = WIDTH_BUTTON,
                               .h = HEIGHT_BUTTON};
         buttonsOperations[i] =
-            initButton("resource/hud.gif", transform, spritesButtons[i]);
+            initButton("resource/hud.png", transform, spritesButtons[i]);
     }
 
     for (; i < COUNT_OPERATIONS; i++) {
@@ -75,7 +75,7 @@ int initGame() {
                               .w = WIDTH_BUTTON,
                               .h = HEIGHT_BUTTON};
         buttonsOperations[i] =
-            initButton("resource/hud.gif", transform, spritesButtons[i]);
+            initButton("resource/hud.png", transform, spritesButtons[i]);
     }
     return 1;
 }
