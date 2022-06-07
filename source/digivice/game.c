@@ -166,6 +166,9 @@ static void updateButtonsHovering(int x, int y) {
     SDL_Point point = {x, y};
     int i;
 
+    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0)
+        return;
+
     for (i = 0; i < COUNT_OPERATIONS; i++) {
         setButtonHovering(&buttonsOperations[i], point);
 
@@ -177,6 +180,9 @@ static void updateButtonsHovering(int x, int y) {
 static void updateButtonsClick(int x, int y) {
     SDL_Point point = {x, y};
     int i;
+
+    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0)
+        return;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
         setButtonClicked(&buttonsOperations[i], point);
@@ -211,11 +217,14 @@ int updateGame() {
     }
 
     // TODO: Enums for each button
-    if (currentMenu.countOptions == 0 &&
-        digimon.infoApi.pstCurrentDigimon->uiStage > 0) {
-        if (buttonsOperations[1].clicked) {
-            char* ops[] = {"FOOD", "VITAMIN"};
-            currentMenu = initMenuText(sizeof(ops) / sizeof(ops[0]), ops);
+    if (currentMenu.countOptions == 0) {
+        if (!digimon.initiated)
+            initiateDigitamaMenu();
+        else if (digimon.infoApi.pstCurrentDigimon->uiStage > 0) {
+            if (buttonsOperations[1].clicked) {
+                char* ops[] = {"FOOD", "VITAMIN"};
+                currentMenu = initMenuText(sizeof(ops) / sizeof(ops[0]), ops);
+            }
         }
     }
 
@@ -227,8 +236,6 @@ int updateGame() {
         (float)(nowTime - lastTime) / (float)SDL_GetPerformanceFrequency();
     lastTime = nowTime;
 
-    if (!digimon.initiated && !currentMenu.countOptions)
-        initiateDigitamaMenu();
     updateAvatar(&digimon, deltaTime);
     return 1;
 }

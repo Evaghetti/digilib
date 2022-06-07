@@ -21,8 +21,24 @@ void setButtonClicked(Button* button, SDL_Point position) {
 }
 
 void drawButton(SDL_Renderer* renderer, Button* button) {
+    Uint8 r, g, b;
+
+    SDL_Rect iconTransform = {
+        .x = button->transform.x + button->transform.w / 4,
+        .w = button->transform.w / 2,
+        .y = button->transform.y + button->transform.h / 3,
+        .h = button->transform.h / 2};
+
+    SDL_GetTextureColorMod(button->texture, &r, &g, &b);
+
+    if (button->clicked || button->hovering)
+        SDL_SetTextureColorMod(button->texture, 0, 0, 0);
+    else
+        SDL_SetTextureColorMod(button->texture, 50, 50, 50);
+
     SDL_RenderCopy(renderer, button->texture, &button->spriteClip,
-                   &button->transform);
+                   &iconTransform);
+    SDL_SetTextureColorMod(button->texture, r, g, b);
 }
 
 void freeButton(Button* button) {

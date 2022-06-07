@@ -45,7 +45,7 @@ Menu initMenuText(int count, char* texts[]) {
     }
 
     if (cursorTexture == NULL)
-        cursorTexture = loadTexture("resource/hud.gif");
+        cursorTexture = loadTexture("resource/hud.png");
 
     return ret;
 }
@@ -65,7 +65,7 @@ Menu initMenuImage(int count, char* paths[], SDL_Rect spriteRects[]) {
     }
 
     if (cursorTexture == NULL)
-        cursorTexture = loadTexture("resource/hud.gif");
+        cursorTexture = loadTexture("resource/hud.png");
 
     return ret;
 }
