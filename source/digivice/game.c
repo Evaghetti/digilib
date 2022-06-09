@@ -17,7 +17,18 @@ static const SDL_Rect spritesButtons[] = {
     {0, 8, 16, 16},  {16, 8, 16, 16}, {32, 8, 16, 16}, {48, 8, 16, 16},
     {64, 8, 16, 16}, {80, 8, 16, 16}, {96, 8, 16, 16}};
 
-#define COUNT_OPERATIONS sizeof(spritesButtons) / sizeof(spritesButtons[0])
+typedef enum {
+    BIRTHING = -2,
+    NO_OPERATION,
+    INFORMATION,
+    FEED,
+    TRAIN,
+    BATTLE,
+    CLEAN_POOP,
+    LIGHTS,
+    HEAL,
+    COUNT_OPERATIONS
+} PossibleOperations;
 
 SDL_Window* window = NULL;
 SDL_Texture* background;
@@ -107,40 +118,12 @@ static void initiateDigitamaMenu() {
     free(spriteClips);
 }
 
-static void handleDigitamaMenu(SDL_Scancode scanCode) {
-    if (digimon.initiated)
-        return;
-
-    switch (scanCode) {
-        case SDL_SCANCODE_LEFT:
-            advanceMenu(&currentMenu, -1);
-            break;
-        case SDL_SCANCODE_RIGHT:
-            advanceMenu(&currentMenu, 1);
-            break;
-        case SDL_SCANCODE_RETURN:
-            DIGI_initDigitama(SAVE_FILE, currentMenu.currentOption);
-            freeMenu(&currentMenu);
-            initAvatar(&digimon);
-            break;
-    }
-}
-
 static int handleMenu(SDL_Scancode scanCode) {
-    int buttonClicked = -1, i;
-    for (i = 0; i < COUNT_OPERATIONS; i++) {
-        if (buttonsOperations[i].clicked) {
-            buttonClicked = i;
-            break;
-        }
-    }
-
-    // If there's no current operation.
-    if (buttonClicked == -1) {
-        SDL_Log("No operation to be processed");
+    // If there's no menu, don't do anything.
+    if (currentMenu.countOptions == 0)
         return -1;
-    }
 
+    int i;
     switch (scanCode) {
         case SDL_SCANCODE_LEFT:
         case SDL_SCANCODE_UP:
@@ -151,15 +134,13 @@ static int handleMenu(SDL_Scancode scanCode) {
             advanceMenu(&currentMenu, -1);
             break;
         case SDL_SCANCODE_RETURN:
-            buttonsOperations[i].clicked = 0;
             i = currentMenu.currentOption;
-            freeMenu(&currentMenu);
             return i;
         case SDL_SCANCODE_ESCAPE:
-            buttonsOperations[i].clicked = 0;
-            freeMenu(&currentMenu);
             return -2;
     }
+
+    return -3;
 }
 
 static void updateButtonsHovering(int x, int y) {
@@ -177,25 +158,68 @@ static void updateButtonsHovering(int x, int y) {
     }
 }
 
-static void updateButtonsClick(int x, int y) {
+static PossibleOperations updateButtonsClick(int x, int y) {
     SDL_Point point = {x, y};
-    int i;
+    int i, indexClickedButton = NO_OPERATION;
 
     if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0)
-        return;
+        return indexClickedButton;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
         setButtonClicked(&buttonsOperations[i], point);
 
-        if (buttonsOperations[i].clicked)
+        if (buttonsOperations[i].clicked) {
             SDL_Log("Clicked on button %d", i);
+
+            indexClickedButton = (PossibleOperations)i;
+        }
     }
+
+    return indexClickedButton;
+}
+
+static PossibleOperations handleOperation(PossibleOperations operation,
+                                          int lastAction) {
+    PossibleOperations responseOperation = operation;
+
+    switch (operation) {
+        case BIRTHING:
+            if (currentMenu.countOptions == 0)
+                initiateDigitamaMenu();
+            else if (lastAction >= 0) {
+                DIGI_initDigitama(SAVE_FILE, lastAction);
+                freeMenu(&currentMenu);
+                initAvatar(&digimon);
+                responseOperation = NO_OPERATION;
+            }
+            break;
+        case FEED:
+            if (currentMenu.countOptions == 0) {
+                char* args[] = {"FEED", "VITAMIN"};
+                currentMenu = initMenuText(2, args);
+            } else if (lastAction >= 0) {
+                if (lastAction == 0)
+                    DIGI_feedDigimon(1);
+                else if (lastAction == 1)
+                    DIGI_stregthenDigimon(1, 2);
+                responseOperation = NO_OPERATION;
+                freeMenu(&currentMenu);
+            }
+            break;
+        default:
+            responseOperation = NO_OPERATION;
+            break;
+    }
+
+    return responseOperation;
 }
 
 int updateGame() {
     static int lastTime = -1;
+    static PossibleOperations currentOperation = NO_OPERATION;
+
     SDL_Event e;
-    int i;
+    int i = -1;
 
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -203,30 +227,23 @@ int updateGame() {
                 SDL_Log("Closing game");
                 return 0;
             case SDL_KEYUP:
-                handleDigitamaMenu(e.key.keysym.scancode);
-                handleMenu(e.key.keysym.scancode);
+                i = handleMenu(e.key.keysym.scancode);
                 break;
             case SDL_MOUSEMOTION:
                 updateButtonsHovering(e.motion.x, e.motion.y);
                 break;
             case SDL_MOUSEBUTTONUP:
                 if (e.button.button == SDL_BUTTON_LEFT)
-                    updateButtonsClick(e.button.x, e.button.y);
+                    currentOperation =
+                        updateButtonsClick(e.button.x, e.button.y);
                 break;
         }
     }
 
-    // TODO: Enums for each button
-    if (currentMenu.countOptions == 0) {
-        if (!digimon.initiated)
-            initiateDigitamaMenu();
-        else if (digimon.infoApi.pstCurrentDigimon->uiStage > 0) {
-            if (buttonsOperations[1].clicked) {
-                char* ops[] = {"FOOD", "VITAMIN"};
-                currentMenu = initMenuText(sizeof(ops) / sizeof(ops[0]), ops);
-            }
-        }
-    }
+    if (!digimon.initiated)
+        currentOperation = BIRTHING;
+
+    currentOperation = handleOperation(currentOperation, i);
 
     int nowTime = SDL_GetPerformanceCounter();
     if (lastTime == -1)
