@@ -40,11 +40,13 @@ void setCurrentAnimation(AnimationController* animationController,
     int i;
     for (i = 0; i < animationController->animationCount; i++) {
         if (strcmp(animationController->animations[i].animationName,
-                   animationName) == 0) {
+                   animationName) == 0 &&
+            animationController->currentAnimation != i) {
             Animation* currentAnimation =
                 &animationController
                      ->animations[animationController->currentAnimation];
             currentAnimation->currentFrame = currentAnimation->firstFrame;
+            currentAnimation->finished = 0;
 
             animationController->currentAnimation = i;
             animationController->timeInCurrentFrame = 0.f;

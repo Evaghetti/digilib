@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
+                                          HEIGHT_BUTTON, WIDTH_SPRITE,
+                                          HEIGHT_SPRITE + STEP_SPRITE};
+
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
 
@@ -30,10 +34,7 @@ int initAvatar(Avatar* ret) {
         if (ret->spriteSheet == NULL)
             return 0;
 
-        ret->transform.x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2;
-        ret->transform.y = HEIGHT_BUTTON;
-        ret->transform.w = WIDTH_SPRITE;
-        ret->transform.h = HEIGHT_SPRITE + STEP_SPRITE;
+        ret->transform = initialTransform;
 
         addAnimation(&ret->animationController, "hatching", 2,
                      createRect(0, 0, 16, 16), 1.f,
@@ -67,6 +68,32 @@ int initAvatar(Avatar* ret) {
             createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
             1.f);
+        addAnimation(&ret->animationController, "happy", 4,
+                     createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f);
+        addAnimation(&ret->animationController, "negating", 4,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f);
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
             ret->currentAction = HATCHING;
@@ -101,9 +128,9 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         if (avatar->currentAction == WALKING &&
             avatar->infoApi.pstCurrentDigimon->uiStage > DIGI_STAGE_EGG) {
             if (rand() % 100 < 50) {
-                avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
-                                          ? SDL_FLIP_NONE
-                                          : SDL_FLIP_HORIZONTAL;
+                // avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+                //                           ? SDL_FLIP_NONE
+                //                           : SDL_FLIP_HORIZONTAL;
             }
             const int direction =
                 avatar->renderFlags & SDL_FLIP_HORIZONTAL ? -1 : 1;
@@ -122,6 +149,29 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
                 freeTexture(avatar->spriteSheet);
                 avatar->spriteSheet = loadTexture(spriteSheetFile);
+                setCurrentAnimation(&avatar->animationController, "walking");
+                avatar->currentAction = WALKING;
+            }
+        } else if (avatar->currentAction == HEALING) {
+            DIGI_healDigimon(MASK_SICK);
+            DIGI_healDigimon(MASK_INJURIED);
+
+            avatar->currentAction = HAPPY;
+        }
+
+        if (avatar->currentAction == HAPPY ||
+            avatar->currentAction == NEGATING) {
+            avatar->transform = initialTransform;
+            if (avatar->currentAction == HAPPY)
+                setCurrentAnimation(&avatar->animationController, "happy");
+            else
+                setCurrentAnimation(&avatar->animationController, "negating");
+
+            avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+                                      ? SDL_FLIP_NONE
+                                      : SDL_FLIP_HORIZONTAL;
+
+            if (finishedCurrentAnimation(&avatar->animationController)) {
                 setCurrentAnimation(&avatar->animationController, "walking");
                 avatar->currentAction = WALKING;
             }

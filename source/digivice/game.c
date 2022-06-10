@@ -206,6 +206,14 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                 freeMenu(&currentMenu);
             }
             break;
+        case HEAL:
+            if ((digimon.infoApi.uiStats & (MASK_SICK | MASK_INJURIED)) != 0) {
+                digimon.currentAction = HEALING;
+            } else {
+                digimon.currentAction = NEGATING;
+            }
+
+            responseOperation = NO_OPERATION;
         default:
             responseOperation = NO_OPERATION;
             break;

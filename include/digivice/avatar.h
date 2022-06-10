@@ -10,7 +10,16 @@
 
 #define SAVE_FILE "digimon.save"
 
-typedef enum Action { HATCHING, EVOLVING, WALKING, EATING, SLEEPING } Action;
+typedef enum Action {
+    HATCHING,
+    EVOLVING,
+    WALKING,
+    EATING,
+    SLEEPING,
+    HEALING,
+    HAPPY,
+    NEGATING
+} Action;
 
 typedef struct {
     char name[256];
