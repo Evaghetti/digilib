@@ -224,7 +224,13 @@ int updateGame() {
     static PossibleOperations currentOperation = NO_OPERATION;
 
     SDL_Event e;
-    int selectedOptionMenu = -1;
+    int selectedOptionMenu = -1, i;
+
+    for (i = 0; i < COUNT_OPERATIONS; i++)
+        buttonsOperations[i].clicked = 0;
+
+    if (currentOperation > NO_OPERATION)
+        buttonsOperations[currentOperation].clicked = 1;
 
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -238,7 +244,8 @@ int updateGame() {
                 updateButtonsHovering(e.motion.x, e.motion.y);
                 break;
             case SDL_MOUSEBUTTONUP:
-                if (e.button.button == SDL_BUTTON_LEFT)
+                if (e.button.button == SDL_BUTTON_LEFT &&
+                    currentOperation == NO_OPERATION)
                     currentOperation =
                         updateButtonsClick(e.button.x, e.button.y);
                 break;
