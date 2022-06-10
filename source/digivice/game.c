@@ -198,10 +198,8 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                 char* args[] = {"FEED", "VITAMIN"};
                 currentMenu = initMenuText(2, args);
             } else if (selectedOption >= 0) {
-                if (selectedOption == 0)
-                    DIGI_feedDigimon(1);
-                else if (selectedOption == 1)
-                    DIGI_stregthenDigimon(1, 2);
+                digimon.currentAction =
+                    selectedOption == 0 ? EATING : STRENGTHNING;
                 responseOperation = NO_OPERATION;
                 freeMenu(&currentMenu);
             }

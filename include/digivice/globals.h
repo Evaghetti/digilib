@@ -3,11 +3,12 @@
 
 #include "SDL2/SDL_ttf.h"
 
-#define MIN_WIDTH_SCREEN   480
-#define MIN_HEIGHT_SCREEN  320
-#define WIDTH_SCREEN       640
-#define HEIGHT_SCREEN      480
-#define NORMAL_SIZE_SPRITE 16
+#define MIN_WIDTH_SCREEN         480
+#define MIN_HEIGHT_SCREEN        320
+#define WIDTH_SCREEN             640
+#define HEIGHT_SCREEN            480
+#define NORMAL_SIZE_SPRITE       16
+#define NORMAL_SIZE_SMALL_SPRITE (NORMAL_SIZE_SPRITE / 2)
 
 #define WIDTH_SPRITE \
     (((NORMAL_SIZE_SPRITE * 10) * WIDTH_SCREEN) / MIN_WIDTH_SCREEN)

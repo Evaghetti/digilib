@@ -15,6 +15,7 @@ typedef enum Action {
     EVOLVING,
     WALKING,
     EATING,
+    STRENGTHNING,
     SLEEPING,
     HEALING,
     HAPPY,

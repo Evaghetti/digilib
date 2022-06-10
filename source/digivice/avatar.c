@@ -14,6 +14,9 @@ static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
                                           HEIGHT_BUTTON, WIDTH_SPRITE,
                                           HEIGHT_SPRITE + STEP_SPRITE};
 
+static SDL_Texture* textureAdditional;
+static AnimationController additionalAnimations;
+
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
 
@@ -94,6 +97,28 @@ int initAvatar(Avatar* ret) {
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
                      1.f);
+        addAnimation(&ret->animationController, "eating", 6,
+                     // Entire
+                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     // Bitten 1 time
+                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     // Bitten 2 times
+                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f);
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
             ret->currentAction = HATCHING;
@@ -102,6 +127,46 @@ int initAvatar(Avatar* ret) {
             ret->currentAction = WALKING;
             setCurrentAnimation(&ret->animationController, "walking");
         }
+
+        // Additional stuff for animations etc.
+        textureAdditional = loadTexture("resource/feed.gif");
+        // Work around
+        // TODO: define that the controlelr should not play the first animation.
+        addAnimation(
+            &additionalAnimations, "nothing", 1,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 7, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE));
+
+        addAnimation(
+            &additionalAnimations, "meat", 4,
+            createRect(0, 0, NORMAL_SIZE_SMALL_SPRITE,
+                       NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 1, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 2, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 3, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            1.f);
+
+        addAnimation(
+            &additionalAnimations, "vitamin", 4,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 4, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 5, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 6, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            2.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 7, 0,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            1.f);
+
         ret->initiated = 1;
     }
 
@@ -128,9 +193,9 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         if (avatar->currentAction == WALKING &&
             avatar->infoApi.pstCurrentDigimon->uiStage > DIGI_STAGE_EGG) {
             if (rand() % 100 < 50) {
-                // avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
-                //                           ? SDL_FLIP_NONE
-                //                           : SDL_FLIP_HORIZONTAL;
+                avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+                                          ? SDL_FLIP_NONE
+                                          : SDL_FLIP_HORIZONTAL;
             }
             const int direction =
                 avatar->renderFlags & SDL_FLIP_HORIZONTAL ? -1 : 1;
@@ -149,6 +214,25 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
                 freeTexture(avatar->spriteSheet);
                 avatar->spriteSheet = loadTexture(spriteSheetFile);
+                setCurrentAnimation(&avatar->animationController, "walking");
+                avatar->currentAction = WALKING;
+            }
+        } else if (avatar->currentAction == EATING ||
+                   avatar->currentAction == STRENGTHNING) {
+            avatar->transform = initialTransform;
+            avatar->renderFlags = SDL_FLIP_NONE;
+            setCurrentAnimation(&avatar->animationController, "eating");
+
+            if (avatar->currentAction == EATING) {
+                DIGI_feedDigimon(1);
+                setCurrentAnimation(&additionalAnimations, "meat");
+
+            } else {
+                DIGI_stregthenDigimon(1, 2);
+                setCurrentAnimation(&additionalAnimations, "vitamin");
+            }
+
+            if (finishedCurrentAnimation(&avatar->animationController)) {
                 setCurrentAnimation(&avatar->animationController, "walking");
                 avatar->currentAction = WALKING;
             }
@@ -181,6 +265,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     }
 
     updateAnimation(&avatar->animationController, deltaTime);
+    if (!finishedCurrentAnimation(&additionalAnimations))
+        updateAnimation(&additionalAnimations, deltaTime);
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events) {
@@ -204,6 +290,17 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 
     SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
                      &avatar->transform, 0.f, NULL, avatar->renderFlags);
+
+    if (!finishedCurrentAnimation(&additionalAnimations)) {
+        currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
+        SDL_Rect transform = {.x = avatar->transform.x - WIDTH_SMALL_SPRITE,
+                              .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
+                              .w = WIDTH_SMALL_SPRITE,
+                              .h = HEIGHT_SMALL_SPRITE};
+
+        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
+                       &transform);
+    }
 }
 
 void freeAvatar(Avatar* avatar) {
