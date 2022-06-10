@@ -214,6 +214,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             }
 
             responseOperation = NO_OPERATION;
+            break;
         default:
             responseOperation = NO_OPERATION;
             break;
