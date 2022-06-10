@@ -47,6 +47,8 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar);
 
 void handleEvents(Avatar* avatar, const unsigned char events);
 
+void setCurrentAction(Avatar* avatar, Action newAction);
+
 void freeAvatar(Avatar* avatar);
 
 #endif

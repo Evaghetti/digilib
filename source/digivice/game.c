@@ -198,19 +198,17 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                 char* args[] = {"FEED", "VITAMIN"};
                 currentMenu = initMenuText(2, args);
             } else if (selectedOption >= 0) {
-                digimon.currentAction =
-                    selectedOption == 0 ? EATING : STRENGTHNING;
+                setCurrentAction(&digimon,
+                                 selectedOption == 0 ? EATING : STRENGTHNING);
                 responseOperation = NO_OPERATION;
                 freeMenu(&currentMenu);
             }
             break;
         case HEAL:
-            if ((digimon.infoApi.uiStats & (MASK_SICK | MASK_INJURIED)) != 0) {
-                digimon.currentAction = HEALING;
-            } else {
-                digimon.currentAction = NEGATING;
-            }
-
+            setCurrentAction(&digimon, (digimon.infoApi.uiStats &
+                                        (MASK_SICK | MASK_INJURIED))
+                                           ? HEALING
+                                           : NEGATING);
             responseOperation = NO_OPERATION;
             break;
         default:

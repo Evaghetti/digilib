@@ -303,6 +303,11 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     }
 }
 
+void setCurrentAction(Avatar* avatar, Action newAction) {
+    avatar->currentAction = newAction;
+    avatar->timePassed = 1.f;
+}
+
 void freeAvatar(Avatar* avatar) {
     freeAnimationController(&avatar->animationController);
     if (avatar->spriteSheet)
