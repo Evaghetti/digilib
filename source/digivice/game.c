@@ -179,15 +179,15 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 }
 
 static PossibleOperations handleOperation(PossibleOperations operation,
-                                          int lastAction) {
+                                          int selectedOption) {
     PossibleOperations responseOperation = operation;
 
     switch (operation) {
         case BIRTHING:
             if (currentMenu.countOptions == 0)
                 initiateDigitamaMenu();
-            else if (lastAction >= 0) {
-                DIGI_initDigitama(SAVE_FILE, lastAction);
+            else if (selectedOption >= 0) {
+                DIGI_initDigitama(SAVE_FILE, selectedOption);
                 freeMenu(&currentMenu);
                 initAvatar(&digimon);
                 responseOperation = NO_OPERATION;
@@ -197,10 +197,10 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             if (currentMenu.countOptions == 0) {
                 char* args[] = {"FEED", "VITAMIN"};
                 currentMenu = initMenuText(2, args);
-            } else if (lastAction >= 0) {
-                if (lastAction == 0)
+            } else if (selectedOption >= 0) {
+                if (selectedOption == 0)
                     DIGI_feedDigimon(1);
-                else if (lastAction == 1)
+                else if (selectedOption == 1)
                     DIGI_stregthenDigimon(1, 2);
                 responseOperation = NO_OPERATION;
                 freeMenu(&currentMenu);
@@ -228,7 +228,7 @@ int updateGame() {
     static PossibleOperations currentOperation = NO_OPERATION;
 
     SDL_Event e;
-    int i = -1;
+    int selectedOptionMenu = -1;
 
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -236,7 +236,7 @@ int updateGame() {
                 SDL_Log("Closing game");
                 return 0;
             case SDL_KEYUP:
-                i = handleMenu(e.key.keysym.scancode);
+                selectedOptionMenu = handleMenu(e.key.keysym.scancode);
                 break;
             case SDL_MOUSEMOTION:
                 updateButtonsHovering(e.motion.x, e.motion.y);
@@ -252,7 +252,7 @@ int updateGame() {
     if (!digimon.initiated)
         currentOperation = BIRTHING;
 
-    currentOperation = handleOperation(currentOperation, i);
+    currentOperation = handleOperation(currentOperation, selectedOptionMenu);
 
     int nowTime = SDL_GetPerformanceCounter();
     if (lastTime == -1)
