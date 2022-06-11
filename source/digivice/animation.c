@@ -37,16 +37,20 @@ void addAnimation(AnimationController* animationController,
 
 void setCurrentAnimation(AnimationController* animationController,
                          const char* animationName) {
+    Animation* currentAnimation =
+        &animationController->animations[animationController->currentAnimation];
     int i;
+
+    if (strcmp(currentAnimation->animationName, animationName) == 0) {
+        return;
+    }
+
     for (i = 0; i < animationController->animationCount; i++) {
-        if (strcmp(animationController->animations[i].animationName,
-                   animationName) == 0 &&
-            animationController->currentAnimation != i) {
-            Animation* currentAnimation =
-                &animationController
-                     ->animations[animationController->currentAnimation];
-            currentAnimation->currentFrame = currentAnimation->firstFrame;
-            currentAnimation->finished = 0;
+        Animation* animation = &animationController->animations[i];
+
+        if (strcmp(animation->animationName, animationName) == 0) {
+            animation->currentFrame = animation->firstFrame;
+            animation->finished = 0;
 
             animationController->currentAnimation = i;
             animationController->timeInCurrentFrame = 0.f;

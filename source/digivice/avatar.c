@@ -97,7 +97,7 @@ int initAvatar(Avatar* ret) {
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
                      1.f);
-        addAnimation(&ret->animationController, "eating", 6,
+        addAnimation(&ret->animationController, "eating", 7,
                      // Entire
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
@@ -118,6 +118,9 @@ int initAvatar(Avatar* ret) {
                      1.f,
                      createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f,
+                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
                      1.f);
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
@@ -234,6 +237,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
                 setCurrentAnimation(&avatar->animationController, "walking");
+                setCurrentAnimation(&additionalAnimations, "nothing");
                 avatar->currentAction = WALKING;
             }
         } else if (avatar->currentAction == HEALING) {
