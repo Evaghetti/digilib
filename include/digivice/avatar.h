@@ -1,6 +1,8 @@
 #ifndef AVATAR_H
 #define AVATAR_H
 
+#include "digivice/menu.h"
+
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_rect.h"
 #include "SDL2/SDL_render.h"
@@ -48,6 +50,8 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar);
 void handleEvents(Avatar* avatar, const unsigned char events);
 
 void setCurrentAction(Avatar* avatar, Action newAction);
+
+Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer);
 
 void freeAvatar(Avatar* avatar);
 

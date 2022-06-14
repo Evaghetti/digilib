@@ -26,4 +26,9 @@
 SDL_Renderer* gRenderer;
 TTF_Font* gFonte;
 
+SDL_Surface* createTextSurface(SDL_Color color, const char* fmt, ...);
+SDL_Texture* createTextTexture(SDL_Color color, const char* fmt, ...);
+
+void saveTextureToFile(const char* file_name, SDL_Texture* texture);
+
 #endif

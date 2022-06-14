@@ -131,7 +131,7 @@ static int handleMenu(SDL_Scancode scanCode) {
             break;
         case SDL_SCANCODE_RIGHT:
         case SDL_SCANCODE_DOWN:
-            advanceMenu(&currentMenu, -1);
+            advanceMenu(&currentMenu, 1);
             break;
         case SDL_SCANCODE_RETURN:
             i = currentMenu.currentOption;
@@ -183,6 +183,15 @@ static PossibleOperations handleOperation(PossibleOperations operation,
     PossibleOperations responseOperation = operation;
 
     switch (operation) {
+        case INFORMATION:
+            if (currentMenu.countOptions == 0) {
+                currentMenu = createTexturesInfoMenu(&digimon, gRenderer);
+            }
+            if (selectedOption == -2) {
+                freeMenu(&currentMenu);
+                responseOperation = NO_OPERATION;
+            }
+            break;
         case BIRTHING:
             if (currentMenu.countOptions == 0)
                 initiateDigitamaMenu();
@@ -202,6 +211,9 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                                  selectedOption == 0 ? EATING : STRENGTHNING);
                 responseOperation = NO_OPERATION;
                 freeMenu(&currentMenu);
+            } else if (selectedOption == -2) {
+                freeMenu(&currentMenu);
+                responseOperation = NO_OPERATION;
             }
             break;
         case HEAL:

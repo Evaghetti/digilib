@@ -3,34 +3,12 @@
 #include "digivice/globals.h"
 #include "digivice/texture.h"
 
+#include "SDL2/SDL_image.h"
+
 #include <stdarg.h>
 
 static SDL_Texture* cursorTexture = NULL;
 static const SDL_Rect cursorClip = {.x = 32, .y = 0, .w = 8, .h = 8};
-
-static SDL_Texture* createTextTexture(SDL_Color color, const char* fmt, ...) {
-    char formattedText[50];
-    va_list vl;
-    va_start(vl, fmt);
-    vsnprintf(formattedText, sizeof(formattedText), fmt, vl);
-    va_end(vl);
-
-    SDL_Surface* surface = TTF_RenderText_Solid(gFonte, formattedText, color);
-    if (surface == NULL) {
-        SDL_Log("Error creating surface for message %s", fmt);
-        return NULL;
-    }
-
-    SDL_Texture* result = SDL_CreateTextureFromSurface(gRenderer, surface);
-    if (result == NULL) {
-        SDL_Log("Error creating texture for message %s", fmt);
-        SDL_FreeSurface(surface);
-        return NULL;
-    }
-
-    SDL_FreeSurface(surface);
-    return result;
-}
 
 Menu initMenuText(int count, char* texts[]) {
     Menu ret = {.countOptions = count, .type = TEXT, .currentOption = 0};
@@ -67,6 +45,27 @@ Menu initMenuImage(int count, char* paths[], SDL_Rect spriteRects[]) {
     if (cursorTexture == NULL)
         cursorTexture = loadTexture("resource/hud.png");
 
+    return ret;
+}
+
+Menu initMenuImageRaw(int count, SDL_Texture* textures[]) {
+    Menu ret = {.countOptions = count, .type = IMAGE, .currentOption = 0};
+    int i;
+
+    ret.options = calloc(count, sizeof(Option));
+
+    for (i = 0; i < count; i++) {
+        SDL_Texture* currentTexture = textures[i];
+        int width, height;
+        SDL_QueryTexture(currentTexture, NULL, NULL, &width, &height);
+
+        const SDL_Rect spriteRect = {0, 0, width, height};
+        ret.options[i].texture = currentTexture;
+        ret.options[i].spriteRect = spriteRect;
+    }
+
+    if (cursorTexture == NULL)
+        cursorTexture = loadTexture("resource/hud.png");
     return ret;
 }
 
@@ -114,24 +113,24 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
-    static const SDL_Rect transform = {.x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
+    static const SDL_Rect transform = {.x = 0,
                                        .y = HEIGHT_BUTTON,
-                                       .w = WIDTH_SPRITE,
-                                       .h = HEIGHT_SPRITE + STEP_SPRITE};
+                                       .w = WIDTH_SCREEN,
+                                       .h = HEIGHT_SCREEN - HEIGHT_BUTTON * 2};
     static const SDL_Point centerCursor = {.x = 0, .y = 4};
 
     const Option* currentOption = &menu->options[menu->currentOption];
     SDL_RenderCopy(renderer, currentOption->texture, &currentOption->spriteRect,
                    &transform);
 
-    SDL_Rect transformCursor = transform;
-    transformCursor.x = transform.x + (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
-                                       WIDTH_SMALL_SPRITE / 2);
-    SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &transformCursor);
-    transformCursor.x = transform.x - (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
-                                       WIDTH_SMALL_SPRITE / 2);
-    SDL_RenderCopyEx(renderer, cursorTexture, &cursorClip, &transformCursor,
-                     0.f, NULL, SDL_FLIP_HORIZONTAL);
+    // SDL_Rect transformCursor = transform;
+    // transformCursor.x = transform.x + (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
+    //                                    WIDTH_SMALL_SPRITE / 2);
+    // SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &transformCursor);
+    // transformCursor.x = transform.x - (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
+    //                                    WIDTH_SMALL_SPRITE / 2);
+    // SDL_RenderCopyEx(renderer, cursorTexture, &cursorClip, &transformCursor,
+    //                  0.f, NULL, SDL_FLIP_HORIZONTAL);
 }
 
 void drawMenu(SDL_Renderer* renderer, Menu* menu) {

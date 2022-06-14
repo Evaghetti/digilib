@@ -2,6 +2,9 @@
 
 #include "SDL2/SDL.h"
 
+#include <stdio.h>
+#include <time.h>
+
 typedef struct LoadedTexture {
     struct LoadedTexture* next;
     SDL_Texture* texture;
@@ -88,6 +91,20 @@ SDL_Texture* loadTexture(const char* filePath) {
     if (addedLoadedTexture)
         return addedLoadedTexture->texture;
     return NULL;
+}
+
+void addRawTexture(SDL_Texture* texture) {
+    LoadedTexture* node = headLoadedTexture;
+    if (node == NULL)
+        return;
+
+    while (node->next)
+        node = node->next;
+
+    node->next = calloc(sizeof(LoadedTexture), 1);
+    snprintf(node->next->filePath, sizeof(node->next->filePath),
+             "%ld_generated", time(NULL));
+    node->next->texture = texture;
 }
 
 void freeTexture(SDL_Texture* texture) {

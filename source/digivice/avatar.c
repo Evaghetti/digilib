@@ -6,6 +6,8 @@
 #include "globals.h"
 #include "texture.h"
 
+#include "SDL2/SDL_ttf.h"
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
@@ -310,6 +312,126 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 void setCurrentAction(Avatar* avatar, Action newAction) {
     avatar->currentAction = newAction;
     avatar->timePassed = 1.f;
+}
+
+static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
+    static const SDL_Color transparent = {0, 0, 0, 255};
+    SDL_Texture* result = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
+        WIDTH_SCREEN, HEIGHT_SCREEN - HEIGHT_BUTTON * 2);
+    SDL_Texture* textureHud = loadTexture("resource/hud.png");
+    SDL_Rect transform = {0, 0, WIDTH_SPRITE, HEIGHT_SPRITE};
+
+    SDL_SetRenderTarget(renderer, result);
+    SDL_RenderClear(renderer);
+    SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
+
+    SDL_RenderCopy(
+        renderer, avatar->spriteSheet,
+        &avatar->animationController.animations[0].firstFrame->frameClip,
+        &transform);
+
+    transform.x += WIDTH_SPRITE;
+    transform.w = ((WIDTH_SCREEN - transform.w) / 4) / 2;
+    transform.h -= HEIGHT_SMALL_SPRITE;
+    SDL_Rect currentHud = {0, 0, 8, 8};
+    SDL_RenderCopy(renderer, textureHud, &currentHud, &transform);
+
+    transform.x += transform.w;
+    transform.w *= 4;
+    SDL_Texture* textureNumber =
+        createTextTexture(transparent, "%d yr.", avatar->infoApi.uiAge);
+    SDL_RenderCopy(renderer, textureNumber, NULL, &transform);
+    SDL_DestroyTexture(textureNumber);
+
+    transform.x += transform.w;
+    transform.w /= 4;
+    currentHud.x += 8;
+    SDL_RenderCopy(renderer, textureHud, &currentHud, &transform);
+
+    transform.x += transform.w;
+    transform.w *= 2;
+    textureNumber =
+        createTextTexture(transparent, "%d G", avatar->infoApi.uiWeight);
+    SDL_RenderCopy(renderer, textureNumber, NULL, &transform);
+    SDL_DestroyTexture(textureNumber);
+
+    transform.x = WIDTH_SPRITE;
+    transform.w = WIDTH_SCREEN - WIDTH_SPRITE;
+    transform.y += HEIGHT_SMALL_SPRITE - STEP_SPRITE;
+    SDL_Texture* textureName = createTextTexture(
+        transparent, avatar->infoApi.pstCurrentDigimon->szName);
+    SDL_RenderCopy(renderer, textureName, NULL, &transform);
+    SDL_DestroyTexture(textureName);
+
+    SDL_SetRenderTarget(renderer, NULL);
+
+    addRawTexture(result);
+    return result;
+}
+
+static SDL_Texture* heartInfoSurface(const char* text, const int count,
+                                     SDL_Renderer* renderer) {
+    static const SDL_Color color = {0, 0, 0, 255};
+    SDL_Texture* result = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
+        WIDTH_SCREEN, HEIGHT_SCREEN - HEIGHT_BUTTON * 2);
+
+    SDL_SetRenderTarget(renderer, result);
+    SDL_RenderClear(renderer);
+    SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
+
+    SDL_Texture* textureText = createTextTexture(color, "%s", text);
+    SDL_Rect transform = {0, 0, WIDTH_SCREEN, HEIGHT_SMALL_SPRITE};
+
+    SDL_RenderCopy(renderer, textureText, NULL, &transform);
+    SDL_DestroyTexture(textureText);
+
+    SDL_Texture* textureHud = loadTexture("resource/hud.png");
+    SDL_Rect spriteClip = {8 * 2, 0, 8, 8};
+    transform.x -= STEP_SPRITE;
+    transform.y += HEIGHT_SMALL_SPRITE;
+    transform.w = WIDTH_SCREEN / 4;
+
+    int i;
+    for (i = 0; i < count; i++) {
+        SDL_RenderCopy(renderer, textureHud, &spriteClip, &transform);
+        transform.x += transform.w;
+    }
+
+    spriteClip.x += 8;
+    for (; i < 4; i++) {
+        SDL_RenderCopy(renderer, textureHud, &spriteClip, &transform);
+        transform.x += transform.w;
+    }
+
+    SDL_SetRenderTarget(renderer, NULL);
+
+    addRawTexture(result);
+    return result;
+}
+
+Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer) {
+    static SDL_Color color = {0, 0, 0, 255};
+    const int currentHunger =
+        GET_HUNGER_VALUE(avatar->infoApi.uiHungerStrength);
+    const int currentStrength =
+        GET_STRENGTH_VALUE(avatar->infoApi.uiHungerStrength);
+    const int currentWinPercentage =
+        avatar->infoApi.uiBattleCount
+            ? avatar->infoApi.uiWinCount / avatar->infoApi.uiBattleCount
+            : 0;
+
+    SDL_Texture* textureWins =
+        createTextTexture(color, "WINS %d %%", currentWinPercentage);
+    addRawTexture(textureWins);
+
+    SDL_Texture* pages[] = {
+        createInfoSurface(avatar, renderer),
+        heartInfoSurface("HUNGER", currentHunger, renderer),
+        heartInfoSurface("STRENGTH", currentStrength, renderer), textureWins};
+    Menu retMenu = initMenuImageRaw(4, pages);
+    return retMenu;
 }
 
 void freeAvatar(Avatar* avatar) {
