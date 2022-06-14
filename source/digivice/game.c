@@ -60,7 +60,7 @@ int initGame() {
         return 0;
     }
 
-    gFonte = TTF_OpenFont("resource/font.ttf", 12);
+    gFonte = TTF_OpenFont("resource/font.ttf", 24);
     if (gFonte == NULL) {
         SDL_Log("Failed loading font");
         cleanUpGame();
