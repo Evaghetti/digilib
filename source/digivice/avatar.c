@@ -125,14 +125,6 @@ int initAvatar(Avatar* ret) {
                                 NORMAL_SIZE_SPRITE),
                      1.f);
 
-        if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
-            ret->currentAction = HATCHING;
-            setCurrentAnimation(&ret->animationController, "hatching");
-        } else {
-            ret->currentAction = WALKING;
-            setCurrentAnimation(&ret->animationController, "walking");
-        }
-
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
         // Work around
@@ -171,6 +163,25 @@ int initAvatar(Avatar* ret) {
             createRect(NORMAL_SIZE_SMALL_SPRITE * 7, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
             1.f);
+        addAnimation(
+            &additionalAnimations, "snore", 2,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 2, NORMAL_SIZE_SMALL_SPRITE,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            1.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE * 3, NORMAL_SIZE_SMALL_SPRITE,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            1.f);
+
+        if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
+            ret->currentAction = HATCHING;
+            setCurrentAnimation(&ret->animationController, "hatching");
+        } else if (ret->infoApi.uiStats & MASK_SLEEPING) {
+            ret->currentAction = SLEEPING;
+            setCurrentAction(ret, SLEEPING);
+        } else {
+            ret->currentAction = WALKING;
+            setCurrentAnimation(&ret->animationController, "walking");
+        }
 
         ret->initiated = 1;
     }
@@ -267,12 +278,15 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             }
         }
 
+        if (avatar->currentAction == SLEEPING) {
+            setCurrentAnimation(&additionalAnimations, "snore");
+        }
+
         avatar->timePassed = 0.f;
     }
 
     updateAnimation(&avatar->animationController, deltaTime);
-    if (!finishedCurrentAnimation(&additionalAnimations))
-        updateAnimation(&additionalAnimations, deltaTime);
+    updateAnimation(&additionalAnimations, deltaTime);
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events) {
@@ -285,33 +299,58 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
             SDL_Log("It's a birth");
         }
     }
+
+    if (events & DIGI_EVENT_MASK_WOKE_UP) {
+        SDL_Log("Wake up time has arrived");
+        setCurrentAction(avatar, WALKING);
+    }
 }
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     if (!avatar->initiated)
         return;
 
-    const SDL_Rect* currentSpriteRect =
-        getAnimationFrameClip(&avatar->animationController);
+    if (avatar->currentAction == SLEEPING) {
+        const SDL_Rect* currentSpriteRect =
+            getAnimationFrameClip(&additionalAnimations);
 
-    SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
-                     &avatar->transform, 0.f, NULL, avatar->renderFlags);
-
-    if (!finishedCurrentAnimation(&additionalAnimations)) {
-        currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
-        SDL_Rect transform = {.x = avatar->transform.x - WIDTH_SMALL_SPRITE,
-                              .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
+        SDL_Rect transform = {.x = avatar->transform.x + WIDTH_SPRITE,
+                              .y = HEIGHT_SMALL_SPRITE,
                               .w = WIDTH_SMALL_SPRITE,
                               .h = HEIGHT_SMALL_SPRITE};
-
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transform);
+    } else {
+        const SDL_Rect* currentSpriteRect =
+            getAnimationFrameClip(&avatar->animationController);
+
+        SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
+                         &avatar->transform, 0.f, NULL, avatar->renderFlags);
+
+        if (!finishedCurrentAnimation(&additionalAnimations)) {
+            currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
+            SDL_Rect transform = {
+                .x = avatar->transform.x - WIDTH_SMALL_SPRITE,
+                .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
+                .w = WIDTH_SMALL_SPRITE,
+                .h = HEIGHT_SMALL_SPRITE};
+
+            SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
+                           &transform);
+        }
     }
 }
 
 void setCurrentAction(Avatar* avatar, Action newAction) {
     avatar->currentAction = newAction;
     avatar->timePassed = 1.f;
+    setCurrentAnimation(&additionalAnimations, "nothing");
+
+    DIGI_putSleep(newAction == SLEEPING);
+
+    unsigned char uiEvents;
+    DIGI_updateEventsDeltaTime(0, &uiEvents);
+    handleEvents(avatar, uiEvents);
 }
 
 static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {

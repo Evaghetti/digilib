@@ -152,9 +152,6 @@ static void updateButtonsHovering(int x, int y) {
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
         setButtonHovering(&buttonsOperations[i], point);
-
-        if (buttonsOperations[i].hovering)
-            SDL_Log("Hovering over button %d", i);
     }
 }
 
@@ -169,8 +166,6 @@ static PossibleOperations updateButtonsClick(int x, int y) {
         setButtonClicked(&buttonsOperations[i], point);
 
         if (buttonsOperations[i].clicked) {
-            SDL_Log("Clicked on button %d", i);
-
             indexClickedButton = (PossibleOperations)i;
         }
     }
@@ -214,6 +209,22 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             } else if (selectedOption == -2) {
                 freeMenu(&currentMenu);
                 responseOperation = NO_OPERATION;
+            }
+            break;
+        case LIGHTS:
+            if (currentMenu.countOptions == 0) {
+                char* args[] = {"ON", "OFF"};
+                currentMenu = initMenuText(2, args);
+            } else if (selectedOption != -1) {
+                if (selectedOption >= 0) {
+                    setCurrentAction(&digimon,
+                                     selectedOption == 0 ? WALKING : SLEEPING);
+                }
+
+                if (selectedOption != -3) {
+                    freeMenu(&currentMenu);
+                    responseOperation = NO_OPERATION;
+                }
             }
             break;
         case HEAL:
