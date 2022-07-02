@@ -22,7 +22,7 @@ static const SDL_Rect flushClip = {7 * 8, 0, NORMAL_SIZE_SMALL_SPRITE,
 
 static SDL_Texture* textureAdditional;
 static AnimationController additionalAnimations;
-static AnimationController animationPoop;
+static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;  // Used for the cleaning animation
 
 int initAvatar(Avatar* ret) {
@@ -179,14 +179,14 @@ int initAvatar(Avatar* ret) {
             1.f);
 
         addAnimation(
-            &animationPoop, "poop", 2,
+            &animationsForPoop, "poop", 2,
             createRect(0, NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE),
             1.f,
             createRect(NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
             1.f);
-        setCurrentAnimation(&animationPoop, "poop");
+        setCurrentAnimation(&animationsForPoop, "poop");
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
             ret->currentAction = HATCHING;
@@ -318,7 +318,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     updateAnimation(&avatar->animationController, deltaTime);
     updateAnimation(&additionalAnimations, deltaTime);
     if (avatar->infoApi.uiPoopCount)
-        updateAnimation(&animationPoop, deltaTime);
+        updateAnimation(&animationsForPoop, deltaTime);
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events) {
@@ -388,7 +388,7 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
             .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
             .w = WIDTH_SMALL_SPRITE,
             .h = HEIGHT_SMALL_SPRITE};
-        currentSpriteRect = getAnimationFrameClip(&animationPoop);
+        currentSpriteRect = getAnimationFrameClip(&animationsForPoop);
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transformPoop);
     }
@@ -533,7 +533,10 @@ Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer) {
 }
 
 void freeAvatar(Avatar* avatar) {
+    freeAnimationController(&additionalAnimations);
+    freeAnimationController(&animationsForPoop);
     freeAnimationController(&avatar->animationController);
     if (avatar->spriteSheet)
         freeTexture(avatar->spriteSheet);
+    freeTexture(textureAdditional);
 }
