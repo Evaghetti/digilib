@@ -21,7 +21,8 @@ typedef enum Action {
     SLEEPING,
     HEALING,
     HAPPY,
-    NEGATING
+    NEGATING,
+    CLEANING
 } Action;
 
 typedef struct {

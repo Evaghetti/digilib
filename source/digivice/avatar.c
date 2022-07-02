@@ -12,13 +12,18 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define SPEED_FLUSH (-STEP_SPRITE * 50)
+
 static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
                                           HEIGHT_BUTTON, WIDTH_SPRITE,
                                           HEIGHT_SPRITE + STEP_SPRITE};
+static const SDL_Rect flushClip = {7 * 8, 0, NORMAL_SIZE_SMALL_SPRITE,
+                                   NORMAL_SIZE_SPRITE};
 
 static SDL_Texture* textureAdditional;
 static AnimationController additionalAnimations;
 static AnimationController animationPoop;
+static float xOffsetSprites = 0;  // Used for the cleaning animation
 
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
@@ -296,6 +301,20 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         avatar->timePassed = 0.f;
     }
 
+    if (avatar->currentAction == CLEANING) {
+        if (xOffsetSprites >= WIDTH_SCREEN + WIDTH_SMALL_SPRITE ||
+            avatar->infoApi.uiPoopCount == 0) {
+            DIGI_cleanPoop();
+
+            xOffsetSprites = 0;
+
+            setCurrentAction(avatar, WALKING);
+            avatar->infoApi = DIGI_playingDigimon();
+            avatar->transform = initialTransform;
+        } else
+            xOffsetSprites += SPEED_FLUSH * deltaTime;
+    }
+
     updateAnimation(&avatar->animationController, deltaTime);
     updateAnimation(&additionalAnimations, deltaTime);
     if (avatar->infoApi.uiPoopCount)
@@ -344,8 +363,11 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     const SDL_Rect* currentSpriteRect =
         getAnimationFrameClip(&avatar->animationController);
 
+    SDL_Rect alteredAvatarTransform = avatar->transform;
+    alteredAvatarTransform.x -= (int)xOffsetSprites;
+
     SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
-                     &avatar->transform, 0.f, NULL, avatar->renderFlags);
+                     &alteredAvatarTransform, 0.f, NULL, avatar->renderFlags);
 
     if (!finishedCurrentAnimation(&additionalAnimations)) {
         currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
@@ -362,13 +384,19 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
         SDL_Rect transformPoop = {
             .x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE -
-                 WIDTH_SMALL_SPRITE * (i % 2),
+                 WIDTH_SMALL_SPRITE * (i % 2) - (int)xOffsetSprites,
             .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
             .w = WIDTH_SMALL_SPRITE,
             .h = HEIGHT_SMALL_SPRITE};
         currentSpriteRect = getAnimationFrameClip(&animationPoop);
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transformPoop);
+    }
+
+    if (avatar->currentAction == CLEANING) {
+        SDL_Rect transform = {WIDTH_SCREEN - xOffsetSprites, HEIGHT_BUTTON,
+                              WIDTH_SMALL_SPRITE, HEIGHT_SPRITE};
+        SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
     }
 }
 

@@ -159,7 +159,8 @@ static PossibleOperations updateButtonsClick(int x, int y) {
     SDL_Point point = {x, y};
     int i, indexClickedButton = NO_OPERATION;
 
-    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0)
+    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
+        digimon.currentAction != WALKING)
         return indexClickedButton;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
@@ -232,6 +233,10 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                                         (MASK_SICK | MASK_INJURIED))
                                            ? HEALING
                                            : NEGATING);
+            responseOperation = NO_OPERATION;
+            break;
+        case CLEAN_POOP:
+            setCurrentAction(&digimon, CLEANING);
             responseOperation = NO_OPERATION;
             break;
         default:
