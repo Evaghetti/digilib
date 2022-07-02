@@ -18,6 +18,7 @@ static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
 
 static SDL_Texture* textureAdditional;
 static AnimationController additionalAnimations;
+static AnimationController animationPoop;
 
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
@@ -172,6 +173,16 @@ int initAvatar(Avatar* ret) {
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
             1.f);
 
+        addAnimation(
+            &animationPoop, "poop", 2,
+            createRect(0, NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
+                       NORMAL_SIZE_SMALL_SPRITE),
+            1.f,
+            createRect(NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
+                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
+            1.f);
+        setCurrentAnimation(&animationPoop, "poop");
+
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
             ret->currentAction = HATCHING;
             setCurrentAnimation(&ret->animationController, "hatching");
@@ -287,6 +298,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
     updateAnimation(&avatar->animationController, deltaTime);
     updateAnimation(&additionalAnimations, deltaTime);
+    if (avatar->infoApi.uiPoopCount)
+        updateAnimation(&animationPoop, deltaTime);
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events) {
@@ -304,6 +317,11 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
         SDL_Log("Wake up time has arrived");
         setCurrentAction(avatar, WALKING);
     }
+
+    if (events & DIGI_EVENT_MASK_POOP) {
+        SDL_Log("Digimon has pooped! Current amount %d",
+                avatar->infoApi.uiPoopCount);
+    }
 }
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
@@ -320,24 +338,37 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
                               .h = HEIGHT_SMALL_SPRITE};
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transform);
-    } else {
-        const SDL_Rect* currentSpriteRect =
-            getAnimationFrameClip(&avatar->animationController);
+        return;
+    }
 
-        SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
-                         &avatar->transform, 0.f, NULL, avatar->renderFlags);
+    const SDL_Rect* currentSpriteRect =
+        getAnimationFrameClip(&avatar->animationController);
 
-        if (!finishedCurrentAnimation(&additionalAnimations)) {
-            currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
-            SDL_Rect transform = {
-                .x = avatar->transform.x - WIDTH_SMALL_SPRITE,
-                .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
-                .w = WIDTH_SMALL_SPRITE,
-                .h = HEIGHT_SMALL_SPRITE};
+    SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
+                     &avatar->transform, 0.f, NULL, avatar->renderFlags);
 
-            SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
-                           &transform);
-        }
+    if (!finishedCurrentAnimation(&additionalAnimations)) {
+        currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
+        SDL_Rect transform = {.x = avatar->transform.x - WIDTH_SMALL_SPRITE,
+                              .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
+                              .w = WIDTH_SMALL_SPRITE,
+                              .h = HEIGHT_SMALL_SPRITE};
+
+        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
+                       &transform);
+    }
+
+    int i;
+    for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
+        SDL_Rect transformPoop = {
+            .x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE -
+                 WIDTH_SMALL_SPRITE * (i % 2),
+            .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
+            .w = WIDTH_SMALL_SPRITE,
+            .h = HEIGHT_SMALL_SPRITE};
+        currentSpriteRect = getAnimationFrameClip(&animationPoop);
+        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
+                       &transformPoop);
     }
 }
 
