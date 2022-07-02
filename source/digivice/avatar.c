@@ -410,6 +410,7 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
     unsigned char uiEvents;
     DIGI_updateEventsDeltaTime(0, &uiEvents);
     handleEvents(avatar, uiEvents);
+    avatar->infoApi = DIGI_playingDigimon();
 }
 
 static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {

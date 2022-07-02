@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "digiapi.h"
+#include "digihardware.h"
 
 #include "digivice/avatar.h"
 #include "digivice/button.h"
@@ -160,7 +161,7 @@ static PossibleOperations updateButtonsClick(int x, int y) {
     int i, indexClickedButton = NO_OPERATION;
 
     if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
-        digimon.currentAction != WALKING)
+        (digimon.currentAction != WALKING && digimon.currentAction != SLEEPING))
         return indexClickedButton;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
@@ -317,6 +318,8 @@ void drawGame() {
 }
 
 void cleanUpGame() {
+    DIGIHW_saveDigimon(SAVE_FILE, &digimon.infoApi);
+
     freeAvatar(&digimon);
     freeTexture(background);
 
