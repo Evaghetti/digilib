@@ -17,8 +17,8 @@
 static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
                                           HEIGHT_BUTTON, WIDTH_SPRITE,
                                           HEIGHT_SPRITE + STEP_SPRITE};
-static const SDL_Rect flushClip = {7 * 8, 0, NORMAL_SIZE_SMALL_SPRITE,
-                                   NORMAL_SIZE_SPRITE};
+static const SDL_Rect flushClip = {7 * 8, 8, NORMAL_SIZE_SMALL_SPRITE,
+                                   NORMAL_SIZE_SMALL_SPRITE};
 
 static SDL_Texture* textureAdditional;
 static AnimationController additionalAnimations;
@@ -397,7 +397,10 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 
     if (avatar->currentAction == CLEANING) {
         SDL_Rect transform = {WIDTH_SCREEN - xOffsetSprites, HEIGHT_BUTTON,
-                              WIDTH_SMALL_SPRITE, HEIGHT_SPRITE};
+                              WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
+        SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
+
+        transform.y += HEIGHT_SMALL_SPRITE;
         SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
     }
 }
