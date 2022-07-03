@@ -25,6 +25,14 @@ static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;  // Used for the cleaning animation
 
+static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
+    unsigned char events;
+
+    DIGI_updateEventsDeltaTime(deltaTime, &events);
+    handleEvents(avatar, events);
+    avatar->infoApi = DIGI_playingDigimon();
+}
+
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
 
@@ -199,10 +207,7 @@ int initAvatar(Avatar* ret) {
             setCurrentAnimation(&ret->animationController, "walking");
         }
 
-        unsigned char events;
-        DIGI_updateEventsDeltaTime(0, &events);
-        handleEvents(ret, events);
-
+        updateInfoAvatar(ret, 0);
         ret->initiated = 1;
     }
 
@@ -218,11 +223,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     if (avatar->timePassed >= 1.f) {
         avatar->secondsPassed++;
         if (avatar->secondsPassed >= 60) {
-            unsigned char events;
-            DIGI_updateEventsDeltaTime(1, &events);
-            avatar->infoApi = DIGI_playingDigimon();
+            updateInfoAvatar(avatar, 1);
 
-            handleEvents(avatar, events);
             avatar->secondsPassed = 0;
         }
 
@@ -260,11 +262,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             setCurrentAnimation(&avatar->animationController, "eating");
 
             if (avatar->currentAction == EATING) {
-                DIGI_feedDigimon(1);
                 setCurrentAnimation(&additionalAnimations, "meat");
-
             } else {
-                DIGI_stregthenDigimon(1, 2);
                 setCurrentAnimation(&additionalAnimations, "vitamin");
             }
 
@@ -302,6 +301,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             setCurrentAnimation(&additionalAnimations, "snore");
         }
 
+        updateInfoAvatar(avatar, 0);
         avatar->timePassed = 0.f;
     }
 
@@ -313,7 +313,6 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             xOffsetSprites = 0;
 
             setCurrentAction(avatar, WALKING);
-            avatar->infoApi = DIGI_playingDigimon();
             avatar->transform = initialTransform;
         } else
             xOffsetSprites += SPEED_FLUSH * deltaTime;
@@ -413,10 +412,18 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
 
     DIGI_putSleep(newAction == SLEEPING);
 
-    unsigned char uiEvents;
-    DIGI_updateEventsDeltaTime(0, &uiEvents);
-    handleEvents(avatar, uiEvents);
-    avatar->infoApi = DIGI_playingDigimon();
+    switch (newAction) {
+        case EATING:
+            DIGI_feedDigimon(1);
+            break;
+        case STRENGTHNING:
+            DIGI_stregthenDigimon(1, 2);
+            break;
+        default:
+            break;
+    }
+
+    updateInfoAvatar(avatar, 0);
 }
 
 static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
