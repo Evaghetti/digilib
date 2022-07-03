@@ -199,6 +199,10 @@ int initAvatar(Avatar* ret) {
             setCurrentAnimation(&ret->animationController, "walking");
         }
 
+        unsigned char events;
+        DIGI_updateEventsDeltaTime(0, &events);
+        handleEvents(ret, events);
+
         ret->initiated = 1;
     }
 
@@ -341,6 +345,8 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
         SDL_Log("Digimon has pooped! Current amount %d",
                 avatar->infoApi.uiPoopCount);
     }
+
+    avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
 }
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {

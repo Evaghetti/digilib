@@ -38,6 +38,7 @@ typedef struct {
     float timePassed;
     int secondsPassed;
     int initiated;
+    int calling;
 
     playing_digimon_t infoApi;
 } Avatar;

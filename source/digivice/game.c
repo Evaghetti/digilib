@@ -17,6 +17,7 @@
 static const SDL_Rect spritesButtons[] = {
     {0, 8, 16, 16},  {16, 8, 16, 16}, {32, 8, 16, 16}, {48, 8, 16, 16},
     {64, 8, 16, 16}, {80, 8, 16, 16}, {96, 8, 16, 16}};
+static const SDL_Rect clipCallStatus = {112, 8, 16, 16};
 
 typedef enum {
     BIRTHING = -2,
@@ -36,6 +37,7 @@ SDL_Texture* background;
 
 Menu currentMenu;
 Button buttonsOperations[COUNT_OPERATIONS];
+Button buttonCallStatus;
 Avatar digimon;
 
 int initGame() {
@@ -89,6 +91,10 @@ int initGame() {
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
+    SDL_Rect transformCall = buttonsOperations[COUNT_OPERATIONS - 1].transform;
+    transformCall.x += transformCall.w;
+    buttonCallStatus =
+        initButton("resource/hud.png", transformCall, clipCallStatus);
     return 1;
 }
 
@@ -260,6 +266,7 @@ int updateGame() {
 
     if (currentOperation > NO_OPERATION)
         buttonsOperations[currentOperation].clicked = 1;
+    buttonCallStatus.clicked = digimon.calling != 0;
 
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -311,6 +318,7 @@ void drawGame() {
     int i;
     for (i = 0; i < COUNT_OPERATIONS; i++)
         drawButton(gRenderer, &buttonsOperations[i]);
+    drawButton(gRenderer, &buttonCallStatus);
 
     SDL_RenderPresent(gRenderer);
 
