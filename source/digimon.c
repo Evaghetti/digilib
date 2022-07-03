@@ -279,6 +279,11 @@ uint8_t DIGI_shouldWakeUp() {
 uint8_t DIGI_setCalled() {
     stPlayingDigimon.uiStats &= ~MASK_CALLED;
 
+    if (stPlayingDigimon.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
+        LOG("Impossible for egg to need for care");
+        return DIGI_RET_ERROR;
+    }
+
     if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) == 0) {
         stPlayingDigimon.uiStats |= MASK_CALLED;
         LOG("Will be calling because of hunger");
