@@ -173,10 +173,7 @@ int initAvatar(Avatar* ret) {
             2.f,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 6, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 7, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            1.f);
+            2.f, createRect(0, 0, 0, 0), 1.f);
         addAnimation(
             &additionalAnimations, "snore", 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 2, NORMAL_SIZE_SMALL_SPRITE,
