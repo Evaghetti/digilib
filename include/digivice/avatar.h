@@ -22,7 +22,10 @@ typedef enum Action {
     HEALING,
     HAPPY,
     NEGATING,
-    CLEANING
+    CLEANING,
+    TRAINING = 16,
+    TRAINING_DOWN,
+    TRAINING_UP,
 } Action;
 
 typedef struct {
@@ -39,6 +42,7 @@ typedef struct {
     int secondsPassed;
     int initiated;
     int calling;
+    int currentTraining;
 
     playing_digimon_t infoApi;
 } Avatar;

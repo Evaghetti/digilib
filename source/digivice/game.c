@@ -246,6 +246,22 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             setCurrentAction(&digimon, CLEANING);
             responseOperation = NO_OPERATION;
             break;
+        case TRAIN:
+            if ((digimon.currentAction & TRAINING) == 0)
+                setCurrentAction(&digimon, TRAINING);
+            else {
+                if (selectedOption == SDL_SCANCODE_ESCAPE) {
+                    setCurrentAction(&digimon, WALKING);
+                    responseOperation = NO_OPERATION;
+                    break;
+                }
+
+                if (selectedOption == SDL_SCANCODE_UP)
+                    setCurrentAction(&digimon, TRAINING_UP);
+                else if (selectedOption == SDL_SCANCODE_DOWN)
+                    setCurrentAction(&digimon, TRAINING_DOWN);
+            }
+            break;
         default:
             responseOperation = NO_OPERATION;
             break;
@@ -274,7 +290,10 @@ int updateGame() {
                 SDL_Log("Closing game");
                 return 0;
             case SDL_KEYUP:
-                selectedOptionMenu = handleMenu(e.key.keysym.scancode);
+                if ((digimon.currentAction & TRAINING) == 0)
+                    selectedOptionMenu = handleMenu(e.key.keysym.scancode);
+                else
+                    selectedOptionMenu = e.key.keysym.scancode;
                 break;
             case SDL_MOUSEMOTION:
                 updateButtonsHovering(e.motion.x, e.motion.y);

@@ -14,6 +14,17 @@
 
 #define SPEED_FLUSH (-STEP_SPRITE * 50)
 
+typedef enum { DOWN, UP } GuessShadowBox;
+
+// DM20 patterns (https://humulos.com/digimon/dm20/manual/)
+static GuessShadowBox patternsShadowBox[][5] = {
+    {UP, DOWN, UP, DOWN, UP},   {UP, DOWN, UP, DOWN, DOWN},
+    {DOWN, DOWN, UP, UP, DOWN}, {DOWN, UP, UP, DOWN, DOWN},
+    {UP, DOWN, DOWN, UP, UP},   {DOWN, UP, DOWN, UP, DOWN}};
+
+static const int COUNT_PATTERNS_SHADOWBOX =
+    sizeof(patternsShadowBox) / sizeof(patternsShadowBox[0]);
+
 static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
                                           HEIGHT_BUTTON, WIDTH_SPRITE,
                                           HEIGHT_SPRITE + STEP_SPRITE};
@@ -23,7 +34,10 @@ static const SDL_Rect flushClip = {7 * 8, 8, NORMAL_SIZE_SMALL_SPRITE,
 static SDL_Texture* textureAdditional;
 static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
-static float xOffsetSprites = 0;  // Used for the cleaning animation
+static float xOffsetSprites = 0;     // Used for the cleaning animation
+static float xProjectileOffset = 0;  // Used for position of projectile
+static int offsetTraining = 0, correctTrainingGuess = 0;
+static int skipFirstFrameScroll = 0;
 
 static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
@@ -31,6 +45,29 @@ static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     DIGI_updateEventsDeltaTime(deltaTime, &events);
     handleEvents(avatar, events);
     avatar->infoApi = DIGI_playingDigimon();
+}
+
+static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
+    avatar->currentAction = TRAINING;
+    avatar->timePassed = 1.f;
+    setCurrentAnimation(&avatar->animationController, "preparing");
+
+    if (hasBeenSuccessful)
+        correctTrainingGuess++;
+
+    offsetTraining++;
+    if (offsetTraining >= 5) {
+        avatar->currentTraining =
+            (avatar->currentTraining + 1) % COUNT_PATTERNS_SHADOWBOX;
+        offsetTraining = 0;
+
+        SDL_Log("Amount of successess %d", correctTrainingGuess);
+        if (correctTrainingGuess >= 3) {
+            SDL_Log("Enough successes to strengthen!");
+            DIGI_trainDigimon(1);
+        }
+        correctTrainingGuess = 0;
+    }
 }
 
 int initAvatar(Avatar* ret) {
@@ -137,6 +174,14 @@ int initAvatar(Avatar* ret) {
                      1.f,
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
+                     1.f);
+        addAnimation(&ret->animationController, "preparing", 1,
+                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 3,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     1.f);
+        addAnimation(&ret->animationController, "shooting", 1,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 3,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
                      1.f);
 
         // Additional stuff for animations etc.
@@ -298,6 +343,32 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             setCurrentAnimation(&additionalAnimations, "snore");
         }
 
+        if (avatar->currentAction & TRAINING) {
+            if (avatar->currentAction == TRAINING_UP ||
+                avatar->currentAction == TRAINING_DOWN) {
+                setCurrentAnimation(&avatar->animationController, "shooting");
+
+                const GuessShadowBox currentAnswer =
+                    patternsShadowBox[avatar->currentTraining][offsetTraining];
+
+                if ((avatar->currentAction - TRAINING_DOWN) == currentAnswer) {
+                    if (!skipFirstFrameScroll)
+                        xProjectileOffset -= WIDTH_SMALL_SPRITE;
+                    skipFirstFrameScroll = 0;
+
+                    if (xProjectileOffset <=
+                        -WIDTH_SPRITE / 2 + WIDTH_SPRITE * 1.5f) {
+                        advanceTraining(avatar, 1);
+                    }
+                } else if (finishedCurrentAnimation(
+                               &avatar->animationController)) {
+                    advanceTraining(avatar, 0);
+                }
+            } else {
+                setCurrentAnimation(&avatar->animationController, "preparing");
+            }
+        }
+
         updateInfoAvatar(avatar, 0);
         avatar->timePassed = 0.f;
     }
@@ -345,10 +416,7 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
     avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
 }
 
-void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
-    if (!avatar->initiated)
-        return;
-
+void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     if (avatar->currentAction == SLEEPING) {
         const SDL_Rect* currentSpriteRect =
             getAnimationFrameClip(&additionalAnimations);
@@ -405,10 +473,68 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     }
 }
 
+void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
+    SDL_Rect transformAvatar = {.x = WIDTH_SCREEN - WIDTH_SPRITE,
+                                .y = HEIGHT_BUTTON,
+                                .w = WIDTH_SPRITE,
+                                .h = HEIGHT_SPRITE};
+    SDL_Rect transformShadowAvatar = transformAvatar;
+    transformShadowAvatar.x = 0;
+
+    const SDL_Rect* spriteClip =
+        getAnimationFrameClip(&avatar->animationController);
+    const SDL_Rect shieldClip = {.x = 7 * NORMAL_SIZE_SMALL_SPRITE,
+                                 .y = 0,
+                                 .w = NORMAL_SIZE_SMALL_SPRITE,
+                                 .h = NORMAL_SIZE_SMALL_SPRITE};
+    const SDL_Rect projectileClip = {.x = NORMAL_SIZE_SPRITE,
+                                     .y = NORMAL_SIZE_SPRITE * 5,
+                                     .w = NORMAL_SIZE_SMALL_SPRITE,
+                                     .h = NORMAL_SIZE_SMALL_SPRITE};
+
+    SDL_RenderCopy(render, avatar->spriteSheet, spriteClip, &transformAvatar);
+    SDL_RenderCopyEx(render, avatar->spriteSheet, spriteClip,
+                     &transformShadowAvatar, 0.f, NULL, SDL_FLIP_HORIZONTAL);
+
+    if (avatar->currentAction == TRAINING_UP ||
+        avatar->currentAction == TRAINING_DOWN) {
+        transformShadowAvatar.x += transformShadowAvatar.w;
+        transformShadowAvatar.w = WIDTH_SMALL_SPRITE;
+        transformShadowAvatar.h = HEIGHT_SMALL_SPRITE;
+        transformAvatar = transformShadowAvatar;
+
+        if (patternsShadowBox[avatar->currentTraining][offsetTraining] != DOWN)
+            transformShadowAvatar.y += transformShadowAvatar.h;
+
+        transformAvatar.x = xProjectileOffset;
+        if (avatar->currentAction == TRAINING_DOWN)
+            transformAvatar.y += transformAvatar.h;
+
+        SDL_RenderCopy(render, avatar->spriteSheet, &projectileClip,
+                       &transformAvatar);
+        SDL_RenderCopy(render, textureAdditional, &shieldClip,
+                       &transformShadowAvatar);
+    }
+}
+
+void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
+    if (!avatar->initiated)
+        return;
+
+    if (avatar->currentAction & TRAINING)
+        drawAvatarTraining(render, avatar);
+    else
+        drawAvatarNormal(render, avatar);
+}
+
 void setCurrentAction(Avatar* avatar, Action newAction) {
     avatar->currentAction = newAction;
     avatar->timePassed = 1.f;
     setCurrentAnimation(&additionalAnimations, "nothing");
+    if (newAction == WALKING) {
+        setCurrentAnimation(&avatar->animationController, "walking");
+        avatar->transform = initialTransform;
+    }
 
     DIGI_putSleep(newAction == SLEEPING);
 
@@ -418,6 +544,16 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
             break;
         case STRENGTHNING:
             DIGI_stregthenDigimon(1, 2);
+            break;
+        case TRAINING:
+            offsetTraining = 0;
+            correctTrainingGuess = 0;
+            break;
+        case TRAINING_UP:
+        case TRAINING_DOWN:
+            skipFirstFrameScroll = 1;
+            xProjectileOffset =
+                WIDTH_SCREEN - (WIDTH_SPRITE + WIDTH_SMALL_SPRITE);
             break;
         default:
             break;
