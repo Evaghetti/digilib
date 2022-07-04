@@ -13,6 +13,7 @@
 #include <time.h>
 
 #define SPEED_FLUSH (-STEP_SPRITE * 50)
+#define GAME_TICK   .5f
 
 typedef enum { DOWN, UP } GuessShadowBox;
 
@@ -49,7 +50,7 @@ static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
 
 static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
     avatar->currentAction = TRAINING;
-    avatar->timePassed = 1.f;
+    avatar->timePassed = GAME_TICK;
     setCurrentAnimation(&avatar->animationController, "preparing");
 
     if (hasBeenSuccessful)
@@ -93,96 +94,99 @@ int initAvatar(Avatar* ret) {
         ret->transform = initialTransform;
 
         addAnimation(&ret->animationController, "hatching", 2,
-                     createRect(0, 0, 16, 16), 1.f,
+                     createRect(0, 0, 16, 16), GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(&ret->animationController, "beingBorn", 3,
                      createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(
             &ret->animationController, "walking", 9, createRect(0, 0, 16, 16),
-            1.f,
+            GAME_TICK,
             createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
-            1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
+            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            GAME_TICK,
             createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
-            1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
+            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            GAME_TICK,
             createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
-            1.f, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE), 1.f,
+            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            GAME_TICK,
             createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
-            1.f,
+            GAME_TICK,
             createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
                        NORMAL_SIZE_SPRITE),
-            1.f);
+            GAME_TICK);
         addAnimation(&ret->animationController, "happy", 4,
                      createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(&ret->animationController, "negating", 4,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(&ret->animationController, "eating", 7,
                      // Entire
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      // Bitten 1 time
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      // Bitten 2 times
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f,
+                     GAME_TICK,
                      createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(&ret->animationController, "preparing", 1,
                      createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 3,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
         addAnimation(&ret->animationController, "shooting", 1,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 3,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     1.f);
+                     GAME_TICK);
 
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
@@ -197,45 +201,45 @@ int initAvatar(Avatar* ret) {
             &additionalAnimations, "meat", 4,
             createRect(0, 0, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
+            GAME_TICK * 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 1, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
+            GAME_TICK * 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 2, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
+            GAME_TICK * 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 3, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            1.f);
+            GAME_TICK);
 
         addAnimation(
             &additionalAnimations, "vitamin", 4,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 4, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
+            GAME_TICK * 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 5, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f,
+            GAME_TICK * 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 6, 0,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            2.f, createRect(0, 0, 0, 0), 1.f);
+            GAME_TICK * 2, createRect(0, 0, 0, 0), GAME_TICK);
         addAnimation(
             &additionalAnimations, "snore", 2,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 2, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            1.f,
+            GAME_TICK,
             createRect(NORMAL_SIZE_SMALL_SPRITE * 3, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            1.f);
+            GAME_TICK);
 
         addAnimation(
             &animationsForPoop, "poop", 2,
             createRect(0, NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE),
-            1.f,
+            GAME_TICK,
             createRect(NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            1.f);
+            GAME_TICK);
         setCurrentAnimation(&animationsForPoop, "poop");
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
@@ -262,7 +266,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         return;
 
     avatar->timePassed += deltaTime;
-    if (avatar->timePassed >= 1.f) {
+    if (avatar->timePassed >= GAME_TICK) {
         avatar->secondsPassed++;
         if (avatar->secondsPassed >= 60) {
             updateInfoAvatar(avatar, 1);
@@ -529,7 +533,7 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 
 void setCurrentAction(Avatar* avatar, Action newAction) {
     avatar->currentAction = newAction;
-    avatar->timePassed = 1.f;
+    avatar->timePassed = GAME_TICK;
     setCurrentAnimation(&additionalAnimations, "nothing");
     if (newAction == WALKING) {
         setCurrentAnimation(&avatar->animationController, "walking");
