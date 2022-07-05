@@ -49,12 +49,16 @@ static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
 }
 
 static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
-    avatar->currentAction = TRAINING;
     avatar->timePassed = GAME_TICK;
-    setCurrentAnimation(&avatar->animationController, "preparing");
+    avatar->transform = initialTransform;
 
-    if (hasBeenSuccessful)
+    setCurrentAnimation(&avatar->animationController, "mad");
+    avatar->currentAction = MAD_TRAINING;
+    if (hasBeenSuccessful) {
+        setCurrentAnimation(&avatar->animationController, "happy");
+        avatar->currentAction = HAPPY_TRAINING;
         correctTrainingGuess++;
+    }
 
     offsetTraining++;
     if (offsetTraining >= 5) {
@@ -186,6 +190,19 @@ int initAvatar(Avatar* ret) {
         addAnimation(&ret->animationController, "shooting", 1,
                      createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 3,
                                 NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     GAME_TICK);
+        addAnimation(&ret->animationController, "mad", 4,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(0, NORMAL_SIZE_SPRITE * 3, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(0, NORMAL_SIZE_SPRITE * 3, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
                      GAME_TICK);
 
         // Additional stuff for animations etc.
@@ -325,21 +342,32 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             avatar->currentAction = HAPPY;
         }
 
-        if (avatar->currentAction == HAPPY ||
-            avatar->currentAction == NEGATING) {
+        if ((avatar->currentAction & (HAPPY | NEGATING | MAD))) {
             avatar->transform = initialTransform;
-            if (avatar->currentAction == HAPPY)
+            if (avatar->currentAction & HAPPY)
                 setCurrentAnimation(&avatar->animationController, "happy");
+            else if (avatar->currentAction & MAD)
+                setCurrentAnimation(&avatar->animationController, "mad");
             else
                 setCurrentAnimation(&avatar->animationController, "negating");
 
-            avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
-                                      ? SDL_FLIP_NONE
-                                      : SDL_FLIP_HORIZONTAL;
+            // avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+            //                           ? SDL_FLIP_NONE
+            //                           : SDL_FLIP_HORIZONTAL;
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
-                setCurrentAnimation(&avatar->animationController, "walking");
-                avatar->currentAction = WALKING;
+
+                if (avatar->currentAction != HAPPY_TRAINING &&
+                    avatar->currentAction != MAD_TRAINING) {
+                    setCurrentAnimation(&avatar->animationController,
+                                        "walking");
+                    avatar->currentAction = WALKING;
+
+                } else {
+                    setCurrentAnimation(&avatar->animationController,
+                                        "preparing");
+                    avatar->currentAction = TRAINING;
+                }
             }
         }
 

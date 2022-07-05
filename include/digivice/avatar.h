@@ -13,19 +13,22 @@
 #define SAVE_FILE "digimon.save"
 
 typedef enum Action {
-    HATCHING,
+    HATCHING = 0,
     EVOLVING,
-    WALKING,
-    EATING,
-    STRENGTHNING,
-    SLEEPING,
-    HEALING,
-    HAPPY,
-    NEGATING,
-    CLEANING,
-    TRAINING = 16,
+    WALKING = 1 << 1,
+    EATING = 1 << 2,
+    STRENGTHNING = 1 << 3,
+    SLEEPING = 1 << 4,
+    HEALING = 1 << 5,
+    HAPPY = 1 << 6,
+    HAPPY_TRAINING,
+    NEGATING = 1 << 7,
+    CLEANING = 1 << 8,
+    TRAINING = 1 << 9,
     TRAINING_DOWN,
     TRAINING_UP,
+    MAD = 1 << 10,
+    MAD_TRAINING,
 } Action;
 
 typedef struct {
