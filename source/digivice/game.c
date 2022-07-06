@@ -247,7 +247,8 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             responseOperation = NO_OPERATION;
             break;
         case TRAIN:
-            if ((digimon.currentAction & (TRAINING | HAPPY | MAD)) == 0)
+            if ((digimon.currentAction &
+                 (TRAINING | HAPPY | MAD | SHOWING_SCORE)) == 0)
                 setCurrentAction(&digimon, TRAINING);
             else {
                 if (selectedOption == SDL_SCANCODE_ESCAPE) {

@@ -71,7 +71,11 @@ static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
             SDL_Log("Enough successes to strengthen!");
             DIGI_trainDigimon(1);
         }
-        correctTrainingGuess = 0;
+
+        if (avatar->currentAction & HAPPY)
+            avatar->currentAction = HAPPY_SCORE;
+        else
+            avatar->currentAction = MAD_SCORE;
     }
 }
 
@@ -357,16 +361,24 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
 
-                if (avatar->currentAction != HAPPY_TRAINING &&
-                    avatar->currentAction != MAD_TRAINING) {
-                    setCurrentAnimation(&avatar->animationController,
-                                        "walking");
-                    avatar->currentAction = WALKING;
-
-                } else {
-                    setCurrentAnimation(&avatar->animationController,
-                                        "preparing");
-                    avatar->currentAction = TRAINING;
+                switch (avatar->currentAction) {
+                    case HAPPY_SCORE:
+                    case MAD_SCORE:
+                        avatar->currentAction = SHOWING_SCORE;
+                        avatar->timePassed = GAME_TICK;
+                        resetCurrentAnimation(&avatar->animationController);
+                        break;
+                    case HAPPY_TRAINING:
+                    case MAD_TRAINING:
+                        setCurrentAnimation(&avatar->animationController,
+                                            "preparing");
+                        avatar->currentAction = TRAINING;
+                        break;
+                    default:
+                        setCurrentAnimation(&avatar->animationController,
+                                            "walking");
+                        avatar->currentAction = WALKING;
+                        break;
                 }
             }
         }
@@ -375,6 +387,19 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             setCurrentAnimation(&additionalAnimations, "snore");
         }
 
+        if (avatar->currentAction & SHOWING_SCORE) {
+            if (finishedCurrentAnimation(&avatar->animationController)) {
+                if (correctTrainingGuess < 3) {
+                    avatar->currentAction = MAD_TRAINING;
+                    setCurrentAnimation(&avatar->animationController, "mad");
+                } else {
+                    avatar->currentAction = HAPPY_TRAINING;
+                    setCurrentAnimation(&avatar->animationController, "happy");
+                }
+                avatar->timePassed = GAME_TICK;
+                correctTrainingGuess = 0;
+            }
+        }
         if (avatar->currentAction & TRAINING) {
             if (avatar->currentAction == TRAINING_UP ||
                 avatar->currentAction == TRAINING_DOWN) {
@@ -505,7 +530,38 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     }
 }
 
+void drawTrainingScore(SDL_Renderer* render) {
+    const SDL_Rect shieldClip = {.x = 7 * NORMAL_SIZE_SMALL_SPRITE,
+                                 .y = 0,
+                                 .w = NORMAL_SIZE_SMALL_SPRITE,
+                                 .h = NORMAL_SIZE_SMALL_SPRITE};
+
+    SDL_Texture* hudTexture = loadTexture("resource/hud.png");
+    SDL_Rect botamonSpriteClip = {0, 0, NORMAL_SIZE_SMALL_SPRITE,
+                                  NORMAL_SIZE_SMALL_SPRITE};
+
+    SDL_Rect botamonTransform = {WIDTH_SMALL_SPRITE, HEIGHT_BUTTON,
+                                 WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
+    SDL_Rect shieldTranform = {WIDTH_SMALL_SPRITE * 4, HEIGHT_BUTTON,
+                               WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
+
+    SDL_RenderCopy(render, hudTexture, &botamonSpriteClip, &botamonTransform);
+    SDL_RenderCopy(render, textureAdditional, &shieldClip, &shieldTranform);
+
+    SDL_Color textColor = {0, 0, 0, 255};
+    SDL_Texture* scoreTexture = createTextTexture(
+        textColor, "%d\tx\t%d", correctTrainingGuess, 5 - correctTrainingGuess);
+    botamonTransform.w = WIDTH_SCREEN - botamonTransform.w * 2;
+    botamonTransform.y += botamonTransform.h;
+    SDL_RenderCopy(render, scoreTexture, NULL, &botamonTransform);
+}
+
 void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
+    if (avatar->currentAction & SHOWING_SCORE) {
+        drawTrainingScore(render);
+        return;
+    }
+
     SDL_Rect transformAvatar = {.x = WIDTH_SCREEN - WIDTH_SPRITE,
                                 .y = HEIGHT_BUTTON,
                                 .w = WIDTH_SPRITE,
@@ -553,7 +609,7 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     if (!avatar->initiated)
         return;
 
-    if (avatar->currentAction & TRAINING)
+    if (avatar->currentAction & (TRAINING | SHOWING_SCORE))
         drawAvatarTraining(render, avatar);
     else
         drawAvatarNormal(render, avatar);

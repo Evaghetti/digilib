@@ -22,6 +22,7 @@ typedef enum Action {
     HEALING = 1 << 5,
     HAPPY = 1 << 6,
     HAPPY_TRAINING,
+    HAPPY_SCORE,
     NEGATING = 1 << 7,
     CLEANING = 1 << 8,
     TRAINING = 1 << 9,
@@ -29,6 +30,8 @@ typedef enum Action {
     TRAINING_UP,
     MAD = 1 << 10,
     MAD_TRAINING,
+    MAD_SCORE,
+    SHOWING_SCORE = 1 << 11,
 } Action;
 
 typedef struct {

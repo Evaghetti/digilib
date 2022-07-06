@@ -31,6 +31,8 @@ void setCurrentAnimation(AnimationController* animationController,
 
 void updateAnimation(AnimationController* animationController, float deltaTime);
 
+void resetCurrentAnimation(AnimationController* animationController);
+
 const SDL_Rect* getAnimationFrameClip(
     const AnimationController* animationController);
 

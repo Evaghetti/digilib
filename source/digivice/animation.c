@@ -74,6 +74,16 @@ void updateAnimation(AnimationController* animationController,
     }
 }
 
+void resetCurrentAnimation(AnimationController* animationController) {
+    animationController->animations[animationController->currentAnimation]
+        .currentFrame =
+        animationController->animations[animationController->currentAnimation]
+            .firstFrame;
+    animationController->animations[animationController->currentAnimation]
+        .finished = 0;
+    animationController->timeInCurrentFrame = 0.f;
+}
+
 const SDL_Rect* getAnimationFrameClip(
     const AnimationController* animationController) {
     return &animationController
