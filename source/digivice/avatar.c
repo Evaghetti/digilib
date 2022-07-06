@@ -38,7 +38,7 @@ static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;     // Used for the cleaning animation
 static float xProjectileOffset = 0;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
-static int skipFirstFrameScroll = 0;
+static int skipFirstFrameScroll = 0, scrolledTrainingStance = 0;
 
 static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
@@ -373,6 +373,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         setCurrentAnimation(&avatar->animationController,
                                             "preparing");
                         avatar->currentAction = TRAINING;
+                        scrolledTrainingStance = 0;
                         break;
                     default:
                         setCurrentAnimation(&avatar->animationController,
@@ -441,6 +442,17 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             avatar->transform = initialTransform;
         } else
             xOffsetSprites += SPEED_FLUSH * deltaTime;
+    }
+
+    if (avatar->currentAction == TRAINING) {
+        if (xOffsetSprites == 0.f && scrolledTrainingStance == 0) {
+            xOffsetSprites = WIDTH_SCREEN * .75f;
+        } else if (xOffsetSprites > 0.f) {
+            xOffsetSprites -= SPEED_FLUSH * deltaTime;
+        } else {
+            xOffsetSprites = 0;
+            scrolledTrainingStance = 1;
+        }
     }
 
     updateAnimation(&avatar->animationController, deltaTime);
@@ -562,12 +574,13 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
         return;
     }
 
-    SDL_Rect transformAvatar = {.x = WIDTH_SCREEN - WIDTH_SPRITE,
-                                .y = HEIGHT_BUTTON,
-                                .w = WIDTH_SPRITE,
-                                .h = HEIGHT_SPRITE};
+    SDL_Rect transformAvatar = {
+        .x = WIDTH_SCREEN - WIDTH_SPRITE - xOffsetSprites,
+        .y = HEIGHT_BUTTON,
+        .w = WIDTH_SPRITE,
+        .h = HEIGHT_SPRITE};
     SDL_Rect transformShadowAvatar = transformAvatar;
-    transformShadowAvatar.x = 0;
+    transformShadowAvatar.x = -xOffsetSprites;
 
     const SDL_Rect* spriteClip =
         getAnimationFrameClip(&avatar->animationController);
@@ -602,6 +615,19 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
                        &transformAvatar);
         SDL_RenderCopy(render, textureAdditional, &shieldClip,
                        &transformShadowAvatar);
+    }
+
+    int i;
+    for (i = 0; i < 4; i++) {
+        SDL_Rect transformProjectile = {
+            .x = WIDTH_SCREEN + WIDTH_SMALL_SPRITE * (i % 2) -
+                 (int)xOffsetSprites,
+            .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
+            .w = WIDTH_SMALL_SPRITE,
+            .h = HEIGHT_SMALL_SPRITE};
+
+        SDL_RenderCopy(render, avatar->spriteSheet, &projectileClip,
+                       &transformProjectile);
     }
 }
 
