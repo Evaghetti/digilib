@@ -352,12 +352,12 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 setCurrentAnimation(&avatar->animationController, "happy");
             else if (avatar->currentAction & MAD)
                 setCurrentAnimation(&avatar->animationController, "mad");
-            else
+            else {
                 setCurrentAnimation(&avatar->animationController, "negating");
-
-            // avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
-            //                           ? SDL_FLIP_NONE
-            //                           : SDL_FLIP_HORIZONTAL;
+                avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+                                          ? SDL_FLIP_NONE
+                                          : SDL_FLIP_HORIZONTAL;
+            }
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
 
