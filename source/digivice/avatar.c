@@ -39,6 +39,7 @@ static float xOffsetSprites = 0;     // Used for the cleaning animation
 static float xProjectileOffset = 0;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
 static int skipFirstFrameScroll = 0, scrolledTrainingStance = 0;
+static int selectOptionTraining = 0;
 
 static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
@@ -367,6 +368,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         avatar->currentAction = SHOWING_SCORE;
                         avatar->timePassed = GAME_TICK;
                         resetCurrentAnimation(&avatar->animationController);
+                        selectOptionTraining = 0;
                         break;
                     case HAPPY_TRAINING:
                     case MAD_TRAINING:
@@ -374,6 +376,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                                             "preparing");
                         avatar->currentAction = TRAINING;
                         scrolledTrainingStance = 0;
+                        selectOptionTraining = 0;
                         break;
                     default:
                         setCurrentAnimation(&avatar->animationController,
@@ -642,7 +645,9 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 }
 
 void setCurrentAction(Avatar* avatar, Action newAction) {
+    const Action oldAction = avatar->currentAction;
     avatar->currentAction = newAction;
+
     avatar->timePassed = GAME_TICK;
     setCurrentAnimation(&additionalAnimations, "nothing");
     if (newAction == WALKING) {
@@ -665,9 +670,16 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
             break;
         case TRAINING_UP:
         case TRAINING_DOWN:
+            if (selectOptionTraining) {
+                avatar->currentAction = oldAction;
+                break;
+            }
+
             skipFirstFrameScroll = 1;
             xProjectileOffset =
                 WIDTH_SCREEN - (WIDTH_SPRITE + WIDTH_SMALL_SPRITE);
+            xOffsetSprites = 0;
+            selectOptionTraining = 1;
             break;
         default:
             break;
