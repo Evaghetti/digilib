@@ -34,18 +34,27 @@ Menu initMenuImage(int count, char* paths[], SDL_Rect spriteRects[]) {
 
     ret.options = calloc(count, sizeof(Option));
 
-    for (i = 0; i < count; i++) {
-        SDL_Texture* currentTexture = loadTexture(paths[i]);
-        SDL_Rect currentSpriteClip = spriteRects[i];
-
-        ret.options[i].texture = currentTexture;
-        ret.options[i].spriteRect = currentSpriteClip;
-    }
+    for (i = 0; i < count; i++)
+        addMenuImage(&ret, paths[i], spriteRects[i]);
 
     if (cursorTexture == NULL)
         cursorTexture = loadTexture("resource/hud.png");
 
     return ret;
+}
+
+void addMenuImage(Menu* menu, const char* path, SDL_Rect spriteRect) {
+    Option* currentOption = &menu->options[0];
+    int i;
+
+    for (i = 0; i < menu->countOptions; i++) {
+        if (currentOption->texture == NULL)
+            break;
+        currentOption++;
+    }
+
+    currentOption->texture = loadTexture(path);
+    currentOption->spriteRect = spriteRect;
 }
 
 Menu initMenuImageRaw(int count, SDL_Texture* textures[]) {

@@ -1,6 +1,7 @@
 #include "game.h"
 
 #include "SDL2/SDL.h"
+#include "SDL2/SDL_net.h"
 #include "SDL2/SDL_ttf.h"
 
 #include <stdio.h>
@@ -9,10 +10,11 @@
 #include "digihardware.h"
 
 #include "digivice/avatar.h"
+#include "digivice/battle.h"
 #include "digivice/button.h"
+#include "digivice/globals.h"
 #include "digivice/menu.h"
 #include "digivice/texture.h"
-#include "globals.h"
 
 static const SDL_Rect spritesButtons[] = {
     {0, 8, 16, 16},  {16, 8, 16, 16}, {32, 8, 16, 16}, {48, 8, 16, 16},
@@ -67,6 +69,11 @@ int initGame() {
     if (gFonte == NULL) {
         SDL_Log("Failed loading font");
         cleanUpGame();
+        return 0;
+    }
+
+    if (SDLNet_Init() != 0) {
+        SDL_Log("Error initializing SDL_net -> %s", SDLNet_GetError());
         return 0;
     }
 
@@ -263,6 +270,30 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     setCurrentAction(&digimon, TRAINING_DOWN);
             }
             break;
+        case BATTLE:
+            if (currentMenu.countOptions == 0) {
+                const int resultConnect = connectToServer();
+                if (resultConnect == 1) {
+                    if (!registerUser(digimon.infoApi.pstCurrentDigimon,
+                                      &currentMenu)) {
+                        SDL_Log("Falha 2");
+                        break;
+                    }
+                } else if (resultConnect == 2) {
+                    getBattleList(&currentMenu);
+                }
+
+                if (currentMenu.countOptions == 0) {
+                    responseOperation = NO_OPERATION;
+                    break;
+                }
+            } else if (selectedOption == -2) {
+                if (currentMenu.countOptions)
+                    freeMenu(&currentMenu);
+                disconnectFromServer();
+                responseOperation = NO_OPERATION;
+            }
+            break;
         default:
             responseOperation = NO_OPERATION;
             break;
@@ -365,6 +396,7 @@ void cleanUpGame() {
     }
 
     SDL_Log("Qutting SDL");
+    SDLNet_Quit();
     TTF_Quit();
     SDL_Quit();
 }
