@@ -8,6 +8,9 @@
 #define IP   "localhost"
 #define PORT 1998
 
+#define SIZE_UUID      36
+#define MAX_USER_COUNT 50
+
 // States
 typedef enum States {
     BATTLE_REGISTER,
@@ -30,6 +33,8 @@ typedef struct {
 } TagLengthValue;
 
 static TCPsocket connection = NULL;
+
+static char playersUUIDs[MAX_USER_COUNT][SIZE_UUID + 1];
 
 int connectToServer() {
     // Already connected
@@ -122,7 +127,7 @@ static Menu handleUserListRequest() {
 
     result.options = calloc(countUsers, sizeof(Option));
 
-    for (i = 0; i < countUsers && i < 50; i++) {
+    for (i = 0; i < countUsers && i < MAX_USER_COUNT; i++) {
         SDLNet_TCP_Recv(connection, data, 6);
 
         digimon_t* currentDigimon = getDigimon(data[2], data[5]);
@@ -138,6 +143,10 @@ static Menu handleUserListRequest() {
         }
 
         addMenuImage(&result, path, clip);
+
+        SDLNet_TCP_Recv(connection, data, 2);
+        SDLNet_TCP_Recv(connection, playersUUIDs[i], data[1]);
+        SDL_Log("User uuid -> %s", playersUUIDs[i]);
     }
 
     return result;

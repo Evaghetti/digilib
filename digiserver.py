@@ -3,6 +3,7 @@ import socket
 from typing import Dict, List
 import select
 from struct import *
+from uuid import uuid4 as uuid
 
 # TODO: Leave match results on server side instead of client side
 
@@ -16,6 +17,7 @@ BATTLE_LIST = 3
 SLOT_POWER = 0 # 1 bytes length
 VERSION = 1    # 1 byte length
 COUNT = 2      # 4 byte length
+USER_ID = 3    # 36 byte length
 
 # Constants
 ADDRESS = 'localhost'
@@ -31,6 +33,7 @@ def getLengthFormat(length: int) -> str:
 
 class Player:
     def __init__(self) -> None:
+        self.uuid = str(uuid())
         self.currentAction = BATTLE_REGISTER
         self.slotPower = 0
         self.version = 0
@@ -53,6 +56,8 @@ class Player:
     def serialize(self) -> bytes:
         data = pack("<bbb", SLOT_POWER, 1, self.slotPower)
         data += pack("<bbb", VERSION, 1, self.version)
+        data += pack("<bb", USER_ID, 36)
+        data += self.uuid.encode()
         return data
 
 class Server:
