@@ -6,9 +6,9 @@
 
 int connectToServer();
 
-int registerUser(digimon_t* digimon, Menu* menu);
+int registerUser(digimon_t* digimon);
 
-int getBattleList(Menu* menu);
+int updateClient(Menu* menu);
 
 int disconnectFromServer();
 

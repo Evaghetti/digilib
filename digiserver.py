@@ -1,6 +1,6 @@
 from queue import Queue
 import socket
-from typing import Dict, List
+from typing import Dict, List, Union
 import select
 from struct import *
 from uuid import uuid4 as uuid
@@ -12,6 +12,7 @@ BATTLE_REGISTER = 0
 BATTLE_CHALLENGE = 1
 BATTLE_REQUEST = 2
 BATTLE_LIST = 3
+UPDATE_GAME = 4
 
 # Tags TLV
 SLOT_POWER = 0 # 1 bytes length
@@ -113,11 +114,10 @@ class Server:
                     
                     if user.currentAction == BATTLE_REGISTER:
                         user.configure(dataReceive[1:])
-                        data = self.createPlayerList(user)
-                        print("Sending data:", ''.join('\\x{:02x}'.format(b) for b in data))
-                        self.messageQueue[input].put(data)
-                    elif user.currentAction == BATTLE_LIST:
-                        self.messageQueue[input].put(self.createPlayerList(user))
+                        self.send(input, 0)
+                    elif user.currentAction == UPDATE_GAME:
+                        self.send(input, BATTLE_LIST)
+                        self.send(input, self.createPlayerList(user))
                 else:
                     raise ConnectionResetError
             except ConnectionResetError:
@@ -138,6 +138,14 @@ class Server:
                 pass
             else:
                 write.send(message)
+    
+    def send(self, target: socket.socket, data: Union[bytes, int]) -> None:
+        if type(data) is int:
+            data = bytes([data])
+        dataStr: str = ''.join('\\x{:02x}'.format(b) for b in data)
+        print(f"Sending data -> {dataStr}")
+
+        self.messageQueue[target].put(data)
 
 def main():
     server = Server()

@@ -11,12 +11,15 @@
 #define SIZE_UUID      36
 #define MAX_USER_COUNT 50
 
+#define TLV_LENGTH(x) (sizeof(x) / sizeof(x[0]))
+
 // States
 typedef enum States {
     BATTLE_REGISTER,
     BATTLE_CHALLENGE,
     BATTLE_REQUEST,
     BATTLE_LIST,
+    UPDATE_GAME,
 } State;
 
 // Tags TLV
@@ -39,7 +42,7 @@ static char playersUUIDs[MAX_USER_COUNT][SIZE_UUID + 1];
 int connectToServer() {
     // Already connected
     if (connection != NULL)
-        return 1;
+        return 2;
 
     IPaddress ip;
 
@@ -91,6 +94,23 @@ static unsigned char* allocBufferCOMM(State state, TagLengthValue data[],
     return socketData;
 }
 
+static int sendData(State state, TagLengthValue* tags, int tagsLength) {
+    int sizeData;
+    unsigned char* data = allocBufferCOMM(state, tags, tagsLength, &sizeData);
+    if (data == NULL) {
+        SDL_Log("Unable to alloc memory send to server");
+        return 0;
+    }
+
+    if (SDLNet_TCP_Send(connection, data, sizeData) != sizeData) {
+        SDL_Log("Error sending data to server -> %s", SDLNet_GetError());
+        free(data);
+        return 0;
+    }
+    free(data);
+    return 1;
+}
+
 digimon_t* getDigimon(unsigned char slot, unsigned char version) {
     int i;
     for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
@@ -104,7 +124,7 @@ digimon_t* getDigimon(unsigned char slot, unsigned char version) {
 
 static Menu handleUserListRequest() {
     SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
-    Menu result;
+    Menu result = {0};
 
     int countUsers, i, j;
     unsigned char data[6];
@@ -117,6 +137,7 @@ static Menu handleUserListRequest() {
 
     memcpy(&countUsers, data + 2, sizeof(countUsers));
     result.countOptions = countUsers;
+    result.type = IMAGE;
     result.currentOption = 0;
 
     SDL_Log("%d digimons on server", countUsers);
@@ -152,9 +173,9 @@ static Menu handleUserListRequest() {
     return result;
 }
 
-int registerUser(digimon_t* digimon, Menu* menu) {
-    if (connection == NULL || menu == NULL) {
-        SDL_Log("Trying to register user without valid socket or menu");
+int registerUser(digimon_t* digimon) {
+    if (connection == NULL) {
+        SDL_Log("Trying to register user without valid socket");
         return 0;
     }
 
@@ -163,36 +184,47 @@ int registerUser(digimon_t* digimon, Menu* menu) {
         {VERSION, sizeof(digimon->uiVersion), &digimon->uiVersion},
     };
 
-    int size;
-    unsigned char* data =
-        allocBufferCOMM(BATTLE_REGISTER, dataRegister, 2, &size);
-    if (data == NULL) {
-        SDL_Log("Unable to prepare data to register user");
+    if (!sendData(BATTLE_REGISTER, dataRegister, TLV_LENGTH(dataRegister))) {
+        SDL_Log("Unable to register");
         return 0;
     }
 
-    if (SDLNet_TCP_Send(connection, data, size) != size) {
-        SDL_Log("Error sending registering data to server -> %s",
-                SDLNet_GetError());
-        free(data);
-        return 0;
-    }
-    free(data);
-
-    *menu = handleUserListRequest();
+    unsigned char byte;
+    SDLNet_TCP_Recv(connection, &byte, 1);
     return 1;
 }
 
-int getBattleList(Menu* menu) {
+static void changeMenuKeepIndex(Menu* menu, Menu* newMenu) {
+    const int originalIndex = menu->currentOption;
+
+    freeMenu(menu);
+    memcpy(menu, newMenu, sizeof(Menu));
+    menu->currentOption = originalIndex < menu->countOptions
+                              ? originalIndex
+                              : menu->countOptions - 1;
+    if (menu->currentOption < 0)
+        menu->currentOption = 0;
+}
+
+int updateClient(Menu* menu) {
+    Menu generatedMenu;
     if (connection == NULL || menu == NULL) {
         SDL_Log("Trying to register user without valid socket or menu");
         return 0;
     }
 
-    unsigned char data = BATTLE_LIST;
-    SDLNet_TCP_Send(connection, &data, sizeof(data));
+    // Say to server i want an update, then get the type of update
+    unsigned char typeAction = UPDATE_GAME;
+    SDLNet_TCP_Send(connection, &typeAction, sizeof(typeAction));
+    SDLNet_TCP_Recv(connection, &typeAction, sizeof(typeAction));
 
-    *menu = handleUserListRequest();
+    switch (typeAction) {
+        case BATTLE_LIST:
+            generatedMenu = handleUserListRequest();
+            break;
+    }
+
+    changeMenuKeepIndex(menu, &generatedMenu);
     return 1;
 }
 

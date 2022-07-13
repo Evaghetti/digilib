@@ -271,25 +271,24 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             }
             break;
         case BATTLE:
-            if (currentMenu.countOptions == 0) {
-                const int resultConnect = connectToServer();
-                if (resultConnect == 1) {
-                    if (!registerUser(digimon.infoApi.pstCurrentDigimon,
-                                      &currentMenu)) {
-                        SDL_Log("Falha 2");
-                        break;
-                    }
-                } else if (resultConnect == 2) {
-                    getBattleList(&currentMenu);
-                }
-
-                if (currentMenu.countOptions == 0) {
+            switch (connectToServer()) {
+                case 0:
+                    SDL_Log("Not able to connect to server");
                     responseOperation = NO_OPERATION;
                     break;
-                }
-            } else if (selectedOption == -2) {
-                if (currentMenu.countOptions)
+                case 1:
+                    registerUser(digimon.infoApi.pstCurrentDigimon);
+                    break;
+                default:
+                    break;
+            }
+
+            updateClient(&currentMenu);
+
+            if (selectedOption == -2) {
+                if (currentMenu.options)
                     freeMenu(&currentMenu);
+
                 disconnectFromServer();
                 responseOperation = NO_OPERATION;
             }

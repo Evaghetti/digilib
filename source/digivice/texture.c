@@ -9,6 +9,7 @@ typedef struct LoadedTexture {
     struct LoadedTexture* next;
     SDL_Texture* texture;
     char filePath[256];
+    int resourceCount;
 } LoadedTexture;
 
 LoadedTexture* headLoadedTexture;
@@ -40,6 +41,8 @@ static LoadedTexture* initLoadedTexture(const char* filePath) {
 
     SDL_Log("Loaded %s!", filePath);
     SDL_FreeSurface(surface);
+
+    loadedTexture->resourceCount = 1;
     loadedTexture->next = NULL;
     return loadedTexture;
 }
@@ -52,7 +55,9 @@ static SDL_Texture* lookForTexture(LoadedTexture* node, const char* filePath) {
 
     while (node != NULL) {
         if (strcmp(node->filePath, filePath) == 0) {
-            SDL_Log("%s already loaded! Returning", filePath);
+            SDL_Log("%s already loaded! Returning (current count: %d)",
+                    filePath, node->resourceCount + 1);
+            node->resourceCount++;
             return node->texture;
         }
 
@@ -116,16 +121,22 @@ void freeTexture(SDL_Texture* texture) {
         LoadedTexture* contentNode = *nodeTree;
 
         if (contentNode->texture == texture) {
-            LoadedTexture* nextNode = contentNode->next;
+            SDL_Log("Reducing resource %s by one (%d)", contentNode->filePath,
+                    contentNode->resourceCount - 1);
 
-            SDL_Log("Destroying %s", contentNode->filePath);
-            SDL_DestroyTexture(contentNode->texture);
+            contentNode->resourceCount--;
+            if (contentNode->resourceCount == 0) {
+                LoadedTexture* nextNode = contentNode->next;
 
-            SDL_Log("Freeing node");
-            free(contentNode);
+                SDL_Log("Destroying %s", contentNode->filePath);
+                SDL_DestroyTexture(contentNode->texture);
 
-            *nodeTree = nextNode;
-            break;
+                SDL_Log("Freeing node");
+                free(contentNode);
+
+                *nodeTree = nextNode;
+                break;
+            }
         }
 
         nodeTree = &contentNode->next;
