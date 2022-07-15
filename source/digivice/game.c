@@ -283,7 +283,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     break;
             }
 
-            updateClient(&currentMenu);
+            int clientHandledMenu = updateClient(&currentMenu, selectedOption);
 
             if (selectedOption == -2) {
                 if (currentMenu.options)
@@ -291,6 +291,10 @@ static PossibleOperations handleOperation(PossibleOperations operation,
 
                 disconnectFromServer();
                 responseOperation = NO_OPERATION;
+            } else if (selectedOption >= 0 && clientHandledMenu == 0) {
+                if (!challengeUser(selectedOption)) {
+                    SDL_Log("Not possible to challenge this user");
+                }
             }
             break;
         default:

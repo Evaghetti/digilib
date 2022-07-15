@@ -1,8 +1,10 @@
+from __future__ import annotations
 from queue import Queue
 import socket
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 import select
 from struct import *
+from urllib import response
 from uuid import uuid4 as uuid
 
 # TODO: Leave match results on server side instead of client side
@@ -19,6 +21,12 @@ SLOT_POWER = 0 # 1 bytes length
 VERSION = 1    # 1 byte length
 COUNT = 2      # 4 byte length
 USER_ID = 3    # 36 byte length
+RESPONSE = 4   # 1 byte length
+
+# Interaction request status
+NO_RESPONSE = 0
+ACCEPTED = 1
+REFUSED = 2
 
 # Constants
 ADDRESS = 'localhost'
@@ -30,7 +38,8 @@ def getLengthFormat(length: int) -> str:
         return f"<b"
     elif length == 2:
         return f"<h"
-    raise f"Invalid length of {length}"
+    else:
+        return f"<{length}s"
 
 class Player:
     def __init__(self) -> None:
@@ -38,6 +47,11 @@ class Player:
         self.currentAction = BATTLE_REGISTER
         self.slotPower = 0
         self.version = 0
+        self.challenging: Player = None
+        self.challengedBy: Player = None
+        self.requestStatus: int = NO_RESPONSE
+
+        print("New user", self.uuid)
 
     def configure(self, data: bytes) -> None:
         if len(data) < 3:
@@ -60,6 +74,12 @@ class Player:
         data += pack("<bb", USER_ID, 36)
         data += self.uuid.encode()
         return data
+
+    def isInteracting(self, another: Player = None) -> bool:
+        if another is None:
+            return self.challenging != None or self.challengedBy != None
+
+        return another is self.challenging or another is self.challengedBy
 
 class Server:
     def __init__(self) -> None:
@@ -109,15 +129,62 @@ class Server:
 
                     user: Player = self.users[input]
                     user.currentAction = dataReceive[0]
+                    receivedTLV = self.processTLV(dataReceive[1:]) if len(dataReceive) > 1 else {}
 
                     print("Received data:", ''.join('\\x{:02x}'.format(b) for b in dataReceive))
                     
                     if user.currentAction == BATTLE_REGISTER:
                         user.configure(dataReceive[1:])
                         self.send(input, 0)
+                    elif user.currentAction == BATTLE_CHALLENGE:
+                        uuidChallenged: str = receivedTLV[USER_ID].decode()
+
+                        print(f"{user.uuid} is trying to challenge {uuidChallenged}")
+                        socketChallenged, userChallenged = self.lookForUser(uuidChallenged)
+
+                        if not userChallenged.isInteracting():
+                            userChallenged.challengedBy = user
+                            user.challenging = userChallenged
+
+                            print(f"{user.uuid} challenged {uuidChallenged}")
+                            self.send(input, 1)
+                        else:
+                            print(f"{user.uuid} was not able to challenge {uuidChallenged}, he was interacting with another")
+                            self.send(input, 0)
+                            
                     elif user.currentAction == UPDATE_GAME:
-                        self.send(input, BATTLE_LIST)
-                        self.send(input, self.createPlayerList(user))
+                        if user.isInteracting():
+                            print(f"Logica de briga {user.uuid}")
+                            if user.challenging:
+                                print("Logica do desafiador")
+                                self.send(input, BATTLE_CHALLENGE)
+                                self.send(input, pack("<bbb", RESPONSE, 1, user.challenging.requestStatus))
+                                print("Enviado resultado do pooling")
+                                if user.challenging.requestStatus == REFUSED:
+                                    print(f"{user.challenging.uuid} refused your challenge {user.uuid}")
+                                elif user.challenging.requestStatus == ACCEPTED:
+                                    print(f"{user.challenging.uuid} accepted your challenge {user.uuid}")
+
+                                if user.challenging.requestStatus != NO_RESPONSE:
+                                    user.challenging = None
+                            else:
+                                self.send(input, BATTLE_REQUEST)
+
+                                user.requestStatus = receivedTLV[RESPONSE]
+                                self.send(input, pack("<bbb", RESPONSE, 1, user.requestStatus))
+
+                                if user.requestStatus == ACCEPTED:
+                                    print(f"{user.uuid} accepted challenge by {user.challengedBy.uuid}")
+                                elif user.requestStatus == REFUSED:
+                                    print(f"{user.uuid} refused challenge by {user.challengedBy.uuid}")
+                                else:
+                                    print(f"{user.uuid} still did not respond")
+
+                                if user.requestStatus != NO_RESPONSE:
+                                    user.challengedBy = None
+                        else:
+                            self.send(input, BATTLE_LIST)
+                            self.send(input, self.createPlayerList(user))
                 else:
                     raise ConnectionResetError
             except ConnectionResetError:
@@ -146,6 +213,26 @@ class Server:
         print(f"Sending data -> {dataStr}")
 
         self.messageQueue[target].put(data)
+    
+    def processTLV(self, data: bytes) -> Dict[int, bytes]:
+        ret: dict[int, bytes] = {}
+
+        while len(data) >= 3:
+            tag, lengthRaw = unpack("<bb", data[0:2])
+            length = getLengthFormat(lengthRaw)
+            value = unpack(length, data[2:2 + lengthRaw])[0]
+
+            ret[tag] = value
+            data = data[2+lengthRaw:]
+        return ret
+        
+    def lookForUser(self, idUser: str) -> Tuple[socket.socket, Player]:
+        for socket in self.users.keys():
+            if self.users[socket].uuid == idUser:
+                return (socket, self.users[socket])
+        else:
+            print(f"No user {idUser}")
+            raise
 
 def main():
     server = Server()

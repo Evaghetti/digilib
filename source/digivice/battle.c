@@ -27,7 +27,15 @@ typedef enum Tags {
     SLOT_POWER,
     VERSION,
     COUNT,
+    USER_ID,
+    RESPONSE,
 } Tag;
+
+typedef enum ResponsesRequest {
+    NO_RESPONSE,
+    ACCEPTED,
+    REFUSED
+} ResponseRequest;
 
 typedef struct {
     unsigned char tag;
@@ -38,6 +46,7 @@ typedef struct {
 static TCPsocket connection = NULL;
 
 static char playersUUIDs[MAX_USER_COUNT][SIZE_UUID + 1];
+static int countPlayers = 0;
 
 int connectToServer() {
     // Already connected
@@ -126,7 +135,7 @@ static Menu handleUserListRequest() {
     SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
     Menu result = {0};
 
-    int countUsers, i, j;
+    int i, j;
     unsigned char data[6];
     char path[100];
 
@@ -135,25 +144,26 @@ static Menu handleUserListRequest() {
         return result;
     }
 
-    memcpy(&countUsers, data + 2, sizeof(countUsers));
-    result.countOptions = countUsers;
+    memcpy(&countPlayers, data + 2, sizeof(countPlayers));
+    result.countOptions = countPlayers;
     result.type = IMAGE;
     result.currentOption = 0;
 
-    SDL_Log("%d digimons on server", countUsers);
-    if (countUsers == 0) {
+    SDL_Log("%d digimons on server", countPlayers);
+    if (countPlayers == 0) {
         SDL_Log("No one on server");
         return result;
     }
 
-    result.options = calloc(countUsers, sizeof(Option));
+    result.options = calloc(countPlayers, sizeof(Option));
 
-    for (i = 0; i < countUsers && i < MAX_USER_COUNT; i++) {
+    for (i = 0; i < countPlayers && i < MAX_USER_COUNT; i++) {
         SDLNet_TCP_Recv(connection, data, 6);
 
         digimon_t* currentDigimon = getDigimon(data[2], data[5]);
         if (currentDigimon == NULL) {
             SDL_Log("Digimon %d %d does not exist", data[2], data[5]);
+            countPlayers--;
             // TODO: Error handling
             continue;
         }
@@ -171,6 +181,26 @@ static Menu handleUserListRequest() {
     }
 
     return result;
+}
+
+static int handleBattleChallenge(Menu* menu) {
+    unsigned char dataReceived[3];
+    SDLNet_TCP_Recv(connection, &dataReceived, sizeof(dataReceived));
+
+    SDL_Log("Response from challenged -> %d", dataReceived[2]);
+    if (dataReceived[2] == 0) {
+        char* options[] = {"BATTLE"};
+        *menu = initMenuText(1, options);
+    }
+    return dataReceived[2];
+}
+
+static void handleBattleRequest(Menu* menu) {
+    unsigned char dataReceived[3];
+    SDLNet_TCP_Recv(connection, &dataReceived, sizeof(dataReceived));
+
+    char* options[] = {"YES", "NO"};
+    *menu = initMenuText(2, options);
 }
 
 int registerUser(digimon_t* digimon) {
@@ -206,7 +236,10 @@ static void changeMenuKeepIndex(Menu* menu, Menu* newMenu) {
         menu->currentOption = 0;
 }
 
-int updateClient(Menu* menu) {
+int updateClient(Menu* menu, int selectedOption) {
+    static unsigned char typeAction = BATTLE_LIST;
+    int status = 0;
+    char* options[2];
     Menu generatedMenu;
     if (connection == NULL || menu == NULL) {
         SDL_Log("Trying to register user without valid socket or menu");
@@ -214,18 +247,59 @@ int updateClient(Menu* menu) {
     }
 
     // Say to server i want an update, then get the type of update
-    unsigned char typeAction = UPDATE_GAME;
-    SDLNet_TCP_Send(connection, &typeAction, sizeof(typeAction));
+    unsigned char typeData = UPDATE_GAME, response = NO_RESPONSE;
+    if (selectedOption != -1 && typeAction == BATTLE_REQUEST) {
+        if (selectedOption == -2 || selectedOption == 1)
+            response = REFUSED;
+        else
+            response = ACCEPTED;
+
+        status = response;
+    }
+
+    TagLengthValue dataUpdateRequest[] = {
+        {RESPONSE, sizeof(response), &response}};
+    sendData(typeData, dataUpdateRequest, TLV_LENGTH(dataUpdateRequest));
     SDLNet_TCP_Recv(connection, &typeAction, sizeof(typeAction));
 
+    SDL_Log("Type of Online action -> %d", typeAction);
     switch (typeAction) {
         case BATTLE_LIST:
             generatedMenu = handleUserListRequest();
             break;
+        case BATTLE_CHALLENGE:
+            status = handleBattleChallenge(&generatedMenu);
+            break;
+        case BATTLE_REQUEST:
+            handleBattleRequest(&generatedMenu);
+            break;
+        default:
+            break;
     }
 
     changeMenuKeepIndex(menu, &generatedMenu);
-    return 1;
+    return status;
+}
+
+int challengeUser(int offsetUser) {
+    if (connection == NULL) {
+        SDL_Log("Trying to challenge user without valid connection");
+        return 0;
+    }
+    if (offsetUser < 0 && offsetUser >= countPlayers) {
+        SDL_Log("User %d does not exist", offsetUser);
+        return 0;
+    }
+
+    TagLengthValue dataSent[] = {
+        {USER_ID, strlen(playersUUIDs[offsetUser]), playersUUIDs[offsetUser]},
+    };
+    sendData(BATTLE_CHALLENGE, dataSent, TLV_LENGTH(dataSent));
+
+    unsigned char status;
+    SDLNet_TCP_Recv(connection, &status, sizeof(status));
+
+    return status;
 }
 
 int disconnectFromServer() {
