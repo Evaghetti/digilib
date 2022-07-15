@@ -248,7 +248,8 @@ int updateClient(Menu* menu, int selectedOption) {
 
     // Say to server i want an update, then get the type of update
     unsigned char typeData = UPDATE_GAME, response = NO_RESPONSE;
-    if (selectedOption != -1 && typeAction == BATTLE_REQUEST) {
+    if ((selectedOption != -1 && selectedOption != -3) &&
+        typeAction == BATTLE_REQUEST) {
         if (selectedOption == -2 || selectedOption == 1)
             response = REFUSED;
         else
