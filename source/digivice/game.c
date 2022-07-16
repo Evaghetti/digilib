@@ -284,16 +284,19 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     break;
             }
 
-            int clientHandledMenu =
-                updateClient(&currentMenu, selectedOption, &resultBattle);
+            StatusUpdate status = updateClient(&currentMenu, selectedOption);
 
-            if (selectedOption == -2 || resultBattle > 0) {
+            if (selectedOption == -2 || (status & (WIN | LOSE))) {
                 if (currentMenu.options)
                     freeMenu(&currentMenu);
 
                 disconnectFromServer();
+                if (status & WIN)
+                    SDL_Log("Lost the battle");
+                else
+                    SDL_Log("Won the battle");
                 responseOperation = NO_OPERATION;
-            } else if (selectedOption >= 0 && clientHandledMenu == 0) {
+            } else if (selectedOption >= 0 && status == NOTHING_HAPPENED) {
                 if (!challengeUser(selectedOption)) {
                     SDL_Log("Not possible to challenge this user");
                 }

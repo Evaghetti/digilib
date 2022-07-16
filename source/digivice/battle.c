@@ -248,27 +248,27 @@ static uint16_t sendImplementation(uint16_t data) {
     return 0;
 }
 
-int updateClient(Menu* menu, int selectedOption, int* resultBattle) {
+StatusUpdate updateClient(Menu* menu, int selectedOption) {
     static unsigned char typeAction = BATTLE_LIST;
-    int status = 0;
+    StatusUpdate status = NOTHING_HAPPENED;
     char* options[2];
     Menu generatedMenu;
     if (connection == NULL || menu == NULL) {
         SDL_Log("Trying to register user without valid socket or menu");
-        return 0;
+        return ERROR;
     }
 
-    *resultBattle = 0;
     if (battleState != UPDATE_GAME) {
+        uint8_t resultBattle;
         if (battleState == BATTLE_CHALLENGE) {
-            *resultBattle =
+            resultBattle =
                 DIGIBATTLE_initiate(&sendImplementation, &recvImplementation);
         } else {
-            *resultBattle =
+            resultBattle =
                 DIGIBATTLE_continue(&sendImplementation, &recvImplementation);
         }
         battleState = UPDATE_GAME;
-        return 1;
+        return (StatusUpdate)resultBattle;
     }
 
     // Say to server i want an update, then get the type of update
@@ -279,8 +279,7 @@ int updateClient(Menu* menu, int selectedOption, int* resultBattle) {
             response = REFUSED;
         else
             response = ACCEPTED;
-
-        status = response;
+        status = HANDLING_MENU;
     }
 
     TagLengthValue dataUpdateRequest[] = {
