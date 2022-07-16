@@ -81,6 +81,15 @@ class Player:
 
         return another is self.challenging or another is self.challengedBy
 
+    def getInteractingPlayer(self) -> Player:
+        return self.challenging or self.challengedBy
+    
+    def isBattling(self) -> bool:
+        if not self.isInteracting():
+            return False
+
+        return self.requestStatus == ACCEPTED
+
 class Server:
     def __init__(self) -> None:
         self.server: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,11 +137,21 @@ class Server:
                         self.outputs.append(input)
 
                     user: Player = self.users[input]
+
+                    if user.isBattling():
+                        print(f"Battle logic from {user.uuid}")
+                        otherUser: Player = user.getInteractingPlayer()
+                        socketOtherUser, otherUser = self.lookForUser(otherUser.uuid)
+
+                        print(f"Sending to {otherUser.uuid}")
+                        self.send(socketOtherUser, dataReceive)
+                        continue
+
                     user.currentAction = dataReceive[0]
                     receivedTLV = self.processTLV(dataReceive[1:]) if len(dataReceive) > 1 else {}
 
-                    print("Received data:", ''.join('\\x{:02x}'.format(b) for b in dataReceive))
-                    
+                    print(f"Received data {user.uuid}:", ''.join('\\x{:02x}'.format(b) for b in dataReceive))
+                        
                     if user.currentAction == BATTLE_REGISTER:
                         user.configure(dataReceive[1:])
                         self.send(input, 0)
@@ -154,20 +173,22 @@ class Server:
                             
                     elif user.currentAction == UPDATE_GAME:
                         if user.isInteracting():
-                            print(f"Logica de briga {user.uuid}")
+                            print(f"Processing user interaction")
                             if user.challenging:
-                                print("Logica do desafiador")
-                                self.send(input, BATTLE_CHALLENGE)
-                                self.send(input, pack("<bbb", RESPONSE, 1, user.challenging.requestStatus))
-                                print("Enviado resultado do pooling")
-                                if user.challenging.requestStatus == REFUSED:
-                                    print(f"{user.challenging.uuid} refused your challenge {user.uuid}")
-                                elif user.challenging.requestStatus == ACCEPTED:
-                                    print(f"{user.challenging.uuid} accepted your challenge {user.uuid}")
+                                print("Challenger logic")
 
-                                if user.challenging.requestStatus != NO_RESPONSE:
-                                    user.challenging = None
+                                # The status of this request is the same as the challenged
+                                user.requestStatus = user.challenging.requestStatus 
+
+                                self.send(input, BATTLE_CHALLENGE)
+                                self.send(input, pack("<bbb", RESPONSE, 1, user.requestStatus))
+
+                                if user.requestStatus == REFUSED:
+                                    print(f"{user.challenging.uuid} refused your challenge {user.uuid}")
+                                elif user.requestStatus == ACCEPTED:
+                                    print(f"{user.challenging.uuid} accepted your challenge {user.uuid}")
                             else:
+                                print("Challenged logic")
                                 self.send(input, BATTLE_REQUEST)
 
                                 user.requestStatus = receivedTLV[RESPONSE]
@@ -179,9 +200,6 @@ class Server:
                                     print(f"{user.uuid} refused challenge by {user.challengedBy.uuid}")
                                 else:
                                     print(f"{user.uuid} still did not respond")
-
-                                if user.requestStatus != NO_RESPONSE:
-                                    user.challengedBy = None
                         else:
                             self.send(input, BATTLE_LIST)
                             self.send(input, self.createPlayerList(user))

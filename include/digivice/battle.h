@@ -8,7 +8,7 @@ int connectToServer();
 
 int registerUser(digimon_t* digimon);
 
-int updateClient(Menu* menu, int selectedOption);
+int updateClient(Menu* menu, int selectedOption, int* resultBattle);
 
 int challengeUser(int offsetUser);
 

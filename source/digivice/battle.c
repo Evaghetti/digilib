@@ -47,6 +47,7 @@ static TCPsocket connection = NULL;
 
 static char playersUUIDs[MAX_USER_COUNT][SIZE_UUID + 1];
 static int countPlayers = 0;
+static State battleState = UPDATE_GAME;
 
 int connectToServer() {
     // Already connected
@@ -236,7 +237,18 @@ static void changeMenuKeepIndex(Menu* menu, Menu* newMenu) {
         menu->currentOption = 0;
 }
 
-int updateClient(Menu* menu, int selectedOption) {
+static uint16_t recvImplementation() {
+    uint16_t dataReceived;
+    SDLNet_TCP_Recv(connection, &dataReceived, sizeof(dataReceived));
+    return dataReceived;
+}
+
+static uint16_t sendImplementation(uint16_t data) {
+    SDLNet_TCP_Send(connection, &data, sizeof(data));
+    return 0;
+}
+
+int updateClient(Menu* menu, int selectedOption, int* resultBattle) {
     static unsigned char typeAction = BATTLE_LIST;
     int status = 0;
     char* options[2];
@@ -244,6 +256,19 @@ int updateClient(Menu* menu, int selectedOption) {
     if (connection == NULL || menu == NULL) {
         SDL_Log("Trying to register user without valid socket or menu");
         return 0;
+    }
+
+    *resultBattle = 0;
+    if (battleState != UPDATE_GAME) {
+        if (battleState == BATTLE_CHALLENGE) {
+            *resultBattle =
+                DIGIBATTLE_initiate(&sendImplementation, &recvImplementation);
+        } else {
+            *resultBattle =
+                DIGIBATTLE_continue(&sendImplementation, &recvImplementation);
+        }
+        battleState = UPDATE_GAME;
+        return 1;
     }
 
     // Say to server i want an update, then get the type of update
@@ -269,10 +294,15 @@ int updateClient(Menu* menu, int selectedOption) {
             generatedMenu = handleUserListRequest();
             break;
         case BATTLE_CHALLENGE:
-            status = handleBattleChallenge(&generatedMenu);
+            if (handleBattleChallenge(&generatedMenu) == 1) {
+                battleState = BATTLE_CHALLENGE;
+            }
             break;
         case BATTLE_REQUEST:
             handleBattleRequest(&generatedMenu);
+            if (selectedOption == 0) {
+                battleState = BATTLE_REQUEST;
+            }
             break;
         default:
             break;

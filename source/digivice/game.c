@@ -191,6 +191,7 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 static PossibleOperations handleOperation(PossibleOperations operation,
                                           int selectedOption) {
     PossibleOperations responseOperation = operation;
+    int resultBattle;
 
     switch (operation) {
         case INFORMATION:
@@ -283,9 +284,10 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     break;
             }
 
-            int clientHandledMenu = updateClient(&currentMenu, selectedOption);
+            int clientHandledMenu =
+                updateClient(&currentMenu, selectedOption, &resultBattle);
 
-            if (selectedOption == -2) {
+            if (selectedOption == -2 || resultBattle > 0) {
                 if (currentMenu.options)
                     freeMenu(&currentMenu);
 
