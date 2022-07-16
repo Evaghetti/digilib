@@ -8,6 +8,7 @@
 #include "SDL2/SDL_render.h"
 
 #include "animation.h"
+#include "battle.h"
 #include "digimon.h"
 
 #define SAVE_FILE "digimon.save"
@@ -32,6 +33,9 @@ typedef enum Action {
     MAD_TRAINING,
     MAD_SCORE,
     SHOWING_SCORE = 1 << 11,
+    BATTLE_STATE = 1 << 12,
+    BATTLE_WIN,
+    BATTLE_LOSE,
 } Action;
 
 typedef struct {
@@ -62,6 +66,8 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar);
 void handleEvents(Avatar* avatar, const unsigned char events);
 
 void setCurrentAction(Avatar* avatar, Action newAction);
+
+void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy);
 
 Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer);
 

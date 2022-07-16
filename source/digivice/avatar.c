@@ -32,7 +32,7 @@ static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
 static const SDL_Rect flushClip = {7 * 8, 8, NORMAL_SIZE_SMALL_SPRITE,
                                    NORMAL_SIZE_SMALL_SPRITE};
 
-static SDL_Texture* textureAdditional;
+static SDL_Texture *textureAdditional, *textureEnemy;
 static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;     // Used for the cleaning animation
@@ -40,6 +40,10 @@ static float xProjectileOffset = 0;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
 static int skipFirstFrameScroll = 0, scrolledTrainingStance = 0;
 static int selectOptionTraining = 0;
+
+static SDL_RendererFlags projectileRenderFlags = SDL_FLIP_NONE;
+static float xProjectileSpeed = -SPEED_FLUSH;
+static int roundBattle = 0;
 
 static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
@@ -208,6 +212,9 @@ int initAvatar(Avatar* ret) {
                      GAME_TICK,
                      createRect(0, NORMAL_SIZE_SPRITE * 3, NORMAL_SIZE_SPRITE,
                                 NORMAL_SIZE_SPRITE),
+                     GAME_TICK);
+        addAnimation(&ret->animationController, "standing", 1,
+                     createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
                      GAME_TICK);
 
         // Additional stuff for animations etc.
@@ -429,7 +436,26 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 setCurrentAnimation(&avatar->animationController, "preparing");
             }
         }
+        if (avatar->currentAction & BATTLE_STATE) {
+            const char* currentAnimationName =
+                avatar->animationController
+                    .animations[avatar->animationController.currentAnimation]
+                    .animationName;
 
+            if (finishedCurrentAnimation(&avatar->animationController) &&
+                roundBattle <= 3) {
+                if (strcmp("preparing", currentAnimationName) == 0) {
+                    xProjectileOffset =
+                        avatar->transform.x - WIDTH_SMALL_SPRITE;
+                    xProjectileSpeed = -SDL_abs(xProjectileSpeed);
+                    setCurrentAnimation(&avatar->animationController,
+                                        "shooting");
+                } else if (strcmp("shooting", currentAnimationName) == 0) {
+                    setCurrentAnimation(&avatar->animationController,
+                                        "standing");
+                }
+            }
+        }
         updateInfoAvatar(avatar, 0);
         avatar->timePassed = 0.f;
     }
@@ -455,6 +481,35 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         } else {
             xOffsetSprites = 0;
             scrolledTrainingStance = 1;
+        }
+    }
+
+    if (avatar->currentAction & BATTLE_STATE) {
+        if (xProjectileOffset <= avatar->transform.x) {
+            xProjectileOffset += xProjectileSpeed * deltaTime;
+
+            int loopingRightside =
+                xProjectileOffset + WIDTH_SMALL_SPRITE > avatar->transform.x;
+            int loopingLeftside = xProjectileOffset < -WIDTH_SMALL_SPRITE;
+            if (loopingLeftside || loopingRightside) {
+                xProjectileSpeed = -xProjectileSpeed;
+                projectileRenderFlags = projectileRenderFlags == SDL_FLIP_NONE
+                                            ? SDL_FLIP_HORIZONTAL
+                                            : SDL_FLIP_NONE;
+
+                if (loopingRightside) {
+                    xProjectileOffset =
+                        avatar->transform.x + avatar->transform.w;
+                    roundBattle++;
+
+                    if (roundBattle <= 3) {
+                        setCurrentAnimation(&avatar->animationController,
+                                            "preparing");
+                    } else if (avatar->currentAction == BATTLE_WIN) {
+                        avatar->renderFlags = SDL_FLIP_HORIZONTAL;
+                    }
+                }
+            }
         }
     }
 
@@ -634,12 +689,41 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
     }
 }
 
+void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
+    SDL_Rect transformProjectile = {.x = xProjectileOffset,
+                                    .y = HEIGHT_BUTTON,
+                                    .w = WIDTH_SMALL_SPRITE,
+                                    .h = HEIGHT_SMALL_SPRITE};
+    const SDL_Rect* playerClip =
+        getAnimationFrameClip(&avatar->animationController);
+    const SDL_Rect projectileClip = {.x = NORMAL_SIZE_SPRITE,
+                                     .y = NORMAL_SIZE_SPRITE * 5,
+                                     .w = NORMAL_SIZE_SMALL_SPRITE,
+                                     .h = NORMAL_SIZE_SMALL_SPRITE};
+    SDL_Texture* textureProjectile =
+        xProjectileSpeed < 0 ? avatar->spriteSheet : textureEnemy;
+
+    SDL_RenderCopyEx(render, avatar->spriteSheet, playerClip,
+                     &avatar->transform, 0, NULL, avatar->renderFlags);
+    SDL_RenderCopyEx(render, textureProjectile, &projectileClip,
+                     &transformProjectile, 0, NULL, projectileRenderFlags);
+    if (roundBattle == 3) {
+        if ((xProjectileSpeed < 0 && avatar->currentAction == BATTLE_WIN) ||
+            (xProjectileSpeed > 0 && avatar->currentAction == BATTLE_LOSE))
+            transformProjectile.y += transformProjectile.h;
+        SDL_RenderCopyEx(render, avatar->spriteSheet, &projectileClip,
+                         &transformProjectile, 0, NULL, projectileRenderFlags);
+    }
+}
+
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
     if (!avatar->initiated)
         return;
 
     if (avatar->currentAction & (TRAINING | SHOWING_SCORE))
         drawAvatarTraining(render, avatar);
+    else if (avatar->currentAction & BATTLE_STATE)
+        drawAvatarBattle(render, avatar);
     else
         drawAvatarNormal(render, avatar);
 }
@@ -686,6 +770,16 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
     }
 
     updateInfoAvatar(avatar, 0);
+}
+
+void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy) {
+    avatar->currentAction = status & WIN ? BATTLE_WIN : BATTLE_LOSE;
+    avatar->transform.x = WIDTH_SCREEN - avatar->transform.w;
+    avatar->renderFlags = SDL_FLIP_NONE;
+    setCurrentAnimation(&avatar->animationController, "preparing");
+    xProjectileOffset = avatar->transform.x + WIDTH_SPRITE;
+
+    textureEnemy = enemy;
 }
 
 static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
