@@ -32,7 +32,7 @@ static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
 static const SDL_Rect flushClip = {7 * 8, 8, NORMAL_SIZE_SMALL_SPRITE,
                                    NORMAL_SIZE_SMALL_SPRITE};
 
-static SDL_Texture *textureAdditional, *textureEnemy;
+static SDL_Texture *textureAdditional, *textureEnemy, *texturePopup;
 static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;     // Used for the cleaning animation
@@ -219,6 +219,7 @@ int initAvatar(Avatar* ret) {
 
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
+        texturePopup = loadTexture("resource/popups.gif");
         // Work around
         // TODO: define that the controlelr should not play the first animation.
         addAnimation(
@@ -260,6 +261,24 @@ int initAvatar(Avatar* ret) {
             createRect(NORMAL_SIZE_SMALL_SPRITE * 3, NORMAL_SIZE_SMALL_SPRITE,
                        NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
             GAME_TICK);
+        addAnimation(
+            &additionalAnimations, "damage", 8,
+            createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE), 0.15f,
+            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                       NORMAL_SIZE_SPRITE),
+            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            0.15f,
+            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                       NORMAL_SIZE_SPRITE),
+            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            0.15f,
+            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                       NORMAL_SIZE_SPRITE),
+            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            0.15f,
+            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
+                       NORMAL_SIZE_SPRITE),
+            0.15f);
 
         addAnimation(
             &animationsForPoop, "poop", 2,
@@ -437,20 +456,17 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             }
         }
         if (avatar->currentAction & BATTLE_STATE) {
-            const char* currentAnimationName =
-                avatar->animationController
-                    .animations[avatar->animationController.currentAnimation]
-                    .animationName;
-
             if (finishedCurrentAnimation(&avatar->animationController) &&
                 roundBattle <= 3) {
-                if (strcmp("preparing", currentAnimationName) == 0) {
+                if (isCurrentAnimation(&avatar->animationController,
+                                       "preparing")) {
                     xProjectileOffset =
                         avatar->transform.x - WIDTH_SMALL_SPRITE;
                     xProjectileSpeed = -SDL_abs(xProjectileSpeed);
                     setCurrentAnimation(&avatar->animationController,
                                         "shooting");
-                } else if (strcmp("shooting", currentAnimationName) == 0) {
+                } else if (isCurrentAnimation(&avatar->animationController,
+                                              "shooting")) {
                     setCurrentAnimation(&avatar->animationController,
                                         "standing");
                 }
@@ -502,11 +518,13 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         avatar->transform.x + avatar->transform.w;
                     roundBattle++;
 
-                    if (roundBattle <= 3) {
-                        setCurrentAnimation(&avatar->animationController,
-                                            "preparing");
-                    } else if (avatar->currentAction == BATTLE_WIN) {
+                    if (!isCurrentAnimation(&additionalAnimations, "damage"))
+                        setCurrentAnimation(&additionalAnimations, "damage");
+                    if (roundBattle > 3 &&
+                        avatar->currentAction == BATTLE_WIN) {
                         avatar->renderFlags = SDL_FLIP_HORIZONTAL;
+
+                        setCurrentAnimation(&additionalAnimations, "nothing");
                     }
                 }
             }
@@ -517,6 +535,14 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     updateAnimation(&additionalAnimations, deltaTime);
     if (avatar->infoApi.uiPoopCount)
         updateAnimation(&animationsForPoop, deltaTime);
+
+    if ((avatar->currentAction & BATTLE_STATE) &&
+        isCurrentAnimationAndFinished(&additionalAnimations, "damage")) {
+        setCurrentAnimation(&additionalAnimations, "nothing");
+
+        if (roundBattle <= 3)
+            setCurrentAnimation(&avatar->animationController, "preparing");
+    }
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events) {
@@ -690,6 +716,17 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
 }
 
 void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
+    if (isCurrentAnimation(&additionalAnimations, "damage") &&
+        !finishedCurrentAnimation(&additionalAnimations)) {
+        SDL_Rect transformDamage = {
+            .x = 0, .y = HEIGHT_BUTTON, .w = WIDTH_SCREEN, .h = HEIGHT_SPRITE};
+        const SDL_Rect* clipPopup =
+            getAnimationFrameClip(&additionalAnimations);
+
+        SDL_RenderCopy(render, texturePopup, clipPopup, &transformDamage);
+        return;
+    }
+
     SDL_Rect transformProjectile = {.x = xProjectileOffset,
                                     .y = HEIGHT_BUTTON,
                                     .w = WIDTH_SMALL_SPRITE,
@@ -711,7 +748,7 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
         if ((xProjectileSpeed < 0 && avatar->currentAction == BATTLE_WIN) ||
             (xProjectileSpeed > 0 && avatar->currentAction == BATTLE_LOSE))
             transformProjectile.y += transformProjectile.h;
-        SDL_RenderCopyEx(render, avatar->spriteSheet, &projectileClip,
+        SDL_RenderCopyEx(render, textureProjectile, &projectileClip,
                          &transformProjectile, 0, NULL, projectileRenderFlags);
     }
 }
@@ -909,4 +946,5 @@ void freeAvatar(Avatar* avatar) {
     if (avatar->spriteSheet)
         freeTexture(avatar->spriteSheet);
     freeTexture(textureAdditional);
+    freeTexture(texturePopup);
 }

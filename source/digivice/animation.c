@@ -98,6 +98,21 @@ int finishedCurrentAnimation(AnimationController* animationController) {
     return animation->finished;
 }
 
+int isCurrentAnimation(AnimationController* animationController,
+                       const char* name) {
+    const char* currentName =
+        animationController->animations[animationController->currentAnimation]
+            .animationName;
+
+    return strcmp(name, currentName) == 0;
+}
+
+int isCurrentAnimationAndFinished(AnimationController* animationController,
+                                  const char* name) {
+    return isCurrentAnimation(animationController, name) &&
+           finishedCurrentAnimation(animationController);
+}
+
 void freeAnimationController(AnimationController* animationController) {
     int i;
 

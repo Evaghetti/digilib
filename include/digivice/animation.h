@@ -38,6 +38,12 @@ const SDL_Rect* getAnimationFrameClip(
 
 int finishedCurrentAnimation(AnimationController* animationController);
 
+int isCurrentAnimation(AnimationController* animationController,
+                       const char* name);
+
+int isCurrentAnimationAndFinished(AnimationController* animationController,
+                                  const char* name);
+
 void freeAnimationController(AnimationController* animationController);
 
 SDL_Rect createRect(int x, int y, int w, int h);
