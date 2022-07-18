@@ -4,6 +4,8 @@
 #include "digimon.h"
 #include "digivice/menu.h"
 
+#include "SDL2/SDL_image.h"
+
 typedef enum {
     ERROR = 0,
     WIN = 1 << 0,
@@ -22,5 +24,7 @@ StatusUpdate updateClient(Menu* menu, int selectedOption);
 int challengeUser(int offsetUser);
 
 int disconnectFromServer();
+
+SDL_Texture* getChallengedUserTexture();
 
 #endif  // BATTLE_H

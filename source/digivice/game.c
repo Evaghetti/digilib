@@ -291,10 +291,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     freeMenu(&currentMenu);
 
                 disconnectFromServer();
-                if (status & WIN)
-                    SDL_Log("Lost the battle");
-                else
-                    SDL_Log("Won the battle");
+                setBattleAction(&digimon, status, getChallengedUserTexture());
                 responseOperation = NO_OPERATION;
             } else if (selectedOption >= 0 && status == NOTHING_HAPPENED) {
                 if (!challengeUser(selectedOption)) {

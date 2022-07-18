@@ -502,6 +502,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                     }
                 } else if (avatar->currentAction == BATTLE_WIN) {
                     setCurrentAction(avatar, HAPPY_BATTLE);
+                    freeTexture(textureEnemy);
                 }
             }
         }
@@ -581,8 +582,10 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         setCurrentAnimation(&additionalAnimations, "nothing");
 
         setCurrentAnimation(&avatar->animationController, "preparing");
-        if (roundBattle > 3 && avatar->currentAction == BATTLE_LOSE)
+        if (roundBattle > 3 && avatar->currentAction == BATTLE_LOSE) {
             setCurrentAction(avatar, SAD_BATTLE);
+            freeTexture(textureEnemy);
+        }
     }
 }
 
@@ -886,7 +889,7 @@ void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy) {
     avatar->renderFlags = SDL_FLIP_NONE;
     setCurrentAnimation(&avatar->animationController, "preparing");
     xProjectileOffset = avatar->transform.x + WIDTH_SPRITE;
-
+    roundBattle = 0;
     textureEnemy = enemy;
 }
 

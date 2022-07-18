@@ -1,6 +1,7 @@
 #include "digivice/battle.h"
 #include "digibattle_classic.h"
 #include "digivice/globals.h"
+#include "digivice/texture.h"
 #include "digiworld.h"
 
 #include "SDL2/SDL_net.h"
@@ -9,6 +10,7 @@
 #define PORT 1998
 
 #define SIZE_UUID      36
+#define SIZE_PATH      100
 #define MAX_USER_COUNT 50
 
 #define TLV_LENGTH(x) (sizeof(x) / sizeof(x[0]))
@@ -43,10 +45,17 @@ typedef struct {
     void* value;
 } TagLengthValue;
 
+typedef struct {
+    unsigned char slotPower;
+    unsigned char version;
+    char pathSpriteSheet[SIZE_PATH + 1];
+    char uuid[SIZE_UUID + 1];
+} Player;
+
 static TCPsocket connection = NULL;
 
-static char playersUUIDs[MAX_USER_COUNT][SIZE_UUID + 1];
-static int countPlayers = 0;
+static Player players[MAX_USER_COUNT];
+static int countPlayers = 0, selectedPlayer = 0;
 static State battleState = UPDATE_GAME;
 
 int connectToServer() {
@@ -121,7 +130,7 @@ static int sendData(State state, TagLengthValue* tags, int tagsLength) {
     return 1;
 }
 
-digimon_t* getDigimon(unsigned char slot, unsigned char version) {
+static digimon_t* getDigimon(unsigned char slot, unsigned char version) {
     int i;
     for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
         if (slot == vstPossibleDigimon[i].uiSlotPower &&
@@ -161,24 +170,31 @@ static Menu handleUserListRequest() {
     for (i = 0; i < countPlayers && i < MAX_USER_COUNT; i++) {
         SDLNet_TCP_Recv(connection, data, 6);
 
-        digimon_t* currentDigimon = getDigimon(data[2], data[5]);
+        players[i].slotPower = data[2];
+        players[i].version = data[5];
+
+        digimon_t* currentDigimon =
+            getDigimon(players[i].slotPower, players[i].version);
         if (currentDigimon == NULL) {
-            SDL_Log("Digimon %d %d does not exist", data[2], data[5]);
+            SDL_Log("Digimon %d %d does not exist", players[i].slotPower,
+                    players[i].version);
             countPlayers--;
             // TODO: Error handling
             continue;
         }
 
-        snprintf(path, sizeof(path), "resource/%s.gif", currentDigimon->szName);
-        for (j = 0; j < strlen(path); j++) {
-            path[j] = tolower(path[j]);
+        snprintf(players[i].pathSpriteSheet, sizeof(players[i].pathSpriteSheet),
+                 "resource/%s.gif", currentDigimon->szName);
+        for (j = 0; j < strlen(players[i].pathSpriteSheet); j++) {
+            players[i].pathSpriteSheet[j] =
+                tolower(players[i].pathSpriteSheet[j]);
         }
 
-        addMenuImage(&result, path, clip);
+        addMenuImage(&result, players[i].pathSpriteSheet, clip);
 
         SDLNet_TCP_Recv(connection, data, 2);
-        SDLNet_TCP_Recv(connection, playersUUIDs[i], data[1]);
-        SDL_Log("User uuid -> %s", playersUUIDs[i]);
+        SDLNet_TCP_Recv(connection, players[i].uuid, data[1]);
+        SDL_Log("User uuid -> %s", players[i].uuid);
     }
 
     return result;
@@ -322,14 +338,22 @@ int challengeUser(int offsetUser) {
     }
 
     TagLengthValue dataSent[] = {
-        {USER_ID, strlen(playersUUIDs[offsetUser]), playersUUIDs[offsetUser]},
+        {USER_ID, strlen(players[offsetUser].uuid), players[offsetUser].uuid},
     };
     sendData(BATTLE_CHALLENGE, dataSent, TLV_LENGTH(dataSent));
+    selectedPlayer = offsetUser;
 
     unsigned char status;
     SDLNet_TCP_Recv(connection, &status, sizeof(status));
 
     return status;
+}
+
+SDL_Texture* getChallengedUserTexture() {
+    if (selectedPlayer < 0 || selectedPlayer >= countPlayers)
+        return NULL;
+
+    return loadTexture(players[selectedPlayer].pathSpriteSheet);
 }
 
 int disconnectFromServer() {
