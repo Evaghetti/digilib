@@ -39,6 +39,7 @@ typedef enum Action {
     BATTLE_STATE = 1 << 12,
     BATTLE_WIN,
     BATTLE_LOSE,
+    STANDOFF = 1 << 13,
 } Action;
 
 typedef struct {
