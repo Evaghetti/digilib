@@ -84,6 +84,11 @@ static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
     }
 }
 
+static int isOnScreenCenter(const Avatar* avatar) {
+    return memcmp(&avatar->transform, &initialTransform,
+                  sizeof(avatar->transform)) == 0;
+}
+
 int initAvatar(Avatar* ret) {
     int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
 
@@ -215,6 +220,19 @@ int initAvatar(Avatar* ret) {
                      GAME_TICK);
         addAnimation(&ret->animationController, "standing", 1,
                      createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     GAME_TICK);
+        addAnimation(&ret->animationController, "sick", 4,
+                     createRect(0, NORMAL_SIZE_SPRITE * 5, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 4,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(0, NORMAL_SIZE_SPRITE * 5, NORMAL_SIZE_SPRITE,
+                                NORMAL_SIZE_SPRITE),
+                     GAME_TICK,
+                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 4,
+                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
                      GAME_TICK);
 
         // Additional stuff for animations etc.
@@ -375,11 +393,18 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
         if ((avatar->currentAction & (HAPPY | NEGATING | MAD))) {
             avatar->transform = initialTransform;
-            if (avatar->currentAction & HAPPY)
+            if (avatar->currentAction & HAPPY) {
                 setCurrentAnimation(&avatar->animationController, "happy");
-            else if (avatar->currentAction & MAD)
-                setCurrentAnimation(&avatar->animationController, "mad");
-            else {
+                avatar->renderFlags = SDL_FLIP_NONE;
+            } else if (avatar->currentAction & MAD) {
+                if (avatar->currentAction == SAD_BATTLE) {
+                    if (isCurrentAnimationAndFinished(
+                            &avatar->animationController, "preparing"))
+                        setCurrentAnimation(&avatar->animationController,
+                                            "sick");
+                } else
+                    setCurrentAnimation(&avatar->animationController, "mad");
+            } else {
                 setCurrentAnimation(&avatar->animationController, "negating");
                 avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
                                           ? SDL_FLIP_NONE
@@ -387,7 +412,6 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             }
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
-
                 switch (avatar->currentAction) {
                     case HAPPY_SCORE:
                     case MAD_SCORE:
@@ -404,6 +428,12 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         scrolledTrainingStance = 0;
                         selectOptionTraining = 0;
                         break;
+                    case SAD_BATTLE:
+                        setCurrentAction(avatar, CLEANING_DEFEAT);
+                        break;
+                    case HAPPY_BATTLE:
+                        avatar->timePassed = GAME_TICK;
+                        // Fallthrough
                     default:
                         setCurrentAnimation(&avatar->animationController,
                                             "walking");
@@ -456,19 +486,22 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             }
         }
         if (avatar->currentAction & BATTLE_STATE) {
-            if (finishedCurrentAnimation(&avatar->animationController) &&
-                roundBattle <= 3) {
-                if (isCurrentAnimation(&avatar->animationController,
-                                       "preparing")) {
-                    xProjectileOffset =
-                        avatar->transform.x - WIDTH_SMALL_SPRITE;
-                    xProjectileSpeed = -SDL_abs(xProjectileSpeed);
-                    setCurrentAnimation(&avatar->animationController,
-                                        "shooting");
-                } else if (isCurrentAnimation(&avatar->animationController,
-                                              "shooting")) {
-                    setCurrentAnimation(&avatar->animationController,
-                                        "standing");
+            if (finishedCurrentAnimation(&avatar->animationController)) {
+                if (roundBattle <= 3) {
+                    if (isCurrentAnimation(&avatar->animationController,
+                                           "preparing")) {
+                        xProjectileOffset =
+                            avatar->transform.x - WIDTH_SMALL_SPRITE;
+                        xProjectileSpeed = -SDL_abs(xProjectileSpeed);
+                        setCurrentAnimation(&avatar->animationController,
+                                            "shooting");
+                    } else if (isCurrentAnimation(&avatar->animationController,
+                                                  "shooting")) {
+                        setCurrentAnimation(&avatar->animationController,
+                                            "standing");
+                    }
+                } else if (avatar->currentAction == BATTLE_WIN) {
+                    setCurrentAction(avatar, HAPPY_BATTLE);
                 }
             }
         }
@@ -476,17 +509,24 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         avatar->timePassed = 0.f;
     }
 
-    if (avatar->currentAction == CLEANING) {
-        if (xOffsetSprites >= WIDTH_SCREEN + WIDTH_SMALL_SPRITE ||
-            avatar->infoApi.uiPoopCount == 0) {
-            DIGI_cleanPoop();
+    if (avatar->currentAction & CLEANING) {
+        xOffsetSprites += SPEED_FLUSH * deltaTime;
 
+        if (avatar->currentAction == CLEANING_DEFEAT) {
+            avatar->animationController.timeInCurrentFrame = 0.f;
+        }
+
+        if (xOffsetSprites >= WIDTH_SCREEN + WIDTH_SMALL_SPRITE) {
+            avatar->transform = initialTransform;
             xOffsetSprites = 0;
 
+            if (avatar->currentAction == CLEANING &&
+                avatar->infoApi.uiPoopCount) {
+                DIGI_cleanPoop();
+            }
+
             setCurrentAction(avatar, WALKING);
-            avatar->transform = initialTransform;
-        } else
-            xOffsetSprites += SPEED_FLUSH * deltaTime;
+        }
     }
 
     if (avatar->currentAction == TRAINING) {
@@ -540,8 +580,9 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         isCurrentAnimationAndFinished(&additionalAnimations, "damage")) {
         setCurrentAnimation(&additionalAnimations, "nothing");
 
-        if (roundBattle <= 3)
-            setCurrentAnimation(&avatar->animationController, "preparing");
+        setCurrentAnimation(&avatar->animationController, "preparing");
+        if (roundBattle > 3 && avatar->currentAction == BATTLE_LOSE)
+            setCurrentAction(avatar, SAD_BATTLE);
     }
 }
 
@@ -570,6 +611,8 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
 }
 
 void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
+    int i, j;
+
     if (avatar->currentAction == SLEEPING) {
         const SDL_Rect* currentSpriteRect =
             getAnimationFrameClip(&additionalAnimations);
@@ -603,26 +646,55 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                        &transform);
     }
 
-    int i;
-    for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
-        SDL_Rect transformPoop = {
-            .x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE -
-                 WIDTH_SMALL_SPRITE * (i % 2) - (int)xOffsetSprites,
-            .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
-            .w = WIDTH_SMALL_SPRITE,
-            .h = HEIGHT_SMALL_SPRITE};
-        currentSpriteRect = getAnimationFrameClip(&animationsForPoop);
-        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
-                       &transformPoop);
-    }
-
-    if (avatar->currentAction == CLEANING) {
+    if (avatar->currentAction & CLEANING) {
         SDL_Rect transform = {WIDTH_SCREEN - xOffsetSprites, HEIGHT_BUTTON,
                               WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
         SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
 
         transform.y += HEIGHT_SMALL_SPRITE;
         SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
+    }
+
+    if ((avatar->currentAction == SAD_BATTLE ||
+         avatar->currentAction == HAPPY_BATTLE ||
+         avatar->currentAction == CLEANING_DEFEAT) &&
+        isOnScreenCenter(avatar)) {
+        const SDL_Rect clip = {.w = NORMAL_SIZE_SMALL_SPRITE,
+                               .h = NORMAL_SIZE_SMALL_SPRITE,
+                               .x = avatar->currentAction == HAPPY_BATTLE
+                                        ? 8 * NORMAL_SIZE_SMALL_SPRITE
+                                        : 4 * NORMAL_SIZE_SMALL_SPRITE,
+                               .y = avatar->currentAction == HAPPY_BATTLE
+                                        ? 0
+                                        : NORMAL_SIZE_SMALL_SPRITE};
+        SDL_Rect transform = {.x = -xOffsetSprites,
+                              .y = 0,
+                              .w = WIDTH_SMALL_SPRITE,
+                              .h = HEIGHT_SMALL_SPRITE};
+
+        for (i = 0; i < 2; i++) {
+            transform.y = HEIGHT_BUTTON;
+
+            for (j = 0; j < 2; j++) {
+                SDL_RenderCopy(render, textureAdditional, &clip, &transform);
+
+                transform.y += transform.h;
+            }
+
+            transform.x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE - xOffsetSprites;
+        }
+    } else {
+        for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
+            SDL_Rect transformPoop = {
+                .x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE -
+                     WIDTH_SMALL_SPRITE * (i % 2) - (int)xOffsetSprites,
+                .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
+                .w = WIDTH_SMALL_SPRITE,
+                .h = HEIGHT_SMALL_SPRITE};
+            currentSpriteRect = getAnimationFrameClip(&animationsForPoop);
+            SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
+                           &transformPoop);
+        }
     }
 }
 
@@ -768,7 +840,6 @@ void drawAvatar(SDL_Renderer* render, const Avatar* avatar) {
 void setCurrentAction(Avatar* avatar, Action newAction) {
     const Action oldAction = avatar->currentAction;
     avatar->currentAction = newAction;
-
     avatar->timePassed = GAME_TICK;
     setCurrentAnimation(&additionalAnimations, "nothing");
     if (newAction == WALKING) {
