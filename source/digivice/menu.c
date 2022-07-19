@@ -10,8 +10,24 @@
 static SDL_Texture* cursorTexture = NULL;
 static const SDL_Rect cursorClip = {.x = 32, .y = 0, .w = 8, .h = 8};
 
+Menu initMenu(int count, TypeMenu type) {
+    Menu ret = {.countOptions = count,
+                .type = type,
+                .currentOption = 0,
+                .customs = NONE};
+
+    ret.options = calloc(count, sizeof(Option));
+
+    if (cursorTexture == NULL)
+        cursorTexture = loadTexture("resource/hud.png");
+    return ret;
+}
+
 Menu initMenuText(int count, char* texts[]) {
-    Menu ret = {.countOptions = count, .type = TEXT, .currentOption = 0};
+    Menu ret = {.countOptions = count,
+                .type = TEXT,
+                .currentOption = 0,
+                .customs = NONE};
     int i;
 
     ret.options = calloc(count, sizeof(Option));
@@ -29,7 +45,10 @@ Menu initMenuText(int count, char* texts[]) {
 }
 
 Menu initMenuImage(int count, char* paths[], SDL_Rect spriteRects[]) {
-    Menu ret = {.countOptions = count, .type = IMAGE, .currentOption = 0};
+    Menu ret = {.countOptions = count,
+                .type = IMAGE,
+                .currentOption = 0,
+                .customs = NONE};
     int i;
 
     ret.options = calloc(count, sizeof(Option));
@@ -58,7 +77,10 @@ void addMenuImage(Menu* menu, const char* path, SDL_Rect spriteRect) {
 }
 
 Menu initMenuImageRaw(int count, SDL_Texture* textures[]) {
-    Menu ret = {.countOptions = count, .type = IMAGE, .currentOption = 0};
+    Menu ret = {.countOptions = count,
+                .type = IMAGE,
+                .currentOption = 0,
+                .customs = NONE};
     int i;
 
     ret.options = calloc(count, sizeof(Option));
@@ -118,7 +140,8 @@ static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
         currentTransform.y += currentTransform.h;
     }
 
-    SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &cursorTransform);
+    if ((menu->customs & NO_CURSOR) == 0)
+        SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &cursorTransform);
 }
 
 static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
@@ -145,7 +168,7 @@ static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
         SDL_RenderCopy(renderer, currentText, NULL, &currentTransform);
         SDL_DestroyTexture(currentText);
 
-        if (index == menu->currentOption) {
+        if (index == menu->currentOption && (menu->customs & NO_CURSOR) == 0) {
             SDL_Rect cursorTransform = currentTransform;
             cursorTransform.x -= currentTransform.w / 2;
 
@@ -166,24 +189,31 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
-    static const SDL_Rect transform = {.x = 0,
-                                       .y = HEIGHT_BUTTON,
-                                       .w = WIDTH_SCREEN,
-                                       .h = HEIGHT_SCREEN - HEIGHT_BUTTON * 2};
-    static const SDL_Point centerCursor = {.x = 0, .y = 4};
+    SDL_Rect transform = {.y = HEIGHT_BUTTON, .h = HEIGHT_SPRITE};
+    if (menu->customs & FILL_SCREEN) {
+        transform.x = 0;
+        transform.w = WIDTH_SCREEN;
+    } else {
+        transform.x = WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2;
+        transform.w = WIDTH_SPRITE;
+    }
 
     const Option* currentOption = &menu->options[menu->currentOption];
     SDL_RenderCopy(renderer, currentOption->texture, &currentOption->spriteRect,
                    &transform);
 
-    // SDL_Rect transformCursor = transform;
-    // transformCursor.x = transform.x + (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
-    //                                    WIDTH_SMALL_SPRITE / 2);
-    // SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &transformCursor);
-    // transformCursor.x = transform.x - (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE +
-    //                                    WIDTH_SMALL_SPRITE / 2);
-    // SDL_RenderCopyEx(renderer, cursorTexture, &cursorClip, &transformCursor,
-    //                  0.f, NULL, SDL_FLIP_HORIZONTAL);
+    if ((menu->customs & NO_CURSOR) == 0) {
+        SDL_Rect transformCursor = transform;
+        transformCursor.x =
+            transform.x +
+            (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE + WIDTH_SMALL_SPRITE / 2);
+        SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &transformCursor);
+        transformCursor.x =
+            transform.x -
+            (WIDTH_SPRITE / 2 + WIDTH_SMALL_SPRITE + WIDTH_SMALL_SPRITE / 2);
+        SDL_RenderCopyEx(renderer, cursorTexture, &cursorClip, &transformCursor,
+                         0.f, NULL, SDL_FLIP_HORIZONTAL);
+    }
 }
 
 void drawMenu(SDL_Renderer* renderer, Menu* menu) {
@@ -203,5 +233,7 @@ void freeMenu(Menu* menu) {
     }
 
     free(menu->options);
+    if (menu->header)
+        freeTexture(menu->header);
     memset(menu, 0, sizeof(Menu));
 }

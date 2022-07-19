@@ -1030,6 +1030,7 @@ Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer) {
         heartInfoSurface("HUNGER", currentHunger, renderer),
         heartInfoSurface("STRENGTH", currentStrength, renderer), textureWins};
     Menu retMenu = initMenuImageRaw(4, pages);
+    retMenu.customs = FILL_SCREEN | NO_CURSOR;
     return retMenu;
 }
 

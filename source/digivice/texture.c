@@ -26,14 +26,16 @@ static LoadedTexture* initLoadedTexture(const char* filePath) {
     strncpy(loadedTexture->filePath, filePath, sizeof(loadedTexture->filePath));
     SDL_Surface* surface = IMG_Load(filePath);
     if (surface == NULL) {
-        SDL_Log("Error while loading %s from memory", filePath);
+        SDL_Log("Error while loading %s from memory -> %s", filePath,
+                IMG_GetError());
         free(loadedTexture);
         return NULL;
     }
 
     loadedTexture->texture = SDL_CreateTextureFromSurface(gRenderer, surface);
     if (loadedTexture->texture == NULL) {
-        SDL_Log("Error while transforming %s into texture", filePath);
+        SDL_Log("Error while transforming %s into texture -> %s", filePath,
+                IMG_GetError());
         SDL_FreeSurface(surface);
         free(loadedTexture);
         return NULL;

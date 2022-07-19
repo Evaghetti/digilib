@@ -11,12 +11,21 @@ typedef struct Option {
 
 typedef enum TypeMenu { UNDEFINED, TEXT, IMAGE } TypeMenu;
 
+typedef enum CustomizationMenu {
+    NONE,
+    NO_CURSOR = 1 << 0,
+    FILL_SCREEN = 1 << 1,
+} CustomizationMenu;
+
 typedef struct Menu {
     int countOptions, currentOption;
+    CustomizationMenu customs;
     TypeMenu type;
     Option* options;
     SDL_Texture* header;
 } Menu;
+
+Menu initMenu(int count, TypeMenu type);
 
 Menu initMenuText(int count, char* texts[]);
 

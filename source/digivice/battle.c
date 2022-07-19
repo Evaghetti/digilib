@@ -169,18 +169,16 @@ static Menu handleUserListRequest() {
     }
 
     memcpy(&countPlayers, data + 2, sizeof(countPlayers));
-    result.countOptions = countPlayers;
-    result.type = IMAGE;
-    result.currentOption = 0;
 
     SDL_Log("%d digimons on server", countPlayers);
     if (countPlayers == 0) {
-        SDL_Log("No one on server");
+        char* message[] = {"WAITING USERS"};
+        result = initMenuText(1, message);
+        result.customs = NO_CURSOR;
         return result;
     }
 
-    result.options = calloc(countPlayers, sizeof(Option));
-
+    result = initMenu(countPlayers, IMAGE);
     for (i = 0; i < countPlayers && i < MAX_USER_COUNT; i++) {
         SDLNet_TCP_Recv(connection, data, 6);
 
@@ -220,6 +218,7 @@ static int handleBattleChallenge(Menu* menu) {
         SDL_Rect clip = {0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
                          NORMAL_SIZE_SPRITE};
         *menu = initMenuImage(1, paths, &clip);
+        menu->customs = FILL_SCREEN | NO_CURSOR;
     }
     return dataReceived[2];
 }
