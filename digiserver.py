@@ -193,6 +193,7 @@ class Server:
 
                                 user.requestStatus = receivedTLV[RESPONSE]
                                 self.send(input, pack("<bbb", RESPONSE, 1, user.requestStatus))
+                                self.send(input, pack("<bb", USER_ID, len(user.challengedBy.uuid)) + user.challengedBy.uuid.encode())
 
                                 if user.requestStatus == ACCEPTED:
                                     print(f"{user.uuid} accepted challenge by {user.challengedBy.uuid}")

@@ -15,6 +15,7 @@ typedef struct Menu {
     int countOptions, currentOption;
     TypeMenu type;
     Option* options;
+    SDL_Texture* header;
 } Menu;
 
 Menu initMenuText(int count, char* texts[]);

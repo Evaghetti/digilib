@@ -87,7 +87,7 @@ void advanceMenu(Menu* menu, int step) {
     }
 }
 
-static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
+static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
     SDL_Rect currentTransform = {.x = WIDTH_SMALL_SPRITE / 2,
                                  .y = HEIGHT_BUTTON + HEIGHT_SMALL_SPRITE / 2,
@@ -119,6 +119,50 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
     }
 
     SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &cursorTransform);
+}
+
+static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
+    static const SDL_Color textColor = {0, 0, 0};
+    SDL_Rect currentTransform = {0, HEIGHT_BUTTON, WIDTH_SCREEN,
+                                 HEIGHT_SMALL_SPRITE};
+
+    SDL_RenderCopy(renderer, menu->header, NULL, &currentTransform);
+    currentTransform.y += currentTransform.h;
+    currentTransform.w *= .25f;
+    currentTransform.x += currentTransform.w * .5f;
+
+    int index = (menu->currentOption / 2) * 2;
+    const int parada = index + 2 >= menu->countOptions && menu->countOptions > 2
+                           ? index + 1
+                           : index + 2;
+
+    for (; index != parada; index++) {
+        SDL_Texture* currentText =
+            createTextTexture(textColor, "%s", menu->options[index].text);
+        if (currentText == NULL)
+            continue;
+
+        SDL_RenderCopy(renderer, currentText, NULL, &currentTransform);
+        SDL_DestroyTexture(currentText);
+
+        if (index == menu->currentOption) {
+            SDL_Rect cursorTransform = currentTransform;
+            cursorTransform.x -= currentTransform.w / 2;
+
+            SDL_RenderCopy(renderer, cursorTexture, &cursorClip,
+                           &cursorTransform);
+        }
+
+        currentTransform.x += currentTransform.w * 2.f;
+    }
+}
+
+static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
+    if (menu->header == NULL) {
+        drawNormalTextMenu(renderer, menu);
+    } else {
+        drawHeaderTextMenu(renderer, menu);
+    }
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {

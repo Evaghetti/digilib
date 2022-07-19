@@ -272,7 +272,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             }
             break;
         case BATTLE:
-            switch (connectToServer()) {
+            switch (connectToServer(digimon.infoApi.pstCurrentDigimon)) {
                 case 0:
                     SDL_Log("Not able to connect to server");
                     responseOperation = NO_OPERATION;
@@ -284,7 +284,8 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     break;
             }
 
-            StatusUpdate status = updateClient(&currentMenu, selectedOption);
+            StatusUpdate status =
+                updateClient(&currentMenu, selectedOption, gRenderer);
 
             if (selectedOption == -2 || (status & (WIN | LOSE))) {
                 if (currentMenu.options)

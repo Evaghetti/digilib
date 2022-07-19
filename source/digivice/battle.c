@@ -54,11 +54,19 @@ typedef struct {
 
 static TCPsocket connection = NULL;
 
-static Player players[MAX_USER_COUNT];
+static Player players[MAX_USER_COUNT], player;
 static int countPlayers = 0, selectedPlayer = 0;
 static State battleState = UPDATE_GAME;
+static SDL_Texture* headerChallenge;
 
-int connectToServer() {
+static void toLowerStr(char* result) {
+    while (*result != '\0') {
+        *result = tolower(*result);
+        result++;
+    }
+}
+
+int connectToServer(digimon_t* playerDigimon) {
     // Already connected
     if (connection != NULL)
         return 2;
@@ -77,6 +85,12 @@ int connectToServer() {
                 SDLNet_GetError());
         return 0;
     }
+
+    snprintf(player.pathSpriteSheet, sizeof(player.pathSpriteSheet),
+             "resource/%s.gif", playerDigimon->szName);
+    toLowerStr(player.pathSpriteSheet);
+    player.slotPower = playerDigimon->uiSlotPower;
+    player.version = playerDigimon->uiVersion;
 
     SDL_Log("Created socket");
     return 1;
@@ -185,11 +199,7 @@ static Menu handleUserListRequest() {
 
         snprintf(players[i].pathSpriteSheet, sizeof(players[i].pathSpriteSheet),
                  "resource/%s.gif", currentDigimon->szName);
-        for (j = 0; j < strlen(players[i].pathSpriteSheet); j++) {
-            players[i].pathSpriteSheet[j] =
-                tolower(players[i].pathSpriteSheet[j]);
-        }
-
+        toLowerStr(players[i].pathSpriteSheet);
         addMenuImage(&result, players[i].pathSpriteSheet, clip);
 
         SDLNet_TCP_Recv(connection, data, 2);
@@ -206,18 +216,66 @@ static int handleBattleChallenge(Menu* menu) {
 
     SDL_Log("Response from challenged -> %d", dataReceived[2]);
     if (dataReceived[2] == 0) {
-        char* options[] = {"BATTLE"};
-        *menu = initMenuText(1, options);
+        char* paths[] = {"resource/popups.gif"};
+        SDL_Rect clip = {0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
+                         NORMAL_SIZE_SPRITE};
+        *menu = initMenuImage(1, paths, &clip);
     }
     return dataReceived[2];
 }
 
-static void handleBattleRequest(Menu* menu) {
+static SDL_Texture* generateHeaderChallenge(SDL_Renderer* renderer) {
+    SDL_Color color = {0, 0, 0, 255};
+    SDL_Texture* result = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
+                                            SDL_TEXTUREACCESS_TARGET,
+                                            WIDTH_SCREEN, HEIGHT_SMALL_SPRITE);
+    SDL_Texture *texturePlayer = loadTexture(player.pathSpriteSheet),
+                *textureChallenger = getChallengedUserTexture();
+
+    SDL_Rect transform = {WIDTH_SMALL_SPRITE / 2, 0, WIDTH_SMALL_SPRITE,
+                          HEIGHT_SMALL_SPRITE};
+    SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
+
+    SDL_SetRenderTarget(renderer, result);
+    SDL_RenderClear(renderer);
+    SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
+
+    SDL_RenderCopyEx(renderer, textureChallenger, &clip, &transform, 0.f, NULL,
+                     SDL_FLIP_HORIZONTAL);
+    transform.x = WIDTH_SCREEN - transform.w * 1.5f;
+    SDL_RenderCopy(renderer, texturePlayer, &clip, &transform);
+
+    SDL_Texture* versusText = createTextTexture(color, "VS");
+    transform.x = WIDTH_SCREEN * .45f;
+    SDL_RenderCopy(renderer, versusText, NULL, &transform);
+
+    SDL_SetRenderTarget(renderer, NULL);
+    SDL_DestroyTexture(versusText);
+    freeTexture(texturePlayer);
+    freeTexture(textureChallenger);
+    return result;
+}
+
+static void handleBattleRequest(Menu* menu, SDL_Renderer* renderer) {
     unsigned char dataReceived[3];
     SDLNet_TCP_Recv(connection, &dataReceived, sizeof(dataReceived));
 
+    char uuidChallenger[SIZE_UUID] = {0};
+    int i = 0;
+    SDLNet_TCP_Recv(connection, dataReceived, 2);
+    SDLNet_TCP_Recv(connection, uuidChallenger, sizeof(uuidChallenger));
+    for (i = 0; i < countPlayers; i++) {
+        SDL_Log("[ENZO] %s(%s) == %s", players[i].uuid,
+                players[i].pathSpriteSheet, uuidChallenger);
+        if (strcmp(players[i].uuid, uuidChallenger) == 0) {
+            selectedPlayer = i;
+            break;
+        }
+    }
+
     char* options[] = {"YES", "NO"};
     *menu = initMenuText(2, options);
+    menu->header = generateHeaderChallenge(renderer);
 }
 
 int registerUser(digimon_t* digimon) {
@@ -264,7 +322,8 @@ static uint16_t sendImplementation(uint16_t data) {
     return 0;
 }
 
-StatusUpdate updateClient(Menu* menu, int selectedOption) {
+StatusUpdate updateClient(Menu* menu, int selectedOption,
+                          SDL_Renderer* renderer) {
     static unsigned char typeAction = BATTLE_LIST;
     StatusUpdate status = NOTHING_HAPPENED;
     char* options[2];
@@ -314,7 +373,7 @@ StatusUpdate updateClient(Menu* menu, int selectedOption) {
             }
             break;
         case BATTLE_REQUEST:
-            handleBattleRequest(&generatedMenu);
+            handleBattleRequest(&generatedMenu, renderer);
             if (selectedOption == 0) {
                 battleState = BATTLE_REQUEST;
             }

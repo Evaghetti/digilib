@@ -15,11 +15,12 @@ typedef enum {
     NOTHING_HAPPENED = 1 << 4,
 } StatusUpdate;
 
-int connectToServer();
+int connectToServer(digimon_t* playerDigimon);
 
 int registerUser(digimon_t* digimon);
 
-StatusUpdate updateClient(Menu* menu, int selectedOption);
+StatusUpdate updateClient(Menu* menu, int selectedOption,
+                          SDL_Renderer* renderer);
 
 int challengeUser(int offsetUser);
 
