@@ -38,7 +38,7 @@ static AnimationController animationsForPoop;
 static float xOffsetSprites = 0;     // Used for the cleaning animation
 static float xProjectileOffset = 0;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
-static int skipFirstFrameScroll = 0, scrolledTrainingStance = 0;
+static int skipFirstFrameScroll;
 static int selectOptionTraining = 0;
 
 static SDL_RendererFlags projectileRenderFlags = SDL_FLIP_NONE;
@@ -425,7 +425,6 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         setCurrentAnimation(&avatar->animationController,
                                             "preparing");
                         avatar->currentAction = TRAINING;
-                        scrolledTrainingStance = 0;
                         selectOptionTraining = 0;
                         break;
                     case SAD_BATTLE:
@@ -537,13 +536,10 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     }
 
     if (avatar->currentAction == TRAINING) {
-        if (xOffsetSprites == 0.f && scrolledTrainingStance == 0) {
-            xOffsetSprites = WIDTH_SCREEN * .75f;
-        } else if (xOffsetSprites > 0.f) {
+        if (xOffsetSprites > 0.f) {
             xOffsetSprites -= SPEED_FLUSH * deltaTime;
         } else {
             xOffsetSprites = 0;
-            scrolledTrainingStance = 1;
         }
     }
 
@@ -867,6 +863,7 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
     if (newAction == WALKING) {
         setCurrentAnimation(&avatar->animationController, "walking");
         avatar->transform = initialTransform;
+        xOffsetSprites = 0;
     }
 
     DIGI_putSleep(newAction == SLEEPING);
@@ -881,6 +878,8 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
         case TRAINING:
             offsetTraining = 0;
             correctTrainingGuess = 0;
+            selectOptionTraining = 0;
+            xOffsetSprites = WIDTH_SCREEN * .75f;
             break;
         case TRAINING_UP:
         case TRAINING_DOWN:
