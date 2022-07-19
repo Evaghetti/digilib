@@ -965,6 +965,7 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
     SDL_SetRenderTarget(renderer, NULL);
 
     addRawTexture(result);
+    freeTexture(textureHud);
     return result;
 }
 
@@ -1006,6 +1007,7 @@ static SDL_Texture* heartInfoSurface(const char* text, const int count,
     SDL_SetRenderTarget(renderer, NULL);
 
     addRawTexture(result);
+    freeTexture(textureHud);
     return result;
 }
 
