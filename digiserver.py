@@ -185,6 +185,7 @@ class Server:
 
                                 if user.requestStatus == REFUSED:
                                     print(f"{user.challenging.uuid} refused your challenge {user.uuid}")
+                                    user.challenging = None
                                 elif user.requestStatus == ACCEPTED:
                                     print(f"{user.challenging.uuid} accepted your challenge {user.uuid}")
                             else:
@@ -199,6 +200,7 @@ class Server:
                                     print(f"{user.uuid} accepted challenge by {user.challengedBy.uuid}")
                                 elif user.requestStatus == REFUSED:
                                     print(f"{user.uuid} refused challenge by {user.challengedBy.uuid}")
+                                    user.challengedBy = None
                                 else:
                                     print(f"{user.uuid} still did not respond")
                         else:

@@ -374,7 +374,7 @@ StatusUpdate updateClient(Menu* menu, int selectedOption,
             break;
         case BATTLE_REQUEST:
             handleBattleRequest(&generatedMenu, renderer);
-            if (selectedOption == 0) {
+            if (response == ACCEPTED) {
                 battleState = BATTLE_REQUEST;
             }
             break;
