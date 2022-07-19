@@ -71,6 +71,11 @@ int connectToServer(digimon_t* playerDigimon) {
     if (connection != NULL)
         return 2;
 
+    if (DIGIBATTLE_canBattle() != DIGIBATTLE_RET_OK) {
+        SDL_Log("Digimon can't battle right now");
+        return 0;
+    }
+
     IPaddress ip;
 
     if (SDLNet_ResolveHost(&ip, IP, PORT) == -1) {
@@ -341,6 +346,8 @@ StatusUpdate updateClient(Menu* menu, int selectedOption,
             resultBattle =
                 DIGIBATTLE_continue(&sendImplementation, &recvImplementation);
         }
+
+        DIGIBATTLE_changeStats(resultBattle);
         battleState = UPDATE_GAME;
         return (StatusUpdate)resultBattle;
     }

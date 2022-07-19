@@ -275,6 +275,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             switch (connectToServer(digimon.infoApi.pstCurrentDigimon)) {
                 case 0:
                     SDL_Log("Not able to connect to server");
+                    setCurrentAction(&digimon, NEGATING);
                     responseOperation = NO_OPERATION;
                     break;
                 case 1:
