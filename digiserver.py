@@ -90,6 +90,14 @@ class Player:
 
         return self.requestStatus == ACCEPTED
 
+    def cleanup(self):
+        if self.challenging:
+            self.challenging.requestStatus = REFUSED
+            self.challenging.challengedBy = None
+        if self.challengedBy:
+            self.challengedBy.requestStatus = REFUSED
+            self.challengedBy = None
+
 class Server:
     def __init__(self) -> None:
         self.server: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -192,7 +200,8 @@ class Server:
                                 print("Challenged logic")
                                 self.send(input, BATTLE_REQUEST)
 
-                                user.requestStatus = receivedTLV[RESPONSE]
+                                if user.requestStatus == NO_RESPONSE:
+                                    user.requestStatus = receivedTLV[RESPONSE]
                                 self.send(input, pack("<bbb", RESPONSE, 1, user.requestStatus))
                                 self.send(input, pack("<bb", USER_ID, len(user.challengedBy.uuid)) + user.challengedBy.uuid.encode())
 
@@ -214,6 +223,7 @@ class Server:
                     self.outputs.remove(input)
                 self.inputs.remove(input)
                 del self.messageQueue[input]
+                self.users[input].cleanup()
                 del self.users[input]
 
                 input.close()

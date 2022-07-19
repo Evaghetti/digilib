@@ -286,13 +286,15 @@ static PossibleOperations handleOperation(PossibleOperations operation,
 
             StatusUpdate status =
                 updateClient(&currentMenu, selectedOption, gRenderer);
-
-            if (selectedOption == -2 || (status & (WIN | LOSE))) {
+            int battled = (status & (WIN | LOSE));
+            if (selectedOption == -2 || battled) {
                 if (currentMenu.options)
                     freeMenu(&currentMenu);
 
                 disconnectFromServer();
-                setBattleAction(&digimon, status, getChallengedUserTexture());
+                if (battled)
+                    setBattleAction(&digimon, status,
+                                    getChallengedUserTexture());
                 responseOperation = NO_OPERATION;
             } else if (selectedOption >= 0 && status == NOTHING_HAPPENED) {
                 if (!challengeUser(selectedOption)) {
