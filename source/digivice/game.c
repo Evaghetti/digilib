@@ -4,6 +4,7 @@
 #include "SDL2/SDL_net.h"
 #include "SDL2/SDL_ttf.h"
 
+#include <ctype.h>
 #include <stdio.h>
 
 #include "digiapi.h"
@@ -152,6 +153,8 @@ static int handleMenu(SDL_Scancode scanCode) {
             return i;
         case SDL_SCANCODE_ESCAPE:
             return -2;
+        default:
+            break;
     }
 
     return -3;
@@ -191,7 +194,6 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 static PossibleOperations handleOperation(PossibleOperations operation,
                                           int selectedOption) {
     PossibleOperations responseOperation = operation;
-    int resultBattle;
 
     switch (operation) {
         case INFORMATION:

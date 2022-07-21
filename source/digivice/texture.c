@@ -3,6 +3,7 @@
 #include "SDL2/SDL.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 typedef struct LoadedTexture {
@@ -110,7 +111,7 @@ void addRawTexture(SDL_Texture* texture) {
 
     node->next = calloc(sizeof(LoadedTexture), 1);
     snprintf(node->next->filePath, sizeof(node->next->filePath),
-             "%ld_generated", time(NULL));
+             "%ld_generated", (long int)time(NULL));
     node->next->texture = texture;
 }
 

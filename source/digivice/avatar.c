@@ -9,7 +9,9 @@
 #include "SDL2/SDL_ttf.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define SPEED_FLUSH (-STEP_SPRITE * 50)
@@ -41,7 +43,7 @@ static int offsetTraining = 0, correctTrainingGuess = 0;
 static int skipFirstFrameScroll;
 static int selectOptionTraining = 0;
 
-static SDL_RendererFlags projectileRenderFlags = SDL_FLIP_NONE;
+static SDL_RendererFlip projectileRenderFlags = SDL_FLIP_NONE;
 static float xProjectileSpeed = -SPEED_FLUSH;
 static int roundBattle = 0, battleResult = 0;
 

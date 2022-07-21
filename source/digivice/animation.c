@@ -1,5 +1,8 @@
 #include "animation.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 void addAnimation(AnimationController* animationController,
                   const char* animationName, int frameCount, ...) {
     animationController->animationCount++;

@@ -6,6 +6,7 @@
 #include "SDL2/SDL_image.h"
 
 #include <stdarg.h>
+#include <string.h>
 
 static SDL_Texture* cursorTexture = NULL;
 static const SDL_Rect cursorClip = {.x = 32, .y = 0, .w = 8, .h = 8};

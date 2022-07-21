@@ -6,6 +6,9 @@
 
 #include "SDL2/SDL_net.h"
 
+#include <ctype.h>
+#include <stdio.h>
+
 #define IP   "localhost"
 #define PORT 1998
 
@@ -57,7 +60,6 @@ static TCPsocket connection = NULL;
 static Player players[MAX_USER_COUNT], player;
 static int countPlayers = 0, selectedPlayer = 0;
 static State battleState = UPDATE_GAME;
-static SDL_Texture* headerChallenge;
 
 static void toLowerStr(char* result) {
     while (*result != '\0') {
@@ -164,9 +166,8 @@ static Menu handleUserListRequest() {
     SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
     Menu result = {0};
 
-    int i, j;
+    int i;
     unsigned char data[6];
-    char path[100];
 
     if (SDLNet_TCP_Recv(connection, data, 6) != 6) {
         SDL_Log("Error receiving list of users");
@@ -330,7 +331,6 @@ StatusUpdate updateClient(Menu* menu, int selectedOption,
                           SDL_Renderer* renderer) {
     static unsigned char typeAction = BATTLE_LIST;
     StatusUpdate status = NOTHING_HAPPENED;
-    char* options[2];
     Menu generatedMenu;
     if (connection == NULL || menu == NULL) {
         SDL_Log("Trying to register user without valid socket or menu");

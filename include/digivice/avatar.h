@@ -47,7 +47,7 @@ typedef struct {
 
     SDL_Texture* spriteSheet;
     SDL_Rect transform;
-    SDL_RendererFlags renderFlags;
+    SDL_RendererFlip renderFlags;
 
     AnimationController animationController;
     Action currentAction;

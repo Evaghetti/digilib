@@ -1,6 +1,13 @@
 project(digilib C)
 cmake_minimum_required(VERSION 3.16)
 
+if ( CMAKE_COMPILER_IS_GNUCC )
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Werror")
+endif()
+if ( MSVC )
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} /W4 /WX")
+endif()
+
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 set(PLATFORM "pc" CACHE STRING "Which platform to build")
