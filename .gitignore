@@ -10,7 +10,11 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 digivice
+digivice.exe
 digilib.so
+digilib.dll
+libdigilib.dll.a
+libdigivice.dll.a
 *.save*
 include/digiworld.h
 source/digiworld.c
