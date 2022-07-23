@@ -14,8 +14,7 @@
 #include <string.h>
 #include <time.h>
 
-#define SPEED_FLUSH (-STEP_SPRITE * 50)
-#define GAME_TICK   .5f
+#define GAME_TICK .5f
 
 typedef enum { DOWN, UP } GuessShadowBox;
 
@@ -28,11 +27,8 @@ static GuessShadowBox patternsShadowBox[][5] = {
 static const int COUNT_PATTERNS_SHADOWBOX =
     sizeof(patternsShadowBox) / sizeof(patternsShadowBox[0]);
 
-static const SDL_Rect initialTransform = {WIDTH_SCREEN / 2 - WIDTH_SPRITE / 2,
-                                          HEIGHT_BUTTON, WIDTH_SPRITE,
-                                          HEIGHT_SPRITE + STEP_SPRITE};
-static const SDL_Rect flushClip = {7 * 8, 8, NORMAL_SIZE_SMALL_SPRITE,
-                                   NORMAL_SIZE_SMALL_SPRITE};
+static SDL_Rect initialTransform;
+static SDL_Rect flushClip;
 
 static SDL_Texture *textureAdditional, *textureEnemy, *texturePopup;
 static AnimationController additionalAnimations;
@@ -44,8 +40,10 @@ static int skipFirstFrameScroll;
 static int selectOptionTraining = 0;
 
 static SDL_RendererFlip projectileRenderFlags = SDL_FLIP_NONE;
-static float xProjectileSpeed = -SPEED_FLUSH;
+static float xProjectileSpeed, flushSpeed;
 static int roundBattle = 0, battleResult = 0;
+
+static const Configuration* config;
 
 static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
@@ -91,10 +89,25 @@ static int isOnScreenCenter(const Avatar* avatar) {
                   sizeof(avatar->transform)) == 0;
 }
 
-int initAvatar(Avatar* ret) {
-    int statusInit = DIGI_init(SAVE_FILE) == DIGI_RET_OK;
+int initAvatar(Avatar* ret, char* saveGame) {
+    int statusInit = DIGI_init(saveGame) == DIGI_RET_OK;
+
+    config = getConfiguration();
 
     if (statusInit) {
+        initialTransform.x = config->widthScreen / 2 - config->widthSprite / 2;
+        initialTransform.y = config->heightButton;
+        initialTransform.w = config->widthSprite;
+        initialTransform.h = config->heightSprite;
+
+        flushClip.x = 7 * config->normalSmallSpriteSize;
+        flushClip.y = config->normalSmallSpriteSize;
+        flushClip.w = config->normalSmallSpriteSize;
+        flushClip.h = config->normalSmallSpriteSize;
+
+        flushSpeed = (-config->stepSprite * 50);
+        xProjectileSpeed = -flushSpeed;
+
         ret->infoApi = DIGI_playingDigimon();
         strncpy(ret->name, ret->infoApi.pstCurrentDigimon->szName,
                 sizeof(ret->name));
@@ -113,201 +126,240 @@ int initAvatar(Avatar* ret) {
 
         ret->transform = initialTransform;
 
-        addAnimation(&ret->animationController, "hatching", 2,
-                     createRect(0, 0, 16, 16), GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "beingBorn", 3,
-                     createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
+        addAnimation(
+            &ret->animationController, "hatching", 2, createRect(0, 0, 16, 16),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "beingBorn", 3,
+            createRect(0, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2, 0,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
         addAnimation(
             &ret->animationController, "walking", 9, createRect(0, 0, 16, 16),
             GAME_TICK,
-            createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                       NORMAL_SIZE_SPRITE),
-            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
             GAME_TICK,
-            createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                       NORMAL_SIZE_SPRITE),
-            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            createRect(0, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
             GAME_TICK,
-            createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                       NORMAL_SIZE_SPRITE),
-            GAME_TICK, createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
             GAME_TICK,
-            createRect(NORMAL_SIZE_SPRITE, 0, NORMAL_SIZE_SPRITE,
-                       NORMAL_SIZE_SPRITE),
+            createRect(0, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
             GAME_TICK,
-            createRect(NORMAL_SIZE_SPRITE * 2, 0, NORMAL_SIZE_SPRITE,
-                       NORMAL_SIZE_SPRITE),
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 0, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2, 0,
+                       config->normalSpriteSize, config->normalSpriteSize),
             GAME_TICK);
-        addAnimation(&ret->animationController, "happy", 4,
-                     createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "negating", 4,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "eating", 7,
-                     // Entire
-                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     // Bitten 1 time
-                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     // Bitten 2 times
-                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE, 4 * NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(0, 4 * NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "preparing", 1,
-                     createRect(NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 3,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "shooting", 1,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 3,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
-        addAnimation(&ret->animationController, "mad", 4,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(0, NORMAL_SIZE_SPRITE * 3, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(0, NORMAL_SIZE_SPRITE * 3, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
+        addAnimation(
+            &ret->animationController, "happy", 4,
+            createRect(0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "negating", 4,
+            createRect(config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "eating", 7,
+            // Entire
+            createRect(0, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            // Bitten 1 time
+            createRect(0, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            // Bitten 2 times
+            createRect(0, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, 4 * config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "preparing", 1,
+            createRect(config->normalSpriteSize, config->normalSpriteSize * 3,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "shooting", 1,
+            createRect(config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 3, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK);
+        addAnimation(
+            &ret->animationController, "mad", 4,
+            createRect(config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, config->normalSpriteSize * 3,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 2, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, config->normalSpriteSize * 3,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
         addAnimation(&ret->animationController, "standing", 1,
-                     createRect(0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
+                     createRect(0, 0, config->normalSpriteSize,
+                                config->normalSpriteSize),
                      GAME_TICK);
-        addAnimation(&ret->animationController, "sick", 4,
-                     createRect(0, NORMAL_SIZE_SPRITE * 5, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 4,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(0, NORMAL_SIZE_SPRITE * 5, NORMAL_SIZE_SPRITE,
-                                NORMAL_SIZE_SPRITE),
-                     GAME_TICK,
-                     createRect(NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 4,
-                                NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE),
-                     GAME_TICK);
+        addAnimation(
+            &ret->animationController, "sick", 4,
+            createRect(0, config->normalSpriteSize * 5,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 4, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(0, config->normalSpriteSize * 5,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 4, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK);
 
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
         texturePopup = loadTexture("resource/popups.gif");
         // Work around
         // TODO: define that the controlelr should not play the first animation.
-        addAnimation(
-            &additionalAnimations, "nothing", 1,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 7, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE));
+        addAnimation(&additionalAnimations, "nothing", 1,
+                     createRect(config->normalSmallSpriteSize * 7, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize));
 
-        addAnimation(
-            &additionalAnimations, "meat", 4,
-            createRect(0, 0, NORMAL_SIZE_SMALL_SPRITE,
-                       NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 1, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 2, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 3, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK);
+        addAnimation(&additionalAnimations, "meat", 4,
+                     createRect(0, 0, config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2,
+                     createRect(config->normalSmallSpriteSize * 1, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2,
+                     createRect(config->normalSmallSpriteSize * 2, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2,
+                     createRect(config->normalSmallSpriteSize * 3, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK);
 
-        addAnimation(
-            &additionalAnimations, "vitamin", 4,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 4, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 5, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 6, 0,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK * 2, createRect(0, 0, 0, 0), GAME_TICK);
-        addAnimation(
-            &additionalAnimations, "snore", 2,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 2, NORMAL_SIZE_SMALL_SPRITE,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK,
-            createRect(NORMAL_SIZE_SMALL_SPRITE * 3, NORMAL_SIZE_SMALL_SPRITE,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK);
+        addAnimation(&additionalAnimations, "vitamin", 4,
+                     createRect(config->normalSmallSpriteSize * 4, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2,
+                     createRect(config->normalSmallSpriteSize * 5, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2,
+                     createRect(config->normalSmallSpriteSize * 6, 0,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK * 2, createRect(0, 0, 0, 0), GAME_TICK);
+        addAnimation(&additionalAnimations, "snore", 2,
+                     createRect(config->normalSmallSpriteSize * 2,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK,
+                     createRect(config->normalSmallSpriteSize * 3,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK);
         addAnimation(
             &additionalAnimations, "damage", 8,
-            createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE), 0.15f,
-            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                       NORMAL_SIZE_SPRITE),
-            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            createRect(0, 0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize),
             0.15f,
-            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                       NORMAL_SIZE_SPRITE),
-            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            createRect(0, config->normalSpriteSize,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f,
-            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                       NORMAL_SIZE_SPRITE),
-            0.15f, createRect(0, 0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE),
+            createRect(0, 0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize),
             0.15f,
-            createRect(0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE * 2,
-                       NORMAL_SIZE_SPRITE),
+            createRect(0, config->normalSpriteSize,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
+            0.15f,
+            createRect(0, 0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize),
+            0.15f,
+            createRect(0, config->normalSpriteSize,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
+            0.15f,
+            createRect(0, 0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize),
+            0.15f,
+            createRect(0, config->normalSpriteSize,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f);
 
-        addAnimation(
-            &animationsForPoop, "poop", 2,
-            createRect(0, NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
-                       NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK,
-            createRect(NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE,
-                       NORMAL_SIZE_SMALL_SPRITE, NORMAL_SIZE_SMALL_SPRITE),
-            GAME_TICK);
+        addAnimation(&animationsForPoop, "poop", 2,
+                     createRect(0, config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK,
+                     createRect(config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK);
         setCurrentAnimation(&animationsForPoop, "poop");
 
         if (ret->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_EGG) {
@@ -352,7 +404,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             const int direction =
                 avatar->renderFlags & SDL_FLIP_HORIZONTAL ? -1 : 1;
 
-            avatar->transform.x += STEP_SPRITE * direction;
+            avatar->transform.x += config->stepSprite * direction;
         } else if (avatar->currentAction == EVOLVING) {
             if (finishedCurrentAnimation(&avatar->animationController)) {
                 char spriteSheetFile[270] = {0};
@@ -471,11 +523,11 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
                 if ((avatar->currentAction - TRAINING_DOWN) == currentAnswer) {
                     if (!skipFirstFrameScroll)
-                        xProjectileOffset -= WIDTH_SMALL_SPRITE;
+                        xProjectileOffset -= config->widthSmallSprite;
                     skipFirstFrameScroll = 0;
 
                     if (xProjectileOffset <=
-                        -WIDTH_SPRITE / 2 + WIDTH_SPRITE * 1.5f) {
+                        -config->widthSprite / 2 + config->widthSprite * 1.5f) {
                         advanceTraining(avatar, 1);
                     }
                 } else if (finishedCurrentAnimation(
@@ -492,7 +544,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                     if (isCurrentAnimation(&avatar->animationController,
                                            "preparing")) {
                         xProjectileOffset =
-                            avatar->transform.x - WIDTH_SMALL_SPRITE;
+                            avatar->transform.x - config->widthSmallSprite;
                         xProjectileSpeed = -SDL_abs(xProjectileSpeed);
                         setCurrentAnimation(&avatar->animationController,
                                             "shooting");
@@ -518,13 +570,13 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     }
 
     if (avatar->currentAction & CLEANING) {
-        xOffsetSprites += SPEED_FLUSH * deltaTime;
+        xOffsetSprites += flushSpeed * deltaTime;
 
         if (avatar->currentAction == CLEANING_DEFEAT) {
             avatar->animationController.timeInCurrentFrame = 0.f;
         }
 
-        if (xOffsetSprites >= WIDTH_SCREEN + WIDTH_SMALL_SPRITE) {
+        if (xOffsetSprites >= config->widthScreen + config->widthSmallSprite) {
             avatar->transform = initialTransform;
             xOffsetSprites = 0;
 
@@ -539,7 +591,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
     if (avatar->currentAction == TRAINING) {
         if (xOffsetSprites > 0.f) {
-            xOffsetSprites -= SPEED_FLUSH * deltaTime;
+            xOffsetSprites -= flushSpeed * deltaTime;
         } else {
             xOffsetSprites = 0;
         }
@@ -550,8 +602,9 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
             xProjectileOffset += xProjectileSpeed * deltaTime;
 
             int loopingRightside =
-                xProjectileOffset + WIDTH_SMALL_SPRITE > avatar->transform.x;
-            int loopingLeftside = xProjectileOffset < -WIDTH_SMALL_SPRITE;
+                xProjectileOffset + config->widthSmallSprite >
+                avatar->transform.x;
+            int loopingLeftside = xProjectileOffset < -config->widthSmallSprite;
             if (loopingLeftside || loopingRightside) {
                 xProjectileSpeed = -xProjectileSpeed;
                 projectileRenderFlags = projectileRenderFlags == SDL_FLIP_NONE
@@ -624,10 +677,10 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
         const SDL_Rect* currentSpriteRect =
             getAnimationFrameClip(&additionalAnimations);
 
-        SDL_Rect transform = {.x = avatar->transform.x + WIDTH_SPRITE,
-                              .y = HEIGHT_SMALL_SPRITE,
-                              .w = WIDTH_SMALL_SPRITE,
-                              .h = HEIGHT_SMALL_SPRITE};
+        SDL_Rect transform = {.x = avatar->transform.x + config->widthSprite,
+                              .y = config->heightSmallSprite,
+                              .w = config->widthSmallSprite,
+                              .h = config->heightSmallSprite};
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transform);
         return;
@@ -644,21 +697,23 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
 
     if (!finishedCurrentAnimation(&additionalAnimations)) {
         currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
-        SDL_Rect transform = {.x = avatar->transform.x - WIDTH_SMALL_SPRITE,
-                              .y = avatar->transform.y + HEIGHT_SMALL_SPRITE,
-                              .w = WIDTH_SMALL_SPRITE,
-                              .h = HEIGHT_SMALL_SPRITE};
+        SDL_Rect transform = {
+            .x = avatar->transform.x - config->widthSmallSprite,
+            .y = avatar->transform.y + config->heightSmallSprite,
+            .w = config->widthSmallSprite,
+            .h = config->heightSmallSprite};
 
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transform);
     }
 
     if (avatar->currentAction & CLEANING) {
-        SDL_Rect transform = {WIDTH_SCREEN - xOffsetSprites, HEIGHT_BUTTON,
-                              WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
+        SDL_Rect transform = {config->widthScreen - xOffsetSprites,
+                              config->heightButton, config->widthSmallSprite,
+                              config->heightSmallSprite};
         SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
 
-        transform.y += HEIGHT_SMALL_SPRITE;
+        transform.y += config->heightSmallSprite;
         SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
     }
 
@@ -666,21 +721,21 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
          avatar->currentAction == HAPPY_BATTLE ||
          avatar->currentAction == CLEANING_DEFEAT) &&
         isOnScreenCenter(avatar)) {
-        const SDL_Rect clip = {.w = NORMAL_SIZE_SMALL_SPRITE,
-                               .h = NORMAL_SIZE_SMALL_SPRITE,
+        const SDL_Rect clip = {.w = config->normalSmallSpriteSize,
+                               .h = config->normalSmallSpriteSize,
                                .x = avatar->currentAction == HAPPY_BATTLE
-                                        ? 8 * NORMAL_SIZE_SMALL_SPRITE
-                                        : 4 * NORMAL_SIZE_SMALL_SPRITE,
+                                        ? 8 * config->normalSmallSpriteSize
+                                        : 4 * config->normalSmallSpriteSize,
                                .y = avatar->currentAction == HAPPY_BATTLE
                                         ? 0
-                                        : NORMAL_SIZE_SMALL_SPRITE};
+                                        : config->normalSmallSpriteSize};
         SDL_Rect transform = {.x = -xOffsetSprites,
                               .y = 0,
-                              .w = WIDTH_SMALL_SPRITE,
-                              .h = HEIGHT_SMALL_SPRITE};
+                              .w = config->widthSmallSprite,
+                              .h = config->heightSmallSprite};
 
         for (i = 0; i < 2; i++) {
-            transform.y = HEIGHT_BUTTON;
+            transform.y = config->heightButton;
 
             for (j = 0; j < 2; j++) {
                 SDL_RenderCopy(render, textureAdditional, &clip, &transform);
@@ -688,16 +743,18 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                 transform.y += transform.h;
             }
 
-            transform.x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE - xOffsetSprites;
+            transform.x =
+                config->widthScreen - config->widthSmallSprite - xOffsetSprites;
         }
     } else {
         for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
             SDL_Rect transformPoop = {
-                .x = WIDTH_SCREEN - WIDTH_SMALL_SPRITE -
-                     WIDTH_SMALL_SPRITE * (i % 2) - (int)xOffsetSprites,
-                .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
-                .w = WIDTH_SMALL_SPRITE,
-                .h = HEIGHT_SMALL_SPRITE};
+                .x = config->widthScreen - config->widthSmallSprite -
+                     config->widthSmallSprite * (i % 2) - (int)xOffsetSprites,
+                .y = config->heightButton +
+                     ((i < 2) ? config->heightSmallSprite : 0),
+                .w = config->widthSmallSprite,
+                .h = config->heightSmallSprite};
             currentSpriteRect = getAnimationFrameClip(&animationsForPoop);
             SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                            &transformPoop);
@@ -706,19 +763,21 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
 }
 
 void drawTrainingScore(SDL_Renderer* render) {
-    const SDL_Rect shieldClip = {.x = 7 * NORMAL_SIZE_SMALL_SPRITE,
+    const SDL_Rect shieldClip = {.x = 7 * config->normalSmallSpriteSize,
                                  .y = 0,
-                                 .w = NORMAL_SIZE_SMALL_SPRITE,
-                                 .h = NORMAL_SIZE_SMALL_SPRITE};
+                                 .w = config->normalSmallSpriteSize,
+                                 .h = config->normalSmallSpriteSize};
 
     SDL_Texture* hudTexture = loadTexture("resource/hud.png");
-    SDL_Rect botamonSpriteClip = {0, 0, NORMAL_SIZE_SMALL_SPRITE,
-                                  NORMAL_SIZE_SMALL_SPRITE};
+    SDL_Rect botamonSpriteClip = {0, 0, config->normalSmallSpriteSize,
+                                  config->normalSmallSpriteSize};
 
-    SDL_Rect botamonTransform = {WIDTH_SMALL_SPRITE, HEIGHT_BUTTON,
-                                 WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
-    SDL_Rect shieldTranform = {WIDTH_SMALL_SPRITE * 4, HEIGHT_BUTTON,
-                               WIDTH_SMALL_SPRITE, HEIGHT_SMALL_SPRITE};
+    SDL_Rect botamonTransform = {config->widthSmallSprite, config->heightButton,
+                                 config->widthSmallSprite,
+                                 config->heightSmallSprite};
+    SDL_Rect shieldTranform = {config->widthSmallSprite * 4,
+                               config->heightButton, config->widthSmallSprite,
+                               config->heightSmallSprite};
 
     SDL_RenderCopy(render, hudTexture, &botamonSpriteClip, &botamonTransform);
     SDL_RenderCopy(render, textureAdditional, &shieldClip, &shieldTranform);
@@ -726,7 +785,7 @@ void drawTrainingScore(SDL_Renderer* render) {
     SDL_Color textColor = {0, 0, 0, 255};
     SDL_Texture* scoreTexture = createTextTexture(
         textColor, "%d\tx\t%d", correctTrainingGuess, 5 - correctTrainingGuess);
-    botamonTransform.w = WIDTH_SCREEN - botamonTransform.w * 2;
+    botamonTransform.w = config->widthScreen - botamonTransform.w * 2;
     botamonTransform.y += botamonTransform.h;
     SDL_RenderCopy(render, scoreTexture, NULL, &botamonTransform);
 }
@@ -738,23 +797,23 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
     }
 
     SDL_Rect transformAvatar = {
-        .x = WIDTH_SCREEN - WIDTH_SPRITE - xOffsetSprites,
-        .y = HEIGHT_BUTTON,
-        .w = WIDTH_SPRITE,
-        .h = HEIGHT_SPRITE};
+        .x = config->widthScreen - config->widthSprite - xOffsetSprites,
+        .y = config->heightButton,
+        .w = config->widthSprite,
+        .h = config->heightSprite};
     SDL_Rect transformShadowAvatar = transformAvatar;
     transformShadowAvatar.x = -xOffsetSprites;
 
     const SDL_Rect* spriteClip =
         getAnimationFrameClip(&avatar->animationController);
-    const SDL_Rect shieldClip = {.x = 7 * NORMAL_SIZE_SMALL_SPRITE,
+    const SDL_Rect shieldClip = {.x = 7 * config->normalSmallSpriteSize,
                                  .y = 0,
-                                 .w = NORMAL_SIZE_SMALL_SPRITE,
-                                 .h = NORMAL_SIZE_SMALL_SPRITE};
-    const SDL_Rect projectileClip = {.x = NORMAL_SIZE_SPRITE,
-                                     .y = NORMAL_SIZE_SPRITE * 5,
-                                     .w = NORMAL_SIZE_SMALL_SPRITE,
-                                     .h = NORMAL_SIZE_SMALL_SPRITE};
+                                 .w = config->normalSmallSpriteSize,
+                                 .h = config->normalSmallSpriteSize};
+    const SDL_Rect projectileClip = {.x = config->normalSpriteSize,
+                                     .y = config->normalSpriteSize * 5,
+                                     .w = config->normalSmallSpriteSize,
+                                     .h = config->normalSmallSpriteSize};
 
     SDL_RenderCopy(render, avatar->spriteSheet, spriteClip, &transformAvatar);
     SDL_RenderCopyEx(render, avatar->spriteSheet, spriteClip,
@@ -763,8 +822,8 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
     if (avatar->currentAction == TRAINING_UP ||
         avatar->currentAction == TRAINING_DOWN) {
         transformShadowAvatar.x += transformShadowAvatar.w;
-        transformShadowAvatar.w = WIDTH_SMALL_SPRITE;
-        transformShadowAvatar.h = HEIGHT_SMALL_SPRITE;
+        transformShadowAvatar.w = config->widthSmallSprite;
+        transformShadowAvatar.h = config->heightSmallSprite;
         transformAvatar = transformShadowAvatar;
 
         if (patternsShadowBox[avatar->currentTraining][offsetTraining] != DOWN)
@@ -783,11 +842,12 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
     int i;
     for (i = 0; i < 4; i++) {
         SDL_Rect transformProjectile = {
-            .x = WIDTH_SCREEN + WIDTH_SMALL_SPRITE * (i % 2) -
+            .x = config->widthScreen + config->widthSmallSprite * (i % 2) -
                  (int)xOffsetSprites,
-            .y = HEIGHT_BUTTON + ((i < 2) ? HEIGHT_SMALL_SPRITE : 0),
-            .w = WIDTH_SMALL_SPRITE,
-            .h = HEIGHT_SMALL_SPRITE};
+            .y = config->heightButton +
+                 ((i < 2) ? config->heightSmallSprite : 0),
+            .w = config->widthSmallSprite,
+            .h = config->heightSmallSprite};
 
         SDL_RenderCopy(render, avatar->spriteSheet, &projectileClip,
                        &transformProjectile);
@@ -797,8 +857,10 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
 void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
     if (isCurrentAnimation(&additionalAnimations, "damage") &&
         !finishedCurrentAnimation(&additionalAnimations)) {
-        SDL_Rect transformDamage = {
-            .x = 0, .y = HEIGHT_BUTTON, .w = WIDTH_SCREEN, .h = HEIGHT_SPRITE};
+        SDL_Rect transformDamage = {.x = 0,
+                                    .y = config->heightButton,
+                                    .w = config->widthScreen,
+                                    .h = config->heightSprite};
         const SDL_Rect* clipPopup =
             getAnimationFrameClip(&additionalAnimations);
 
@@ -820,15 +882,15 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
     }
 
     SDL_Rect transformProjectile = {.x = xProjectileOffset,
-                                    .y = HEIGHT_BUTTON,
-                                    .w = WIDTH_SMALL_SPRITE,
-                                    .h = HEIGHT_SMALL_SPRITE};
+                                    .y = config->heightButton,
+                                    .w = config->widthSmallSprite,
+                                    .h = config->heightSmallSprite};
     const SDL_Rect* playerClip =
         getAnimationFrameClip(&avatar->animationController);
-    const SDL_Rect projectileClip = {.x = NORMAL_SIZE_SPRITE,
-                                     .y = NORMAL_SIZE_SPRITE * 5,
-                                     .w = NORMAL_SIZE_SMALL_SPRITE,
-                                     .h = NORMAL_SIZE_SMALL_SPRITE};
+    const SDL_Rect projectileClip = {.x = config->normalSpriteSize,
+                                     .y = config->normalSpriteSize * 5,
+                                     .w = config->normalSmallSpriteSize,
+                                     .h = config->normalSmallSpriteSize};
     SDL_Texture* textureProjectile =
         xProjectileSpeed < 0 ? avatar->spriteSheet : textureEnemy;
 
@@ -881,7 +943,7 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
             offsetTraining = 0;
             correctTrainingGuess = 0;
             selectOptionTraining = 0;
-            xOffsetSprites = WIDTH_SCREEN * .75f;
+            xOffsetSprites = config->widthScreen * .75f;
             break;
         case TRAINING_UP:
         case TRAINING_DOWN:
@@ -892,7 +954,8 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
 
             skipFirstFrameScroll = 1;
             xProjectileOffset =
-                WIDTH_SCREEN - (WIDTH_SPRITE + WIDTH_SMALL_SPRITE);
+                config->widthScreen -
+                (config->widthSprite + config->widthSmallSprite);
             xOffsetSprites = 0;
             selectOptionTraining = 1;
             break;
@@ -906,10 +969,10 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
 void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy) {
     battleResult = status & WIN ? BATTLE_WIN : BATTLE_LOSE;
     avatar->currentAction = STANDOFF;
-    avatar->transform.x = WIDTH_SCREEN - avatar->transform.w;
+    avatar->transform.x = config->widthScreen - avatar->transform.w;
     avatar->renderFlags = SDL_FLIP_NONE;
     setCurrentAnimation(&avatar->animationController, "mad");
-    xProjectileOffset = avatar->transform.x + WIDTH_SPRITE;
+    xProjectileOffset = avatar->transform.x + config->widthSprite;
     roundBattle = 0;
     textureEnemy = enemy;
 }
@@ -918,9 +981,9 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
     static const SDL_Color transparent = {0, 0, 0, 255};
     SDL_Texture* result = SDL_CreateTexture(
         renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
-        WIDTH_SCREEN, HEIGHT_SCREEN - HEIGHT_BUTTON * 2);
+        config->widthScreen, config->heightScreen - config->heightButton * 2);
     SDL_Texture* textureHud = loadTexture("resource/hud.png");
-    SDL_Rect transform = {0, 0, WIDTH_SPRITE, HEIGHT_SPRITE};
+    SDL_Rect transform = {0, 0, config->widthSprite, config->heightSprite};
 
     SDL_SetRenderTarget(renderer, result);
     SDL_RenderClear(renderer);
@@ -931,9 +994,9 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
         &avatar->animationController.animations[0].firstFrame->frameClip,
         &transform);
 
-    transform.x += WIDTH_SPRITE;
-    transform.w = ((WIDTH_SCREEN - transform.w) / 4) / 2;
-    transform.h -= HEIGHT_SMALL_SPRITE;
+    transform.x += config->widthSprite;
+    transform.w = ((config->widthScreen - transform.w) / 4) / 2;
+    transform.h -= config->heightSmallSprite;
     SDL_Rect currentHud = {0, 0, 8, 8};
     SDL_RenderCopy(renderer, textureHud, &currentHud, &transform);
 
@@ -956,9 +1019,9 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
     SDL_RenderCopy(renderer, textureNumber, NULL, &transform);
     SDL_DestroyTexture(textureNumber);
 
-    transform.x = WIDTH_SPRITE;
-    transform.w = WIDTH_SCREEN - WIDTH_SPRITE;
-    transform.y += HEIGHT_SMALL_SPRITE - STEP_SPRITE;
+    transform.x = config->widthSprite;
+    transform.w = config->widthScreen - config->widthSprite;
+    transform.y += config->heightSmallSprite - config->stepSprite;
     SDL_Texture* textureName = createTextTexture(
         transparent, avatar->infoApi.pstCurrentDigimon->szName);
     SDL_RenderCopy(renderer, textureName, NULL, &transform);
@@ -976,23 +1039,23 @@ static SDL_Texture* heartInfoSurface(const char* text, const int count,
     static const SDL_Color color = {0, 0, 0, 255};
     SDL_Texture* result = SDL_CreateTexture(
         renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
-        WIDTH_SCREEN, HEIGHT_SCREEN - HEIGHT_BUTTON * 2);
+        config->widthScreen, config->heightScreen - config->heightButton * 2);
 
     SDL_SetRenderTarget(renderer, result);
     SDL_RenderClear(renderer);
     SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
 
     SDL_Texture* textureText = createTextTexture(color, "%s", text);
-    SDL_Rect transform = {0, 0, WIDTH_SCREEN, HEIGHT_SMALL_SPRITE};
+    SDL_Rect transform = {0, 0, config->widthScreen, config->heightSmallSprite};
 
     SDL_RenderCopy(renderer, textureText, NULL, &transform);
     SDL_DestroyTexture(textureText);
 
     SDL_Texture* textureHud = loadTexture("resource/hud.png");
     SDL_Rect spriteClip = {8 * 2, 0, 8, 8};
-    transform.x -= STEP_SPRITE;
-    transform.y += HEIGHT_SMALL_SPRITE;
-    transform.w = WIDTH_SCREEN / 4;
+    transform.x -= config->stepSprite;
+    transform.y += config->heightSmallSprite;
+    transform.w = config->widthScreen / 4;
 
     int i;
     for (i = 0; i < count; i++) {

@@ -43,11 +43,42 @@ Button buttonsOperations[COUNT_OPERATIONS];
 Button buttonCallStatus;
 Avatar digimon;
 
+static const Configuration* config;
+static char saveFile[100];
+
 int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
+
+    // Default window to 640x480
+    SDL_DisplayMode display = {.w = 640, .h = 480};
+    Uint32 flags = 0;
+
+#ifdef _USE_DISPLAY_MODE_
+    if (SDL_GetDisplayMode(0, 0, &display) != 0) {
+        SDL_Log("Impossible to get display resolution -> %s", SDL_GetError());
+        return 0;
+    }
+#endif
+
+#ifdef _ANDROID_BUILD_
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeRight|LandscapeLeft");
+    flags = SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
+    int tempWidth = display.w;
+    display.w = display.h;
+    display.h = tempWidth;
+#endif
+
+    char* path = SDL_GetPrefPath("digilib", "digivice");
+    snprintf(saveFile, sizeof(saveFile), "%sdigimon.save", path);
+    free(path);
+
+    SDL_Log("Save game will be at %s", saveFile);
+
+    config = initConfiguration(display.w, display.h);
+
     window = SDL_CreateWindow("Digivice", SDL_WINDOWPOS_CENTERED,
-                              SDL_WINDOWPOS_CENTERED, WIDTH_SCREEN,
-                              HEIGHT_SCREEN, 0);
+                              SDL_WINDOWPOS_CENTERED, config->widthScreen,
+                              config->heightScreen, flags);
     if (window == NULL) {
         SDL_Log("Failed creating window");
         return 0;
@@ -79,23 +110,23 @@ int initGame() {
     }
 
     background = loadTexture("resource/background.png");
-    initAvatar(&digimon);
+    initAvatar(&digimon, saveFile);
 
     int i;
     for (i = 0; i < 4; i++) {
-        SDL_Rect transform = {.x = WIDTH_BUTTON * i,
+        SDL_Rect transform = {.x = config->widthButton * i,
                               .y = 0,
-                              .w = WIDTH_BUTTON,
-                              .h = HEIGHT_BUTTON};
+                              .w = config->widthButton,
+                              .h = config->heightButton};
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
 
     for (; i < COUNT_OPERATIONS; i++) {
-        SDL_Rect transform = {.x = WIDTH_BUTTON * (i - 4),
-                              .y = HEIGHT_SCREEN - HEIGHT_BUTTON,
-                              .w = WIDTH_BUTTON,
-                              .h = HEIGHT_BUTTON};
+        SDL_Rect transform = {.x = config->widthButton * (i - 4),
+                              .y = config->heightScreen - config->heightButton,
+                              .w = config->widthButton,
+                              .h = config->heightButton};
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
@@ -209,9 +240,9 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             if (currentMenu.countOptions == 0)
                 initiateDigitamaMenu();
             else if (selectedOption >= 0) {
-                DIGI_initDigitama(SAVE_FILE, selectedOption);
+                DIGI_initDigitama(saveFile, selectedOption);
                 freeMenu(&currentMenu);
-                initAvatar(&digimon);
+                initAvatar(&digimon, saveFile);
                 responseOperation = NO_OPERATION;
             }
             break;
@@ -341,6 +372,11 @@ int updateGame() {
             case SDL_MOUSEMOTION:
                 updateButtonsHovering(e.motion.x, e.motion.y);
                 break;
+            case SDL_FINGERUP:
+                e.button.button = SDL_BUTTON_LEFT;
+                e.button.x = e.tfinger.x * config->widthScreen;
+                e.button.y = e.tfinger.y * config->heightScreen;
+                // Fallthrough
             case SDL_MOUSEBUTTONUP:
                 if (e.button.button == SDL_BUTTON_LEFT &&
                     currentOperation == NO_OPERATION)
@@ -388,7 +424,7 @@ void drawGame() {
 }
 
 void cleanUpGame() {
-    DIGIHW_saveDigimon(SAVE_FILE, &digimon.infoApi);
+    DIGIHW_saveDigimon(saveFile, &digimon.infoApi);
 
     freeAvatar(&digimon);
     freeTexture(background);

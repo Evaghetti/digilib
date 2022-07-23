@@ -5,6 +5,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define MIN_WIDTH_SCREEN   480
+#define MIN_HEIGHT_SCREEN  320
+#define NORMAL_SIZE_SPRITE 16
+
+static Configuration configuration;
+
 SDL_Surface* createTextSurface(SDL_Color color, const char* fmt, ...) {
     char formattedText[50];
     va_list vl;
@@ -60,4 +66,33 @@ void saveTextureToFile(const char* file_name, SDL_Texture* texture) {
                          surface->pixels, surface->pitch);
     IMG_SavePNG(surface, file_name);
     SDL_FreeSurface(surface);
+}
+
+const Configuration* initConfiguration(int width, int height) {
+    configuration.widthScreen = width;
+    configuration.heightScreen = height;
+    // TODO: Maybe add this as parameter?
+    configuration.normalSpriteSize = NORMAL_SIZE_SPRITE;
+    configuration.normalSmallSpriteSize = configuration.normalSpriteSize / 2;
+
+    configuration.widthSprite =
+        (((configuration.normalSpriteSize * 10) * configuration.widthScreen) /
+         MIN_WIDTH_SCREEN);
+    configuration.heightSprite =
+        (((configuration.normalSpriteSize * 10) * configuration.heightScreen) /
+         MIN_HEIGHT_SCREEN);
+
+    configuration.widthSmallSprite = configuration.widthSprite / 2.f;
+    configuration.heightSmallSprite = configuration.heightSprite / 2.f;
+
+    configuration.widthButton = configuration.widthScreen / 4;
+    configuration.heightButton = configuration.heightSmallSprite;
+
+    configuration.stepSprite =
+        -(((1) * configuration.widthSprite) / configuration.normalSpriteSize);
+    return getConfiguration();
+}
+
+const Configuration* getConfiguration() {
+    return &configuration;
 }

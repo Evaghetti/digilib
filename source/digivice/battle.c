@@ -61,6 +61,8 @@ static Player players[MAX_USER_COUNT], player;
 static int countPlayers = 0, selectedPlayer = 0;
 static State battleState = UPDATE_GAME;
 
+static const Configuration* config;
+
 static void toLowerStr(char* result) {
     while (*result != '\0') {
         *result = tolower(*result);
@@ -69,6 +71,8 @@ static void toLowerStr(char* result) {
 }
 
 int connectToServer(digimon_t* playerDigimon) {
+    config = getConfiguration();
+
     // Already connected
     if (connection != NULL)
         return 2;
@@ -163,7 +167,7 @@ static digimon_t* getDigimon(unsigned char slot, unsigned char version) {
 }
 
 static Menu handleUserListRequest() {
-    SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
+    SDL_Rect clip = {0, 0, config->normalSpriteSize, config->normalSpriteSize};
     Menu result = {0};
 
     int i;
@@ -221,8 +225,9 @@ static int handleBattleChallenge(Menu* menu) {
     SDL_Log("Response from challenged -> %d", dataReceived[2]);
     if (dataReceived[2] == 0) {
         char* paths[] = {"resource/popups.gif"};
-        SDL_Rect clip = {0, NORMAL_SIZE_SPRITE * 2, NORMAL_SIZE_SPRITE * 2,
-                         NORMAL_SIZE_SPRITE};
+        SDL_Rect clip = {0, config->normalSpriteSize * 2,
+                         config->normalSpriteSize * 2,
+                         config->normalSpriteSize};
         *menu = initMenuImage(1, paths, &clip);
         menu->customs = FILL_SCREEN | NO_CURSOR;
     }
@@ -231,15 +236,15 @@ static int handleBattleChallenge(Menu* menu) {
 
 static SDL_Texture* generateHeaderChallenge(SDL_Renderer* renderer) {
     SDL_Color color = {0, 0, 0, 255};
-    SDL_Texture* result = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32,
-                                            SDL_TEXTUREACCESS_TARGET,
-                                            WIDTH_SCREEN, HEIGHT_SMALL_SPRITE);
+    SDL_Texture* result = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
+        config->widthScreen, config->heightSmallSprite);
     SDL_Texture *texturePlayer = loadTexture(player.pathSpriteSheet),
                 *textureChallenger = getChallengedUserTexture();
 
-    SDL_Rect transform = {WIDTH_SMALL_SPRITE / 2, 0, WIDTH_SMALL_SPRITE,
-                          HEIGHT_SMALL_SPRITE};
-    SDL_Rect clip = {0, 0, NORMAL_SIZE_SPRITE, NORMAL_SIZE_SPRITE};
+    SDL_Rect transform = {config->widthSmallSprite / 2, 0,
+                          config->widthSmallSprite, config->heightSmallSprite};
+    SDL_Rect clip = {0, 0, config->normalSpriteSize, config->normalSpriteSize};
 
     SDL_SetRenderTarget(renderer, result);
     SDL_RenderClear(renderer);
@@ -247,11 +252,11 @@ static SDL_Texture* generateHeaderChallenge(SDL_Renderer* renderer) {
 
     SDL_RenderCopyEx(renderer, textureChallenger, &clip, &transform, 0.f, NULL,
                      SDL_FLIP_HORIZONTAL);
-    transform.x = WIDTH_SCREEN - transform.w * 1.5f;
+    transform.x = config->widthScreen - transform.w * 1.5f;
     SDL_RenderCopy(renderer, texturePlayer, &clip, &transform);
 
     SDL_Texture* versusText = createTextTexture(color, "VS");
-    transform.x = WIDTH_SCREEN * .45f;
+    transform.x = config->widthScreen * .45f;
     SDL_RenderCopy(renderer, versusText, NULL, &transform);
 
     SDL_SetRenderTarget(renderer, NULL);

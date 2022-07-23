@@ -45,7 +45,7 @@ if(${BUILD_DIGIVICE})
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
         set(DIGIVICE_TARGET "libmain")
         add_library(${DIGIVICE_TARGET} SHARED)
-        target_compile_definitions(${DIGIVICE_TARGET} PUBLIC _NEEDS_SDL_MAIN_)
+        target_compile_definitions(${DIGIVICE_TARGET} PUBLIC _NEEDS_SDL_MAIN_ _USE_DISPLAY_MODE_ _ANDROID_BUILD_)
     else()
         set(DIGIVICE_TARGET "digivice")
 

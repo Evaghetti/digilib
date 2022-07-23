@@ -11,8 +11,6 @@
 #include "battle.h"
 #include "digimon.h"
 
-#define SAVE_FILE "digimon.save"
-
 typedef enum Action {
     HATCHING = 0,
     EVOLVING,
@@ -61,7 +59,7 @@ typedef struct {
     playing_digimon_t infoApi;
 } Avatar;
 
-int initAvatar(Avatar* ret);
+int initAvatar(Avatar* ret, char* saveGame);
 
 void updateAvatar(Avatar* avatar, const float deltaTime);
 
