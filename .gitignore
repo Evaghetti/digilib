@@ -19,3 +19,4 @@ libdigivice.dll.a
 include/digiworld.h
 source/digiworld.c
 import-digimon.csv
+.vscode/
