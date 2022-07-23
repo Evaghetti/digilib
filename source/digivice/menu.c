@@ -3,7 +3,7 @@
 #include "digivice/globals.h"
 #include "digivice/texture.h"
 
-#include "SDL2/SDL_image.h"
+#include <SDL_image.h>
 
 #include <stdarg.h>
 #include <string.h>

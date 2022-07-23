@@ -1,5 +1,8 @@
-FILE_NAME = "import-digimon.csv"
-FILE_OUTPUT = "include/digiworld.h"
+from sys import argv
+
+fileName = argv[1]
+folderOut = argv[2]
+FILE_OUTPUT = f"{folderOut}/include/digiworld.h"
 FILE_OUTPUT_SOURCE = "source/digiworld.c"
 
 NAME = 0
@@ -101,7 +104,7 @@ if __name__ == "__main__":
     evolutionsRequirements = []
     evolutionRequirementsData = []
 
-    with open(FILE_NAME, "r") as file:
+    with open(fileName, "r") as file:
         file.readline()
 
         for line in file:

@@ -1,7 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include "SDL2/SDL_image.h"
+#include <SDL_image.h>
 
 typedef struct Option {
     char text[50];

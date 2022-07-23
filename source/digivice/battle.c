@@ -4,7 +4,7 @@
 #include "digivice/texture.h"
 #include "digiworld.h"
 
-#include "SDL2/SDL_net.h"
+#include <SDL_net.h>
 
 #include <ctype.h>
 #include <stdio.h>

@@ -3,9 +3,9 @@
 
 #include "digivice/menu.h"
 
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_rect.h"
-#include "SDL2/SDL_render.h"
+#include <SDL_image.h>
+#include <SDL_rect.h>
+#include <SDL_render.h>
 
 #include "animation.h"
 #include "battle.h"

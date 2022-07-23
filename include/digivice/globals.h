@@ -1,7 +1,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include "SDL2/SDL_ttf.h"
+#include <SDL_ttf.h>
 
 #define MIN_WIDTH_SCREEN         480
 #define MIN_HEIGHT_SCREEN        320

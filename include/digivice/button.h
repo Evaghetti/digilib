@@ -1,9 +1,9 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_rect.h"
-#include "SDL2/SDL_render.h"
+#include <SDL_image.h>
+#include <SDL_rect.h>
+#include <SDL_render.h>
 
 typedef struct Buttton {
     SDL_Rect transform, spriteClip;

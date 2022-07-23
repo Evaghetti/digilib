@@ -4,7 +4,7 @@
 #include "digimon.h"
 #include "digivice/menu.h"
 
-#include "SDL2/SDL_image.h"
+#include <SDL_image.h>
 
 typedef enum {
     ERROR = 0,

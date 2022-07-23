@@ -1,8 +1,8 @@
 #ifndef ANIMATION_H
 #define ANIMATION_H
 
+#include <SDL_rect.h>
 #include <stdarg.h>
-#include "SDL2/SDL_rect.h"
 
 typedef struct Frame {
     SDL_Rect frameClip;

@@ -1,6 +1,6 @@
 #include "globals.h"
 
-#include "SDL2/SDL_image.h"
+#include <SDL_image.h>
 
 #include <stdarg.h>
 #include <stdio.h>
