@@ -40,17 +40,19 @@ SDL_Texture *overlay, *background;
 
 Menu currentMenu;
 Button buttonsOperations[COUNT_OPERATIONS];
+Button buttonsControl[COUNT_CONTROL_BUTTON_TYPE];
 Button buttonCallStatus;
 Avatar digimon;
 
 static const Configuration* config;
 static char saveFile[100];
+static int currentHoveringButton = -1;
 
 int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     // Default window to 640x480
-    SDL_DisplayMode display = {.w = 640, .h = 480};
+    SDL_DisplayMode display = {.w = 480, .h = 320};
     Uint32 flags = 0;
 
 #ifdef _USE_DISPLAY_MODE_
@@ -132,6 +134,12 @@ int initGame() {
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
+    for (i = 0; i < COUNT_CONTROL_BUTTON_TYPE; i++) {
+        SDL_Rect transform = {0, 0, 0, 0};
+
+        buttonsControl[i] = initButton("resource/hud.png",
+                                       config->overlayButtons[i], transform);
+    }
     SDL_Rect transformCall = buttonsOperations[COUNT_OPERATIONS - 1].transform;
     transformCall.x += transformCall.w;
     buttonCallStatus =
@@ -197,12 +205,69 @@ static void updateButtonsHovering(int x, int y) {
     SDL_Point point = {x, y};
     int i;
 
-    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0)
+    if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
+        !SDL_PointInRect(&point, &config->overlayArea))
         return;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
         setButtonHovering(&buttonsOperations[i], point);
+        if (buttonsOperations[i].hovering) {
+            currentHoveringButton = i;
+        }
     }
+}
+
+static ControlButtonType updateControlsButtonsClick(int x, int y,
+                                                    int* forcedScancode) {
+    SDL_Point point = {x, y};
+    int i, indexClickedButton = COUNT_CONTROL_BUTTON_TYPE;
+
+    for (i = 0; i < COUNT_CONTROL_BUTTON_TYPE; i++) {
+        setButtonClicked(&buttonsControl[i], point);
+
+        if (buttonsControl[i].clicked) {
+            indexClickedButton = i;
+            break;
+        }
+    }
+
+    const int isTraining =
+        digimon.currentAction & (TRAINING | HAPPY | MAD | SHOWING_SCORE);
+    switch (indexClickedButton) {
+        case SELECT:
+            if (currentMenu.countOptions == 0 && !isTraining) {
+                if (currentHoveringButton >= 0)
+                    buttonsOperations[currentHoveringButton].hovering = 0;
+                currentHoveringButton =
+                    (currentHoveringButton + 1) % COUNT_OPERATIONS;
+                buttonsOperations[currentHoveringButton].hovering = 1;
+            }
+
+            if (isTraining)
+                *forcedScancode = SDL_SCANCODE_UP;
+            else
+                *forcedScancode = SDL_SCANCODE_RIGHT;
+            break;
+        case CONFIRM:
+            if (currentHoveringButton >= 0)
+                buttonsOperations[currentHoveringButton].clicked = 1;
+
+            if (isTraining)
+                *forcedScancode = SDL_SCANCODE_DOWN;
+            else
+                *forcedScancode = SDL_SCANCODE_RETURN;
+            return currentHoveringButton;
+        case CANCEL:
+            if (currentHoveringButton >= 0)
+                buttonsOperations[currentHoveringButton].hovering = 0;
+            currentHoveringButton = -1;
+            *forcedScancode = SDL_SCANCODE_ESCAPE;
+            break;
+        default:
+            break;
+    }
+
+    return NO_OPERATION;
 }
 
 static PossibleOperations updateButtonsClick(int x, int y) {
@@ -351,7 +416,7 @@ int updateGame() {
     static PossibleOperations currentOperation = NO_OPERATION;
 
     SDL_Event e;
-    int selectedOptionMenu = -1, i;
+    int selectedOptionMenu = -1, forcedScanCode = -1, i;
 
     for (i = 0; i < COUNT_OPERATIONS; i++)
         buttonsOperations[i].clicked = 0;
@@ -360,7 +425,13 @@ int updateGame() {
         buttonsOperations[currentOperation].clicked = 1;
     buttonCallStatus.clicked = digimon.calling != 0;
 
-    while (SDL_PollEvent(&e)) {
+    while (SDL_PollEvent(&e) || forcedScanCode != -1) {
+        if (forcedScanCode != -1) {
+            e.type = SDL_KEYUP;
+            e.key.keysym.scancode = forcedScanCode;
+            forcedScanCode = -1;
+        }
+
         switch (e.type) {
             case SDL_QUIT:
                 SDL_Log("Closing game");
@@ -379,12 +450,20 @@ int updateGame() {
                 e.button.x = e.tfinger.x * config->widthScreen;
                 e.button.y = e.tfinger.y * config->heightScreen;
                 // Fallthrough
-            case SDL_MOUSEBUTTONUP:
-                if (e.button.button == SDL_BUTTON_LEFT &&
-                    currentOperation == NO_OPERATION)
-                    currentOperation =
-                        updateButtonsClick(e.button.x, e.button.y);
-                break;
+            case SDL_MOUSEBUTTONUP: {
+                int resultClick = updateControlsButtonsClick(
+                    e.button.x, e.button.y, &forcedScanCode);
+                if (resultClick != NO_OPERATION) {
+                    e.button.x = buttonsOperations[resultClick].transform.x;
+                    e.button.y = buttonsOperations[resultClick].transform.y;
+                }
+                if (e.button.button == SDL_BUTTON_LEFT) {
+                    if (currentOperation == NO_OPERATION) {
+                        currentOperation =
+                            updateButtonsClick(e.button.x, e.button.y);
+                    }
+                }
+            } break;
         }
     }
 

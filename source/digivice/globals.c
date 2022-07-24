@@ -68,21 +68,49 @@ void saveTextureToFile(const char* file_name, SDL_Texture* texture) {
     SDL_FreeSurface(surface);
 }
 
+#define RULE_OF_THREE(x, y, z) (x * y) / z
+
 const Configuration* initConfiguration(int width, int height) {
+    int i;
+
     configuration.widthScreen = width;
     configuration.heightScreen = height;
     // TODO: Maybe add this as parameter?
     configuration.normalSpriteSize = NORMAL_SIZE_SPRITE;
     configuration.normalSmallSpriteSize = configuration.normalSpriteSize / 2;
 
-    configuration.overlayArea.w = (551 * configuration.widthScreen) / 912;
-    configuration.overlayArea.h = (393 * configuration.heightScreen) / 661;
+    configuration.overlayArea.w =
+        RULE_OF_THREE(551, configuration.widthScreen, 912);
+    configuration.overlayArea.h =
+        RULE_OF_THREE(393, configuration.heightScreen, 661);
     configuration.overlayArea.x = 0;
-    configuration.overlayArea.y = (131 * configuration.heightScreen) / 661;
+    configuration.overlayArea.y =
+        RULE_OF_THREE(131, configuration.heightScreen, 661);
 
-    SDL_Log("%d %d %d %d", configuration.overlayArea.x,
-            configuration.overlayArea.y, configuration.overlayArea.w,
-            configuration.overlayArea.h);
+    configuration.overlayButtons[SELECT].y =
+        RULE_OF_THREE(129, configuration.heightScreen, 661);
+    configuration.overlayButtons[CONFIRM].y =
+        RULE_OF_THREE(289, configuration.heightScreen, 661);
+    configuration.overlayButtons[CANCEL].y =
+        RULE_OF_THREE(452, configuration.heightScreen, 661);
+
+    for (i = SELECT; i <= CANCEL; i++) {
+        configuration.overlayButtons[i].x =
+            RULE_OF_THREE(775, configuration.widthScreen, 912);
+        configuration.overlayButtons[i].w =
+            RULE_OF_THREE(79, configuration.widthScreen, 912);
+        configuration.overlayButtons[i].h =
+            RULE_OF_THREE(83, configuration.heightScreen, 661);
+    }
+
+    configuration.overlayButtons[RESET].x =
+        RULE_OF_THREE(725, configuration.widthScreen, 912);
+    configuration.overlayButtons[RESET].y =
+        RULE_OF_THREE(390, configuration.heightScreen, 661);
+    configuration.overlayButtons[RESET].w =
+        RULE_OF_THREE(39, configuration.widthScreen, 912);
+    configuration.overlayButtons[RESET].h =
+        RULE_OF_THREE(39, configuration.heightScreen, 661);
 
     configuration.widthSprite =
         (((configuration.normalSpriteSize * 10) * configuration.overlayArea.w) /

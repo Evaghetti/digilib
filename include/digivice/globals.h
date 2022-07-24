@@ -4,11 +4,20 @@
 #include <SDL_rect.h>
 #include <SDL_ttf.h>
 
+typedef enum ControlButtonType {
+    SELECT,
+    CONFIRM,
+    CANCEL,
+    RESET,
+    COUNT_CONTROL_BUTTON_TYPE,
+} ControlButtonType;
+
 typedef struct Configuration {
     int widthScreen;
     int heightScreen;
 
     SDL_Rect overlayArea;
+    SDL_Rect overlayButtons[COUNT_CONTROL_BUTTON_TYPE];
 
     int normalSpriteSize, normalSmallSpriteSize;
     int widthSprite, heightSprite;
