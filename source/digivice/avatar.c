@@ -49,8 +49,8 @@ static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
 
     DIGI_updateEventsDeltaTime(deltaTime, &events);
-    handleEvents(avatar, events);
     avatar->infoApi = DIGI_playingDigimon();
+    handleEvents(avatar, events);
 }
 
 static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
