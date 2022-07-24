@@ -50,7 +50,7 @@ int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     // Default window to 640x480
-    SDL_DisplayMode display = {.w = 912, .h = 661};
+    SDL_DisplayMode display = {.w = 640, .h = 480};
     Uint32 flags = 0;
 
 #ifdef _USE_DISPLAY_MODE_

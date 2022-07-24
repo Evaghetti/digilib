@@ -173,6 +173,9 @@ class Server:
                             userChallenged.challengedBy = user
                             user.challenging = userChallenged
 
+                            user.requestStatus = 0
+                            user.challenging.requestStatus = 0
+
                             print(f"{user.uuid} challenged {uuidChallenged}")
                             self.send(input, 1)
                         else:
