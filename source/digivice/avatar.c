@@ -33,10 +33,11 @@ static SDL_Rect flushClip;
 static SDL_Texture *textureAdditional, *textureEnemy, *texturePopup;
 static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
-static float xOffsetSprites = 0;     // Used for the cleaning animation
+static float xOffsetSprites = 0,
+             xOffsetSprites2 = 0;    // Used for the cleaning animation
 static float xProjectileOffset = 0;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
-static int skipFirstFrameScroll;
+static int skipFirstFrameScroll, decreaseCurtains = 0;
 static int selectOptionTraining = 0;
 
 static SDL_RendererFlip projectileRenderFlags = SDL_FLIP_NONE;
@@ -95,8 +96,7 @@ int initAvatar(Avatar* ret, char* saveGame) {
     config = getConfiguration();
 
     if (statusInit) {
-        initialTransform.x = config->overlayArea.x + config->overlayArea.w / 2 -
-                             config->widthSprite / 2;
+        initialTransform.x = config->widthSprite;
         initialTransform.y = config->overlayArea.y + config->heightButton;
         initialTransform.w = config->widthSprite;
         initialTransform.h = config->heightSprite;
@@ -272,6 +272,14 @@ int initAvatar(Avatar* ret, char* saveGame) {
                        config->normalSpriteSize * 4, config->normalSpriteSize,
                        config->normalSpriteSize),
             GAME_TICK);
+        addAnimation(
+            &ret->animationController, "happy-short", 2,
+            createRect(0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, config->normalSpriteSize * 2,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK * 100);
 
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
@@ -326,28 +334,28 @@ int initAvatar(Avatar* ret, char* saveGame) {
                      GAME_TICK);
         addAnimation(
             &additionalAnimations, "damage", 8,
-            createRect(0, 0, config->normalSpriteSize * 2,
-                       config->normalSpriteSize),
-            0.15f,
-            createRect(0, config->normalSpriteSize,
+            createRect(0, config->normalSpriteSize * 2,
                        config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f,
-            createRect(0, 0, config->normalSpriteSize * 2,
-                       config->normalSpriteSize),
-            0.15f,
-            createRect(0, config->normalSpriteSize,
+            createRect(0, config->normalSpriteSize * 3,
                        config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f,
-            createRect(0, 0, config->normalSpriteSize * 2,
-                       config->normalSpriteSize),
-            0.15f,
-            createRect(0, config->normalSpriteSize,
+            createRect(0, config->normalSpriteSize * 2,
                        config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f,
-            createRect(0, 0, config->normalSpriteSize * 2,
-                       config->normalSpriteSize),
+            createRect(0, config->normalSpriteSize * 3,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f,
-            createRect(0, config->normalSpriteSize,
+            createRect(0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
+            0.15f,
+            createRect(0, config->normalSpriteSize * 3,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
+            0.15f,
+            createRect(0, config->normalSpriteSize * 2,
+                       config->normalSpriteSize * 2, config->normalSpriteSize),
+            0.15f,
+            createRect(0, config->normalSpriteSize * 3,
                        config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f);
 
@@ -383,6 +391,7 @@ int initAvatar(Avatar* ret, char* saveGame) {
 }
 
 void updateAvatar(Avatar* avatar, const float deltaTime) {
+    static float timePassedCurtain = 0.f;
     if (!avatar->initiated)
         return;
 
@@ -407,7 +416,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
             avatar->transform.x += config->stepSprite * direction;
         } else if (avatar->currentAction == EVOLVING) {
-            if (finishedCurrentAnimation(&avatar->animationController)) {
+            if (finishedCurrentAnimation(&avatar->animationController) ||
+                -xOffsetSprites2 > config->heightSprite) {
                 char spriteSheetFile[270] = {0};
                 int i;
                 snprintf(spriteSheetFile, sizeof(spriteSheetFile),
@@ -419,8 +429,14 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
                 freeTexture(avatar->spriteSheet);
                 avatar->spriteSheet = loadTexture(spriteSheetFile);
-                setCurrentAnimation(&avatar->animationController, "walking");
-                avatar->currentAction = WALKING;
+
+                if (-xOffsetSprites2 <= config->heightSprite) {
+                    setCurrentAnimation(&avatar->animationController,
+                                        "walking");
+                    avatar->currentAction = WALKING;
+                }
+
+                decreaseCurtains = 1;
             }
         } else if (avatar->currentAction == EATING ||
                    avatar->currentAction == STRENGTHNING) {
@@ -631,6 +647,35 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         }
     }
 
+    if (avatar->currentAction & EVOLVING) {
+        if (isCurrentAnimation(&avatar->animationController, "happy-short")) {
+            timePassedCurtain += deltaTime;
+
+            if (timePassedCurtain >= GAME_TICK / 8 &&
+                !isFirstFrame(&avatar->animationController)) {
+                timePassedCurtain = 0.f;
+
+                if (!decreaseCurtains) {
+                    if (-xOffsetSprites <= config->heightSprite)
+                        xOffsetSprites += config->stepSprite;
+                    else if (-xOffsetSprites2 <= config->heightSprite)
+                        xOffsetSprites2 += config->stepSprite;
+                } else {
+                    if (xOffsetSprites2 < 0)
+                        xOffsetSprites2 -= config->stepSprite;
+                    else if (xOffsetSprites < 0)
+                        xOffsetSprites -= config->stepSprite;
+                    else {
+                        avatar->animationController
+                            .animations[avatar->animationController
+                                            .currentAnimation]
+                            .finished = 1;
+                    }
+                }
+            }
+        }
+    }
+
     updateAnimation(&avatar->animationController, deltaTime);
     updateAnimation(&additionalAnimations, deltaTime);
     if (avatar->infoApi.uiPoopCount)
@@ -656,6 +701,10 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
         if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1) {
             setCurrentAnimation(&avatar->animationController, "beingBorn");
             SDL_Log("It's a birth");
+        } else {
+            setCurrentAnimation(&avatar->animationController, "happy-short");
+            xOffsetSprites = xOffsetSprites2 = 0;
+            decreaseCurtains = 0;
         }
     }
 
@@ -672,6 +721,41 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
     avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
 }
 
+static void drawAvatarEvolution(SDL_Renderer* render, const Avatar* avatar) {
+    const int currentLine = xOffsetSprites / config->stepSprite;
+    const int currentLine2 = xOffsetSprites2 / config->stepSprite;
+
+    const SDL_Rect clipEvolve = {.x = 0,
+                                 .y = config->normalSpriteSize,
+                                 .w = config->normalSpriteSize * 2,
+                                 .h = currentLine};
+    const SDL_Rect clipBlackout = {
+        .x = 0, .y = 0, .w = config->normalSpriteSize * 2, .h = currentLine2};
+
+    const SDL_Rect* playerClip =
+        getAnimationFrameClip(&avatar->animationController);
+
+    SDL_RenderCopy(render, avatar->spriteSheet, playerClip, &avatar->transform);
+
+    if (!isFirstFrame(&avatar->animationController)) {
+        SDL_Rect transformEvolve = {
+            .x = config->overlayArea.x,
+            .y = config->overlayArea.y + config->heightButton,
+            .w = config->overlayArea.w,
+            .h = -config->stepSprite * currentLine};
+
+        SDL_Rect transformBlackout = {
+            .x = config->overlayArea.x,
+            .y = config->overlayArea.y + config->heightButton,
+            .w = config->overlayArea.w,
+            .h = -config->stepSprite * currentLine2};
+
+        SDL_RenderCopy(render, texturePopup, &clipEvolve, &transformEvolve);
+        SDL_RenderCopy(render, texturePopup, &clipBlackout, &transformBlackout);
+    }
+    SDL_Log("Desenhando evolução");
+}
+
 void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     int i, j;
 
@@ -685,6 +769,9 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                               .h = config->heightSmallSprite};
         SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
                        &transform);
+        return;
+    } else if (avatar->currentAction == EVOLVING) {
+        drawAvatarEvolution(render, avatar);
         return;
     }
 

@@ -125,8 +125,8 @@ const Configuration* initConfiguration(int width, int height) {
     configuration.widthButton = configuration.overlayArea.w / 4;
     configuration.heightButton = configuration.heightSmallSprite;
 
-    configuration.stepSprite =
-        -(((1) * configuration.widthSprite) / configuration.normalSpriteSize);
+    configuration.stepSprite = -(RULE_OF_THREE(1, configuration.widthSprite,
+                                               configuration.normalSpriteSize));
     return getConfiguration();
 }
 

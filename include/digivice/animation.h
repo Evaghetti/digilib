@@ -44,6 +44,8 @@ int isCurrentAnimation(AnimationController* animationController,
 int isCurrentAnimationAndFinished(AnimationController* animationController,
                                   const char* name);
 
+int isFirstFrame(const AnimationController* animationController);
+
 void freeAnimationController(AnimationController* animationController);
 
 SDL_Rect createRect(int x, int y, int w, int h);

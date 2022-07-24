@@ -116,6 +116,17 @@ int isCurrentAnimationAndFinished(AnimationController* animationController,
            finishedCurrentAnimation(animationController);
 }
 
+int isFirstFrame(const AnimationController* animationController) {
+    const Frame* currentFrame =
+        animationController->animations[animationController->currentAnimation]
+            .currentFrame;
+
+    return currentFrame ==
+           animationController
+               ->animations[animationController->currentAnimation]
+               .firstFrame;
+}
+
 void freeAnimationController(AnimationController* animationController) {
     int i;
 
