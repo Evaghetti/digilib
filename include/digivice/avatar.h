@@ -71,6 +71,8 @@ void setCurrentAction(Avatar* avatar, Action newAction);
 
 void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy);
 
+void setUpdateCoordinatesAvatar(Avatar* avatar);
+
 Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer);
 
 void freeAvatar(Avatar* avatar);

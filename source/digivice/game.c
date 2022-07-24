@@ -442,6 +442,32 @@ int updateGame() {
                 else
                     selectedOptionMenu = e.key.keysym.scancode;
                 break;
+            case SDL_WINDOWEVENT:
+                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                    config = initConfiguration(e.window.data1, e.window.data2);
+                    setUpdateCoordinatesAvatar(&digimon);
+
+                    for (i = 0; i <= COUNT_OPERATIONS; i++) {
+                        SDL_Rect transform = {
+                            .x = i < 4 ? config->widthButton * i
+                                       : config->widthButton * (i - 4),
+                            .y = i < 4 ? config->overlayArea.y
+                                       : config->overlayArea.y +
+                                             config->overlayArea.h -
+                                             config->heightButton,
+                            .w = config->widthButton,
+                            .h = config->heightButton};
+
+                        if (i < COUNT_OPERATIONS)
+                            buttonsOperations[i].transform = transform;
+                        else
+                            buttonCallStatus.transform = transform;
+                        if (i < COUNT_CONTROL_BUTTON_TYPE)
+                            buttonsControl[i].transform =
+                                config->overlayButtons[i];
+                    }
+                }
+                break;
             case SDL_MOUSEMOTION:
                 updateButtonsHovering(e.motion.x, e.motion.y);
                 break;

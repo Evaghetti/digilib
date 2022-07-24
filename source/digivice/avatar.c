@@ -90,24 +90,30 @@ static int isOnScreenCenter(const Avatar* avatar) {
                   sizeof(avatar->transform)) == 0;
 }
 
+void setUpdateCoordinatesAvatar(Avatar* avatar) {
+    config = getConfiguration();
+
+    initialTransform.x = config->widthSprite;
+    initialTransform.y = config->overlayArea.y + config->heightButton;
+    initialTransform.w = config->widthSprite;
+    initialTransform.h = config->heightSprite;
+
+    flushClip.x = 7 * config->normalSmallSpriteSize;
+    flushClip.y = config->normalSmallSpriteSize;
+    flushClip.w = config->normalSmallSpriteSize;
+    flushClip.h = config->normalSmallSpriteSize;
+
+    flushSpeed = (-config->stepSprite * 50);
+    xProjectileSpeed = -flushSpeed;
+
+    avatar->transform = initialTransform;
+}
+
 int initAvatar(Avatar* ret, char* saveGame) {
     int statusInit = DIGI_init(saveGame) == DIGI_RET_OK;
 
-    config = getConfiguration();
-
     if (statusInit) {
-        initialTransform.x = config->widthSprite;
-        initialTransform.y = config->overlayArea.y + config->heightButton;
-        initialTransform.w = config->widthSprite;
-        initialTransform.h = config->heightSprite;
-
-        flushClip.x = 7 * config->normalSmallSpriteSize;
-        flushClip.y = config->normalSmallSpriteSize;
-        flushClip.w = config->normalSmallSpriteSize;
-        flushClip.h = config->normalSmallSpriteSize;
-
-        flushSpeed = (-config->stepSprite * 50);
-        xProjectileSpeed = -flushSpeed;
+        setUpdateCoordinatesAvatar(ret);
 
         ret->infoApi = DIGI_playingDigimon();
         strncpy(ret->name, ret->infoApi.pstCurrentDigimon->szName,
@@ -124,8 +130,6 @@ int initAvatar(Avatar* ret, char* saveGame) {
         ret->spriteSheet = loadTexture(spriteSheetFile);
         if (ret->spriteSheet == NULL)
             return 0;
-
-        ret->transform = initialTransform;
 
         addAnimation(
             &ret->animationController, "hatching", 2, createRect(0, 0, 16, 16),
