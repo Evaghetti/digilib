@@ -80,9 +80,9 @@ const Configuration* initConfiguration(int width, int height) {
     configuration.normalSmallSpriteSize = configuration.normalSpriteSize / 2;
 
     configuration.overlayArea.w =
-        RULE_OF_THREE(551, configuration.widthScreen, 912);
+        RULE_OF_THREE(552, configuration.widthScreen, 912);
     configuration.overlayArea.h =
-        RULE_OF_THREE(393, configuration.heightScreen, 661);
+        RULE_OF_THREE(395, configuration.heightScreen, 661);
     configuration.overlayArea.x = 0;
     configuration.overlayArea.y =
         RULE_OF_THREE(131, configuration.heightScreen, 661);
