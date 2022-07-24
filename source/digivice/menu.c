@@ -120,10 +120,10 @@ void advanceMenu(Menu* menu, int step) {
 static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
     SDL_Rect currentTransform = {
-        .x = config->widthSmallSprite / 2,
-        .y = config->heightButton + config->heightSmallSprite / 2,
-        .w = config->widthScreen / 2,
-        .h = config->heightSmallSprite / 2};
+        .x = config->overlayArea.x + config->widthSmallSprite / 2,
+        .y = config->overlayArea.y + config->heightButton,
+        .w = config->overlayArea.w / 2,
+        .h = config->heightSmallSprite};
     SDL_Rect cursorTransform = {
         .x = currentTransform.x - config->widthSmallSprite / 4,
         .y = (currentTransform.y - config->heightSmallSprite / 12),
@@ -155,8 +155,9 @@ static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
 
 static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
-    SDL_Rect currentTransform = {0, config->heightButton, config->widthScreen,
-                                 config->heightSmallSprite};
+    SDL_Rect currentTransform = {
+        config->overlayArea.x, config->overlayArea.y + config->heightButton,
+        config->overlayArea.w, config->heightSmallSprite};
 
     SDL_RenderCopy(renderer, menu->header, NULL, &currentTransform);
     currentTransform.y += currentTransform.h;
@@ -198,12 +199,14 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
-    SDL_Rect transform = {.y = config->heightButton, .h = config->heightSprite};
+    SDL_Rect transform = {.y = config->overlayArea.y + config->heightButton,
+                          .h = config->heightSprite};
     if (menu->customs & FILL_SCREEN) {
-        transform.x = 0;
-        transform.w = config->widthScreen;
+        transform.x = config->overlayArea.x;
+        transform.w = config->overlayArea.w;
     } else {
-        transform.x = config->widthScreen / 2 - config->widthSprite / 2;
+        transform.x = config->overlayArea.x + config->overlayArea.w / 2 -
+                      config->widthSprite / 2;
         transform.w = config->widthSprite;
     }
 
@@ -241,7 +244,8 @@ void freeMenu(Menu* menu) {
         }
     }
 
-    free(menu->options);
+    if (menu->options)
+        free(menu->options);
     if (menu->header)
         freeTexture(menu->header);
     memset(menu, 0, sizeof(Menu));

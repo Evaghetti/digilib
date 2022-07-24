@@ -36,7 +36,7 @@ typedef enum {
 } PossibleOperations;
 
 SDL_Window* window = NULL;
-SDL_Texture* background;
+SDL_Texture *overlay, *background;
 
 Menu currentMenu;
 Button buttonsOperations[COUNT_OPERATIONS];
@@ -50,7 +50,7 @@ int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     // Default window to 640x480
-    SDL_DisplayMode display = {.w = 640, .h = 480};
+    SDL_DisplayMode display = {.w = 912, .h = 661};
     Uint32 flags = 0;
 
 #ifdef _USE_DISPLAY_MODE_
@@ -110,12 +110,13 @@ int initGame() {
     }
 
     background = loadTexture("resource/background.png");
+    overlay = loadTexture("resource/overlay.png");
     initAvatar(&digimon, saveFile);
 
     int i;
     for (i = 0; i < 4; i++) {
         SDL_Rect transform = {.x = config->widthButton * i,
-                              .y = 0,
+                              .y = config->overlayArea.y,
                               .w = config->widthButton,
                               .h = config->heightButton};
         buttonsOperations[i] =
@@ -124,7 +125,8 @@ int initGame() {
 
     for (; i < COUNT_OPERATIONS; i++) {
         SDL_Rect transform = {.x = config->widthButton * (i - 4),
-                              .y = config->heightScreen - config->heightButton,
+                              .y = config->overlayArea.y +
+                                   config->overlayArea.h - config->heightButton,
                               .w = config->widthButton,
                               .h = config->heightButton};
         buttonsOperations[i] =
@@ -406,7 +408,7 @@ int updateGame() {
 void drawGame() {
     SDL_RenderClear(gRenderer);
 
-    SDL_RenderCopy(gRenderer, background, NULL, NULL);
+    SDL_RenderCopy(gRenderer, background, NULL, &config->overlayArea);
 
     if (currentMenu.countOptions)
         drawMenu(gRenderer, &currentMenu);
@@ -418,6 +420,7 @@ void drawGame() {
         drawButton(gRenderer, &buttonsOperations[i]);
     drawButton(gRenderer, &buttonCallStatus);
 
+    SDL_RenderCopy(gRenderer, overlay, NULL, NULL);
     SDL_RenderPresent(gRenderer);
 
     SDL_Delay(1000 / 60);  // 60 fps

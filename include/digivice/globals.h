@@ -1,15 +1,21 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <SDL_rect.h>
 #include <SDL_ttf.h>
 
 typedef struct Configuration {
     int widthScreen;
     int heightScreen;
+
+    SDL_Rect overlayArea;
+
     int normalSpriteSize, normalSmallSpriteSize;
     int widthSprite, heightSprite;
+
     int widthSmallSprite, heightSmallSprite;
     int widthButton, heightButton;
+
     int stepSprite;
 } Configuration;
 

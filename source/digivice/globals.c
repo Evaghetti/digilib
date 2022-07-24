@@ -75,17 +75,26 @@ const Configuration* initConfiguration(int width, int height) {
     configuration.normalSpriteSize = NORMAL_SIZE_SPRITE;
     configuration.normalSmallSpriteSize = configuration.normalSpriteSize / 2;
 
+    configuration.overlayArea.w = (551 * configuration.widthScreen) / 912;
+    configuration.overlayArea.h = (393 * configuration.heightScreen) / 661;
+    configuration.overlayArea.x = 0;
+    configuration.overlayArea.y = (131 * configuration.heightScreen) / 661;
+
+    SDL_Log("%d %d %d %d", configuration.overlayArea.x,
+            configuration.overlayArea.y, configuration.overlayArea.w,
+            configuration.overlayArea.h);
+
     configuration.widthSprite =
-        (((configuration.normalSpriteSize * 10) * configuration.widthScreen) /
+        (((configuration.normalSpriteSize * 10) * configuration.overlayArea.w) /
          MIN_WIDTH_SCREEN);
     configuration.heightSprite =
-        (((configuration.normalSpriteSize * 10) * configuration.heightScreen) /
+        (((configuration.normalSpriteSize * 10) * configuration.overlayArea.h) /
          MIN_HEIGHT_SCREEN);
 
     configuration.widthSmallSprite = configuration.widthSprite / 2.f;
     configuration.heightSmallSprite = configuration.heightSprite / 2.f;
 
-    configuration.widthButton = configuration.widthScreen / 4;
+    configuration.widthButton = configuration.overlayArea.w / 4;
     configuration.heightButton = configuration.heightSmallSprite;
 
     configuration.stepSprite =
