@@ -313,12 +313,14 @@ static void changeMenuKeepIndex(Menu* menu, Menu* newMenu) {
     const int originalIndex = menu->currentOption;
 
     freeMenu(menu);
-    memcpy(menu, newMenu, sizeof(Menu));
-    menu->currentOption = originalIndex < menu->countOptions
-                              ? originalIndex
-                              : menu->countOptions - 1;
-    if (menu->currentOption < 0)
-        menu->currentOption = 0;
+    if (newMenu->countOptions) {
+        memcpy(menu, newMenu, sizeof(Menu));
+        menu->currentOption = originalIndex < menu->countOptions
+                                  ? originalIndex
+                                  : menu->countOptions - 1;
+        if (menu->currentOption < 0)
+            menu->currentOption = 0;
+    }
 }
 
 static uint16_t recvImplementation() {
