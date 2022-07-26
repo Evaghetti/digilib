@@ -18,9 +18,11 @@
 #define GAME_TICK .5f
 
 #ifdef _ANDROID_BUILD_
-#define NOTIFY_IFTRUE(x, y, e)             \
-    if ((x & (y)) != 0) {                  \
-        SDL_AndroidSendMessage(0x8000, e); \
+#define NOTIFY_IFTRUE(x, y, e)                                           \
+    SDL_Log("(" #x " & (" #y ")) == %d && (lastEvent & (" #y ")) == %d", \
+            (x & (y)), (lastEvent & (y)));                               \
+    if ((x & (y)) != 0 && (lastEvent & (y)) == 0) {                      \
+        SDL_AndroidSendMessage(0x8000, e);                               \
     }
 #else
 #define NOTIFY_IFTRUE(x, y, e)
@@ -56,12 +58,12 @@ static int roundBattle = 0, battleResult = 0;
 
 static const Configuration* config;
 
-void updateInfoAvatar(Avatar* avatar, int deltaTime) {
+void updateInfoAvatar(Avatar* avatar, int deltaTime, int hasUi) {
     unsigned char events;
 
     DIGI_updateEventsDeltaTime(deltaTime, &events);
     avatar->infoApi = DIGI_playingDigimon();
-    handleEvents(avatar, events);
+    handleEvents(avatar, events, hasUi);
 }
 
 static void advanceTraining(Avatar* avatar, int hasBeenSuccessful) {
@@ -119,15 +121,27 @@ void setUpdateCoordinatesAvatar(Avatar* avatar) {
     avatar->transform = initialTransform;
 }
 
-int initAvatar(Avatar* ret, char* saveGame) {
+int initAvatarNoTexture(Avatar* ret, char* saveGame) {
     int statusInit = DIGI_init(saveGame) == DIGI_RET_OK;
 
     if (statusInit) {
-        setUpdateCoordinatesAvatar(ret);
-
         ret->infoApi = DIGI_playingDigimon();
         strncpy(ret->name, ret->infoApi.pstCurrentDigimon->szName,
                 sizeof(ret->name));
+
+        updateInfoAvatar(ret, 0, 1);
+        ret->initiated = 1;
+    }
+
+    srand(time(NULL));
+    return statusInit;
+}
+
+int initAvatar(Avatar* ret, char* saveGame) {
+    int statusInit = initAvatarNoTexture(ret, saveGame);
+
+    if (statusInit) {
+        setUpdateCoordinatesAvatar(ret);
 
         char spriteSheetFile[270] = {0};
         int i;
@@ -395,12 +409,8 @@ int initAvatar(Avatar* ret, char* saveGame) {
             ret->currentAction = WALKING;
             setCurrentAnimation(&ret->animationController, "walking");
         }
-
-        updateInfoAvatar(ret, 0);
-        ret->initiated = 1;
     }
 
-    srand(time(NULL));
     return statusInit;
 }
 
@@ -413,7 +423,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     if (avatar->timePassed >= GAME_TICK) {
         avatar->secondsPassed++;
         if (avatar->secondsPassed >= 60) {
-            updateInfoAvatar(avatar, 1);
+            updateInfoAvatar(avatar, 1, 1);
 
             avatar->secondsPassed = 0;
         }
@@ -596,7 +606,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 }
             }
         }
-        updateInfoAvatar(avatar, 0);
+        updateInfoAvatar(avatar, 0, 1);
         avatar->timePassed = 0.f;
     }
 
@@ -711,7 +721,6 @@ static void sendNotification(const unsigned char events) {
     static unsigned char lastEvent = 0;
 
     if (lastEvent != events) {
-        lastEvent = events;
         if (events != 0) {
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_EVOLVE, EVOLUTION);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_CALL, CALLING);
@@ -722,27 +731,39 @@ static void sendNotification(const unsigned char events) {
                           DIGI_EVENT_MASK_SICK | DIGI_EVENT_MASK_INJURED,
                           TREATMENT);
         }
+
+        lastEvent = events;
     }
 }
 
-void handleEvents(Avatar* avatar, const unsigned char events) {
+void handleEvents(Avatar* avatar, const unsigned char events, int hasUi) {
+    if (hasUi) {
+        if (events & DIGI_EVENT_MASK_EVOLVE) {
+            if (avatar->infoApi.pstCurrentDigimon->uiStage ==
+                DIGI_STAGE_BABY_1) {
+                setCurrentAnimation(&avatar->animationController, "beingBorn");
+            } else {
+                setCurrentAnimation(&avatar->animationController,
+                                    "happy-short");
+                xOffsetSprites = xOffsetSprites2 = 0;
+                decreaseCurtains = 0;
+            }
+        }
+
+        if (events & DIGI_EVENT_MASK_WOKE_UP)
+            setCurrentAction(avatar, WALKING);
+    }
+
     if (events & DIGI_EVENT_MASK_EVOLVE) {
         avatar->currentAction = EVOLVING;
 
         SDL_Log("Evolving to %s", avatar->infoApi.pstCurrentDigimon->szName);
-        if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1) {
-            setCurrentAnimation(&avatar->animationController, "beingBorn");
+        if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
             SDL_Log("It's a birth");
-        } else {
-            setCurrentAnimation(&avatar->animationController, "happy-short");
-            xOffsetSprites = xOffsetSprites2 = 0;
-            decreaseCurtains = 0;
-        }
     }
 
     if (events & DIGI_EVENT_MASK_WOKE_UP) {
         SDL_Log("Wake up time has arrived");
-        setCurrentAction(avatar, WALKING);
     }
 
     if (events & DIGI_EVENT_MASK_POOP) {
@@ -914,6 +935,7 @@ void drawTrainingScore(SDL_Renderer* render) {
     botamonTransform.w = config->overlayArea.w - botamonTransform.w * 2;
     botamonTransform.y += botamonTransform.h;
     SDL_RenderCopy(render, scoreTexture, NULL, &botamonTransform);
+    freeTexture(hudTexture);
 }
 
 void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
@@ -1091,7 +1113,7 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
             break;
     }
 
-    updateInfoAvatar(avatar, 0);
+    updateInfoAvatar(avatar, 0, 1);
 }
 
 void setBattleAction(Avatar* avatar, StatusUpdate status, SDL_Texture* enemy) {
@@ -1237,6 +1259,11 @@ void freeAvatar(Avatar* avatar) {
     freeAnimationController(&avatar->animationController);
     if (avatar->spriteSheet)
         freeTexture(avatar->spriteSheet);
-    freeTexture(textureAdditional);
-    freeTexture(texturePopup);
+    if (textureAdditional)
+        freeTexture(textureAdditional);
+    if (texturePopup)
+        freeTexture(texturePopup);
+    if (textureEnemy)
+        freeTexture(textureEnemy);
+    memset(avatar, 0, sizeof(Avatar));
 }

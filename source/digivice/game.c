@@ -527,20 +527,16 @@ int updateGame() {
     return 1;
 }
 
-int updateBackGround() {
-    static float timePassed = 0.f;
-    timePassed += getDeltaTime();
+int updateBackGround(int deltaTime) {
+    setFileName();
+    if (initAvatarNoTexture(&digimon, saveFile) == 0)
+        return 0;
 
-    if (timePassed >= 60.f) {
-        setFileName();
-        initAvatar(&digimon, saveFile);
-        updateInfoAvatar(&digimon, 1);
-
-        timePassed = 0.f;
-    }
+    updateInfoAvatar(&digimon, 1, 0);
+    SDL_Log("Updated digimon");
 
     SDL_Delay(1000 / 60);  // 60 fps
-    return 0;
+    return 1;
 }
 
 void drawGame() {
@@ -579,6 +575,7 @@ void cleanUpGame() {
             freeButton(&buttonsControl[i]);
     }
     freeButton(&buttonCallStatus);
+    freeMenu(&currentMenu);
 
     if (gFonte)
         TTF_CloseFont(gFonte);

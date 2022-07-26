@@ -248,5 +248,9 @@ void freeMenu(Menu* menu) {
         free(menu->options);
     if (menu->header)
         freeTexture(menu->header);
+    if (cursorTexture) {
+        freeTexture(cursorTexture);
+        cursorTexture = NULL;
+    }
     memset(menu, 0, sizeof(Menu));
 }

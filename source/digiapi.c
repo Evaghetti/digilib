@@ -76,6 +76,9 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     uint16_t uiIsDying = (stPlayingDigimon.uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
 
+    LOG("%s - E: %d - HS: %04x", stPlayingDigimon.pstCurrentDigimon->szName,
+        stPlayingDigimon.uiTimeToEvolve, stPlayingDigimon.uiHungerStrength);
+
     if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
         (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {
         // If dying, then hearts and deplete twice as fast

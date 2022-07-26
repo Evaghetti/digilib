@@ -5,7 +5,7 @@ int initGame();
 
 int updateGame();
 
-int updateBackGround();
+int updateBackGround(int deltaTime);
 
 void drawGame();
 

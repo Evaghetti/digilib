@@ -2,7 +2,6 @@
 
 #include "digivice/game.h"
 
-void Java_org_libsdl_app_BackgroundUpdate_callUpdate(
-    JNIEnv* env, jclass obj) {
-    updateBackGround();
+jint Java_org_libsdl_app_BackgroundUpdate_callUpdate(JNIEnv* env, jclass obj, jint deltaTime) {
+    return updateBackGround(deltaTime);
 }

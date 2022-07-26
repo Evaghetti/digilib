@@ -143,7 +143,8 @@ void freeAnimationController(AnimationController* animationController) {
         free(animation->firstFrame);
     }
 
-    free(animationController->animations);
+    if (animationController->animations)
+        free(animationController->animations);
     memset(animationController, 0, sizeof(AnimationController));
 }
 

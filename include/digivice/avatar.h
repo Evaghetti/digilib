@@ -70,13 +70,15 @@ typedef struct {
 
 int initAvatar(Avatar* ret, char* saveGame);
 
-void updateInfoAvatar(Avatar* avatar, int deltaTime);
+int initAvatarNoTexture(Avatar* ret, char* saveGame);
+
+void updateInfoAvatar(Avatar* avatar, int deltaTime, int hasUi);
 
 void updateAvatar(Avatar* avatar, const float deltaTime);
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar);
 
-void handleEvents(Avatar* avatar, const unsigned char events);
+void handleEvents(Avatar* avatar, const unsigned char events, int hasUi);
 
 void setCurrentAction(Avatar* avatar, Action newAction);
 
