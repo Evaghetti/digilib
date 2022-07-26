@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "texture.h"
 
+#include <SDL_system.h>
 #include <SDL_ttf.h>
 
 #include <ctype.h>
@@ -46,7 +47,7 @@ static int roundBattle = 0, battleResult = 0;
 
 static const Configuration* config;
 
-static void updateInfoAvatar(Avatar* avatar, int deltaTime) {
+void updateInfoAvatar(Avatar* avatar, int deltaTime) {
     unsigned char events;
 
     DIGI_updateEventsDeltaTime(deltaTime, &events);

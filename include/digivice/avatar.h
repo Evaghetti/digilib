@@ -61,6 +61,8 @@ typedef struct {
 
 int initAvatar(Avatar* ret, char* saveGame);
 
+void updateInfoAvatar(Avatar* avatar, int deltaTime);
+
 void updateAvatar(Avatar* avatar, const float deltaTime);
 
 void drawAvatar(SDL_Renderer* render, const Avatar* avatar);

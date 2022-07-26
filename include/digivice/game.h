@@ -5,6 +5,8 @@ int initGame();
 
 int updateGame();
 
+int updateBackGround();
+
 void drawGame();
 
 void cleanUpGame();

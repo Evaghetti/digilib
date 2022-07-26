@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <SDL_net.h>
+#include <SDL_system.h>
 #include <SDL_ttf.h>
 
 #include <ctype.h>
@@ -48,6 +49,22 @@ static const Configuration* config;
 static char saveFile[100];
 static int currentHoveringButton = -1;
 
+static void setFileName() {
+    if (strlen(saveFile))
+        return;
+
+#ifdef _ANDROID_BUILD
+    char* path = SDL_AndroidGetInternalStoragePath();
+#else
+    char* path = SDL_GetPrefPath("digilib", "digivice");
+#endif
+
+    snprintf(saveFile, sizeof(saveFile), "%sdigimon.save", path);
+    free(path);
+
+    SDL_Log("Save game will be at %s", saveFile);
+}
+
 int initGame() {
     SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -70,11 +87,7 @@ int initGame() {
     display.h = tempWidth;
 #endif
 
-    char* path = SDL_GetPrefPath("digilib", "digivice");
-    snprintf(saveFile, sizeof(saveFile), "%sdigimon.save", path);
-    free(path);
-
-    SDL_Log("Save game will be at %s", saveFile);
+    setFileName();
 
     config = initConfiguration(display.w, display.h);
 
@@ -411,8 +424,20 @@ static PossibleOperations handleOperation(PossibleOperations operation,
     return responseOperation;
 }
 
-int updateGame() {
+static float getDeltaTime() {
     static int lastTime = -1;
+    int nowTime = SDL_GetPerformanceCounter();
+    if (lastTime == -1)
+        lastTime = nowTime;
+
+    float deltaTime =
+        (float)(nowTime - lastTime) / (float)SDL_GetPerformanceFrequency();
+    lastTime = nowTime;
+
+    return deltaTime;
+}
+
+int updateGame() {
     static PossibleOperations currentOperation = NO_OPERATION;
 
     SDL_Event e;
@@ -498,16 +523,24 @@ int updateGame() {
 
     currentOperation = handleOperation(currentOperation, selectedOptionMenu);
 
-    int nowTime = SDL_GetPerformanceCounter();
-    if (lastTime == -1)
-        lastTime = nowTime;
-
-    float deltaTime =
-        (float)(nowTime - lastTime) / (float)SDL_GetPerformanceFrequency();
-    lastTime = nowTime;
-
-    updateAvatar(&digimon, deltaTime);
+    updateAvatar(&digimon, getDeltaTime());
     return 1;
+}
+
+int updateBackGround() {
+    static float timePassed = 0.f;
+    timePassed += getDeltaTime();
+
+    if (timePassed >= 60.f) {
+        setFileName();
+        initAvatar(&digimon, saveFile);
+        updateInfoAvatar(&digimon, 1);
+
+        timePassed = 0.f;
+    }
+
+    SDL_Delay(1000 / 60);  // 60 fps
+    return 0;
 }
 
 void drawGame() {
@@ -532,10 +565,20 @@ void drawGame() {
 }
 
 void cleanUpGame() {
+    int i;
+
     DIGIHW_saveDigimon(saveFile, &digimon.infoApi);
 
     freeAvatar(&digimon);
     freeTexture(background);
+    freeTexture(overlay);
+    for (i = 0; i < COUNT_OPERATIONS; i++) {
+        freeButton(&buttonsOperations[i]);
+
+        if (i < COUNT_CONTROL_BUTTON_TYPE)
+            freeButton(&buttonsControl[i]);
+    }
+    freeButton(&buttonCallStatus);
 
     if (gFonte)
         TTF_CloseFont(gFonte);
