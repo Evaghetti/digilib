@@ -40,6 +40,15 @@ typedef enum Action {
     STANDOFF = 1 << 13,
 } Action;
 
+typedef enum MessageNotification {
+    EVOLUTION,
+    CALLING,
+    SLEEPY,
+    TREATMENT,
+    WOKE,
+    DYING,
+} MessageNotification;
+
 typedef struct {
     char name[256];
 

@@ -17,6 +17,15 @@
 
 #define GAME_TICK .5f
 
+#ifdef _ANDROID_BUILD_
+#define NOTIFY_IFTRUE(x, y, e)             \
+    if ((x & (y)) != 0) {                  \
+        SDL_AndroidSendMessage(0x8000, e); \
+    }
+#else
+#define NOTIFY_IFTRUE(x, y, e)
+#endif
+
 typedef enum { DOWN, UP } GuessShadowBox;
 
 // DM20 patterns (https://humulos.com/digimon/dm20/manual/)
@@ -698,6 +707,24 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
     }
 }
 
+static void sendNotification(const unsigned char events) {
+    static unsigned char lastEvent = 0;
+
+    if (lastEvent != events) {
+        lastEvent = events;
+        if (events != 0) {
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_EVOLVE, EVOLUTION);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_CALL, CALLING);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_SLEEPY, SLEEPY);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, WOKE);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, DYING);
+            NOTIFY_IFTRUE(events,
+                          DIGI_EVENT_MASK_SICK | DIGI_EVENT_MASK_INJURED,
+                          TREATMENT);
+        }
+    }
+}
+
 void handleEvents(Avatar* avatar, const unsigned char events) {
     if (events & DIGI_EVENT_MASK_EVOLVE) {
         avatar->currentAction = EVOLVING;
@@ -724,6 +751,8 @@ void handleEvents(Avatar* avatar, const unsigned char events) {
     }
 
     avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
+
+    sendNotification(events);
 }
 
 static void drawAvatarEvolution(SDL_Renderer* render, const Avatar* avatar) {
