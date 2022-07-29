@@ -314,8 +314,7 @@ static PossibleOperations handleOperation(PossibleOperations operation,
         case INFORMATION:
             if (currentMenu.countOptions == 0) {
                 currentMenu = createTexturesInfoMenu(&digimon, gRenderer);
-            }
-            if (selectedOption == -2) {
+            } else if (selectedOption == -2) {
                 freeMenu(&currentMenu);
                 responseOperation = NO_OPERATION;
             }
