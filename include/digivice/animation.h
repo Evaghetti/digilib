@@ -38,6 +38,8 @@ const SDL_Rect* getAnimationFrameClip(
 
 int finishedCurrentAnimation(AnimationController* animationController);
 
+void markAnimationAsFinished(AnimationController* animationController);
+
 int isCurrentAnimation(AnimationController* animationController,
                        const char* name);
 

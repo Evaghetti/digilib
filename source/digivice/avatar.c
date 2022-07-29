@@ -690,10 +690,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                     else if (xOffsetSprites < 0)
                         xOffsetSprites -= config->stepSprite;
                     else {
-                        avatar->animationController
-                            .animations[avatar->animationController
-                                            .currentAnimation]
-                            .finished = 1;
+                        markAnimationAsFinished(&avatar->animationController);
                     }
                 }
             }
@@ -1084,7 +1081,9 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
 
     switch (newAction) {
         case EATING:
-            DIGI_feedDigimon(1);
+            if (DIGI_feedDigimon(1) == DIGI_RET_OVERFEED) {
+                avatar->currentAction = NEGATING;
+            }
             break;
         case STRENGTHNING:
             DIGI_stregthenDigimon(1, 2);

@@ -101,6 +101,11 @@ int finishedCurrentAnimation(AnimationController* animationController) {
     return animation->finished;
 }
 
+void markAnimationAsFinished(AnimationController* animationController) {
+    animationController->animations[animationController->currentAnimation]
+        .finished = 1;
+}
+
 int isCurrentAnimation(AnimationController* animationController,
                        const char* name) {
     const char* currentName =

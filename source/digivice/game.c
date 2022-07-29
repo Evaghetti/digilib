@@ -33,7 +33,8 @@ typedef enum {
     CLEAN_POOP,
     LIGHTS,
     HEAL,
-    COUNT_OPERATIONS
+    COUNT_OPERATIONS,
+    FEED_WAITING,
 } PossibleOperations;
 
 SDL_Window* window = NULL;
@@ -48,6 +49,7 @@ Avatar digimon;
 static const Configuration* config;
 static char saveFile[100];
 static int currentHoveringButton = -1;
+static ControlButtonType clickedControlButton = COUNT_CONTROL_BUTTON_TYPE;
 
 static void setFileName() {
     if (strlen(saveFile))
@@ -190,7 +192,7 @@ static void initiateDigitamaMenu() {
 static int handleMenu(SDL_Scancode scanCode) {
     // If there's no menu, don't do anything.
     if (currentMenu.countOptions == 0)
-        return -1;
+        return -2;
 
     int i;
     switch (scanCode) {
@@ -233,20 +235,20 @@ static void updateButtonsHovering(int x, int y) {
 static ControlButtonType updateControlsButtonsClick(int x, int y,
                                                     int* forcedScancode) {
     SDL_Point point = {x, y};
-    int i, indexClickedButton = COUNT_CONTROL_BUTTON_TYPE;
+    int i;
 
     for (i = 0; i < COUNT_CONTROL_BUTTON_TYPE; i++) {
         setButtonClicked(&buttonsControl[i], point);
 
         if (buttonsControl[i].clicked) {
-            indexClickedButton = i;
+            clickedControlButton = i;
             break;
         }
     }
 
     const int isTraining =
         digimon.currentAction & (TRAINING | HAPPY | MAD | SHOWING_SCORE);
-    switch (indexClickedButton) {
+    switch (clickedControlButton) {
         case SELECT:
             if (currentMenu.countOptions == 0 && !isTraining) {
                 if (currentHoveringButton >= 0)
@@ -277,6 +279,7 @@ static ControlButtonType updateControlsButtonsClick(int x, int y,
             *forcedScancode = SDL_SCANCODE_ESCAPE;
             break;
         default:
+            clickedControlButton = COUNT_CONTROL_BUTTON_TYPE;
             break;
     }
 
@@ -305,6 +308,7 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 static PossibleOperations handleOperation(PossibleOperations operation,
                                           int selectedOption) {
     PossibleOperations responseOperation = operation;
+    int hasSkipped = selectedOption == -2 || clickedControlButton < RESET;
 
     switch (operation) {
         case INFORMATION:
@@ -333,11 +337,19 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             } else if (selectedOption >= 0) {
                 setCurrentAction(&digimon,
                                  selectedOption == 0 ? EATING : STRENGTHNING);
-                responseOperation = NO_OPERATION;
                 freeMenu(&currentMenu);
+                responseOperation = FEED_WAITING;
             } else if (selectedOption == -2) {
                 freeMenu(&currentMenu);
                 responseOperation = NO_OPERATION;
+            }
+            break;
+        case FEED_WAITING:
+            if (finishedCurrentAnimation(&digimon.animationController) ||
+                hasSkipped) {
+                if (hasSkipped)
+                    markAnimationAsFinished(&digimon.animationController);
+                responseOperation = FEED;
             }
             break;
         case LIGHTS:
@@ -450,6 +462,7 @@ int updateGame() {
         buttonsOperations[currentOperation].clicked = 1;
     buttonCallStatus.clicked = digimon.calling != 0;
 
+    clickedControlButton = COUNT_CONTROL_BUTTON_TYPE;
     while (SDL_PollEvent(&e) || forcedScanCode != -1) {
         if (forcedScanCode != -1) {
             e.type = SDL_KEYUP;
