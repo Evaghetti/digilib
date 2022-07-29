@@ -20,3 +20,5 @@ include/digiworld.h
 source/digiworld.c
 import-digimon.csv
 .vscode/
+*ninja*
+.cmake
