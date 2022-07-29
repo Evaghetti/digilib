@@ -1,4 +1,4 @@
-#include "game.h"
+#include "digivice/game.h"
 
 #include <SDL.h>
 #include <SDL_net.h>

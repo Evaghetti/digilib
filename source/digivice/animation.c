@@ -1,4 +1,4 @@
-#include "animation.h"
+#include "digivice/animation.h"
 
 #include <stdlib.h>
 #include <string.h>
