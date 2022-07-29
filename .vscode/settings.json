@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "stdio.h": "c",
-        "digimon.h": "c",
-        "export.h": "c",
-        "digiworld.h": "c",
-        "enums.h": "c"
-    }
-}

@@ -28,7 +28,7 @@ const char* getTime() {
     struct tm* timeInfo = localtime(&currentTime);
 
     static char szDate[50];
-    strftime(szDate, sizeof(szDate), "%F - %T", timeInfo);
+    strftime(szDate, sizeof(szDate), "%Y-%m-%d - %H:%M:%S", timeInfo);
     return szDate;
 }
 

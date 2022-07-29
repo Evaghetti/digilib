@@ -74,11 +74,8 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     uint16_t uiIsDying = (stPlayingDigimon.uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
 
-    printf("%s\nHunger: %d\nStrength: %d\nCare Mistakes: %d\n",
-           stPlayingDigimon.pstCurrentDigimon->szName,
-           GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength),
-           GET_STRENGTH_VALUE(stPlayingDigimon.uiHungerStrength),
-           stPlayingDigimon.uiCareMistakesCount);
+    LOG("%s - E: %d - HS: %04x", stPlayingDigimon.pstCurrentDigimon->szName,
+        stPlayingDigimon.uiTimeToEvolve, stPlayingDigimon.uiHungerStrength);
 
     if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
         (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {

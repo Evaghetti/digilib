@@ -1,6 +1,13 @@
 project(digilib C)
 cmake_minimum_required(VERSION 3.16)
 
+if ( CMAKE_COMPILER_IS_GNUCC )
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wall -Werror")
+endif()
+if ( MSVC )
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} /W4 /WX")
+endif()
+
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 set(PLATFORM "pc" CACHE STRING "Which platform to build")
@@ -9,23 +16,21 @@ set_property(CACHE PLATFORM PROPERTY STRINGS "pc")
 set(DEVICE "Digital Monster" CACHE STRING "Which VPet to simulate")
 set_property(CACHE DEVICE PROPERTY STRINGS "Digital Monster")
 
-option(BUILD_DIGITERMINAL off)
+option(BUILD_DIGIVICE off)
 
 # Needs python to prepare digimons
 find_package(Python REQUIRED Interpreter)
 add_custom_command(
     OUTPUT include/digiworld.h source/digiworld.c
-    COMMAND ${Python_EXECUTABLE} generate-digimon-header.py
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-digimon-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS import-digimon.csv
 )
 
-set(SRCS source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c source/digiworld.c)
-set(SRCS ${SRCS} source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/digicomm.c source/platform/${PLATFORM}/logging.c)
-
 # Build the lib
 include_directories(include)
-add_library(digilib SHARED ${SRCS})
-target_link_libraries(digilib pthread)
+add_library(digilib SHARED)
+target_sources(digilib PRIVATE source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c source/digiworld.c)
+target_sources(digilib PRIVATE source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/logging.c)
 
 message(STATUS "Using ${DEVICE}'s times for events")
 if(${DEVICE} STREQUAL "Digital Monster")
@@ -35,8 +40,25 @@ if(${DEVICE} STREQUAL "Digital Monster")
     target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=20)
 endif()
 
-if(${BUILD_DIGITERMINAL})
-    message(STATUS "Will build digiterminal")
-    add_executable(digiterminal digiterminal.c)
-    target_link_libraries(digiterminal digilib)
+if(${BUILD_DIGIVICE})
+    message(STATUS "Will build digivice")
+    set(SOURCES_DIGIVICE digivice.c source/digivice/game.c source/digivice/texture.c source/digivice/animation.c source/digivice/menu.c source/digivice/avatar.c source/digivice/button.c source/digivice/battle.c source/digivice/globals.c)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+        set(DIGIVICE_TARGET "libmain")
+        add_library(${DIGIVICE_TARGET} SHARED)
+        target_compile_definitions(${DIGIVICE_TARGET} PUBLIC _NEEDS_SDL_MAIN_ _USE_DISPLAY_MODE_ _ANDROID_BUILD_)
+        set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/dv_android.c)
+    else()
+        set(DIGIVICE_TARGET "digivice")
+
+        # Get SDL2 include dir
+        find_package(SDL2 REQUIRED) 
+        
+        add_executable(${DIGIVICE_TARGET})
+        include_directories(${SDL2_INCLUDE_DIR})
+    endif()
+    
+    target_sources(${DIGIVICE_TARGET} PRIVATE ${SOURCES_DIGIVICE})
+    target_link_libraries(${DIGIVICE_TARGET} digilib SDL2 SDL2main SDL2_image SDL2_ttf SDL2_net)
+    include_directories(include/digivice)
 endif()

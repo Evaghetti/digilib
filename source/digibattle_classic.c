@@ -1,5 +1,4 @@
 #include "digibattle_classic.h"
-#include "digicomm.h"
 #include "digihardware.h"
 #include "digimon.h"
 #include "enums.h"
@@ -93,41 +92,34 @@ void DIGIBATTLE_changeStats(uint8_t uiResultBattle) {
     stPlayingDigimon.uiWeight -= AMOUNT_WEIGHT_REDUCE;
 }
 
-uint8_t DIGI_battle(uint8_t uiInitiate) {
+uint8_t DIGI_battle(uint8_t uiInitiate, CALLBACK_SEND pfcSend,
+                    CALLBACK_POLL pfcPool) {
     if (DIGIBATTLE_canBattle() != DIGIBATTLE_RET_OK)
         return DIGIBATTLE_RET_OK;
 
-    DIGICOMM_setup();
-
     // First, see if the other side already has started communcating.
     // Then if it didn't, and this side should initiate, do so
-    uint8_t uiResult = DIGIBATTLE_continue();
+    uint8_t uiResult = DIGIBATTLE_continue(pfcSend, pfcPool);
     if (uiResult == DIGIBATTLE_RET_ERROR && uiInitiate) {
-        uiResult = DIGIBATTLE_initiate();
+        uiResult = DIGIBATTLE_initiate(pfcSend, pfcPool);
     }
 
     DIGIBATTLE_changeStats(uiResult);
-    DIGICOMM_close();
     return uiResult;
 }
 
-uint8_t DIGIBATTLE_initiate() {
+uint8_t DIGIBATTLE_initiate(CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool) {
     LOG("Initiating battle");
 
     uint16_t uiPacket = DIGIBATTLE_createFirstPacket();
     LOG("Challenger: First packet sent -> 0x%04x", uiPacket);
-    if (DIGICOMM_sendData(uiPacket)) {
+    if (pfcSend(uiPacket)) {
         LOG("Challenger: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    uiPacket = DIGICOMM_pollData();
-    if (uiPacket == DIGICOMM_ERROR_POLLING ||
-        uiPacket == DIGICOMM_ERROR_READING) {
-        LOG("Challenger: Error receiving first packet as "
-            "challenger");
-        return DIGIBATTLE_RET_ERROR;
-    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+    uiPacket = pfcPool();
+    if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenger: Received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
@@ -142,12 +134,12 @@ uint8_t DIGIBATTLE_initiate() {
 
     uiPacket = DIGIBATTLE_createSecondPacket(uiResult);
     LOG("Challenger: Sending packet %04x", uiPacket);
-    if (DIGICOMM_sendData(uiPacket)) {
+    if (pfcSend(uiPacket)) {
         LOG("Challenger: Error trying to send last data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    uiPacket = DIGICOMM_pollData();
+    uiPacket = pfcPool();
     LOG("Challenger: Received last package %04x", uiPacket);
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenger: Second received packet %x isn't valid", uiPacket);
@@ -157,32 +149,23 @@ uint8_t DIGIBATTLE_initiate() {
     return uiResult;
 }
 
-uint8_t DIGIBATTLE_continue() {
+uint8_t DIGIBATTLE_continue(CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool) {
     LOG("Challenged: Reading data to continue");
-    uint16_t uiPacket = DIGICOMM_pollData();
-    if (uiPacket == DIGICOMM_ERROR_POLLING ||
-        uiPacket == DIGICOMM_ERROR_READING) {
-        LOG("Challenged: Error receiving first packet as "
-            "challenged");
-        return DIGIBATTLE_RET_ERROR;
-    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+    uint16_t uiPacket = pfcPool();
+    if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
     LOG("Challenged: Got data -> 0x%04x, Sending first packet", uiPacket);
-    if (DIGICOMM_sendData(DIGIBATTLE_createFirstPacket())) {
+    if (pfcSend(DIGIBATTLE_createFirstPacket())) {
         LOG("Challenged: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
     LOG("Challenged: waiting for second package");
-    uiPacket = DIGICOMM_pollData();
-    if (uiPacket == DIGICOMM_ERROR_POLLING ||
-        uiPacket == DIGICOMM_ERROR_READING) {
-        LOG("Challenged: Error receiving data");
-        return DIGIBATTLE_RET_ERROR;
-    } else if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
+    uiPacket = pfcPool();
+    if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Second received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
@@ -191,6 +174,6 @@ uint8_t DIGIBATTLE_continue() {
     uint8_t uiResult = ~uiPacket & 0b11;
     // Doesn't matter what the other side does with this
     LOG("Challenged: Result -> %d", uiResult);
-    DIGICOMM_sendData(DIGIBATTLE_createSecondPacket(uiResult));
+    pfcSend(DIGIBATTLE_createSecondPacket(uiResult));
     return uiResult;
 }

@@ -9,9 +9,14 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-digiterminal
+/digivice
+digivice.exe
 digilib.so
-*.mon
+digilib.dll
+libdigilib.dll.a
+libdigivice.dll.a
+*.save*
 include/digiworld.h
 source/digiworld.c
 import-digimon.csv
+.vscode/

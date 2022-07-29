@@ -6,13 +6,17 @@
 #define DIGIBATTLE_RET_OK    0
 #define DIGIBATTLE_RET_WIN   (DIGIBATTLE_RET_OK + 1)
 #define DIGIBATTLE_RET_LOSE  (DIGIBATTLE_RET_OK + 2)
-#define DIGIBATTLE_RET_ERROR (DIGIBATTLE_RET_OK + 3)
+#define DIGIBATTLE_RET_ERROR (DIGIBATTLE_RET_OK + 4)
 
-uint8_t DIGI_battle(uint8_t uiInitiate);
+typedef uint16_t (*CALLBACK_SEND)(uint16_t);
+typedef uint16_t (*CALLBACK_POLL)();
 
-uint8_t DIGIBATTLE_initiate();
+uint8_t DIGI_battle(uint8_t uiInitiate, CALLBACK_SEND pfcSend,
+                    CALLBACK_POLL pfcPool);
 
-uint8_t DIGIBATTLE_continue();
+uint8_t DIGIBATTLE_initiate(CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool);
+
+uint8_t DIGIBATTLE_continue(CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool);
 
 uint8_t DIGIBATTLE_canBattle();
 
