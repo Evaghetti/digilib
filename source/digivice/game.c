@@ -389,6 +389,13 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     break;
                 }
 
+                const int isSkippable = (digimon.currentAction & ~TRAINING);
+                if (isSkippable && hasSkipped) {
+                    markAnimationAsFinished(&digimon.animationController);
+                    digimon.timePassed = GAME_TICK;
+                    break;
+                }
+
                 if (selectedOption == SDL_SCANCODE_UP)
                     setCurrentAction(&digimon, TRAINING_UP);
                 else if (selectedOption == SDL_SCANCODE_DOWN)

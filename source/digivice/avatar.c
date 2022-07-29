@@ -15,8 +15,6 @@
 #include <string.h>
 #include <time.h>
 
-#define GAME_TICK .5f
-
 #ifdef _ANDROID_BUILD_
 #define NOTIFY_IFTRUE(x, y, e)                                           \
     SDL_Log("(" #x " & (" #y ")) == %d && (lastEvent & (" #y ")) == %d", \
@@ -488,23 +486,6 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
 
         if ((avatar->currentAction & (HAPPY | NEGATING | MAD))) {
             avatar->transform = initialTransform;
-            if (avatar->currentAction & HAPPY) {
-                setCurrentAnimation(&avatar->animationController, "happy");
-                avatar->renderFlags = SDL_FLIP_NONE;
-            } else if (avatar->currentAction & MAD) {
-                if (avatar->currentAction == SAD_BATTLE) {
-                    if (isCurrentAnimationAndFinished(
-                            &avatar->animationController, "preparing"))
-                        setCurrentAnimation(&avatar->animationController,
-                                            "sick");
-                } else
-                    setCurrentAnimation(&avatar->animationController, "mad");
-            } else {
-                setCurrentAnimation(&avatar->animationController, "negating");
-                avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
-                                          ? SDL_FLIP_NONE
-                                          : SDL_FLIP_HORIZONTAL;
-            }
 
             if (finishedCurrentAnimation(&avatar->animationController)) {
                 switch (avatar->currentAction) {
@@ -534,6 +515,24 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         avatar->currentAction = WALKING;
                         break;
                 }
+            }
+
+            if (avatar->currentAction & HAPPY) {
+                setCurrentAnimation(&avatar->animationController, "happy");
+                avatar->renderFlags = SDL_FLIP_NONE;
+            } else if (avatar->currentAction & MAD) {
+                if (avatar->currentAction == SAD_BATTLE) {
+                    if (isCurrentAnimationAndFinished(
+                            &avatar->animationController, "preparing"))
+                        setCurrentAnimation(&avatar->animationController,
+                                            "sick");
+                } else
+                    setCurrentAnimation(&avatar->animationController, "mad");
+            } else {
+                setCurrentAnimation(&avatar->animationController, "negating");
+                avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
+                                          ? SDL_FLIP_NONE
+                                          : SDL_FLIP_HORIZONTAL;
             }
         }
 

@@ -4,6 +4,8 @@
 #include <SDL_rect.h>
 #include <SDL_ttf.h>
 
+#define GAME_TICK .5f
+
 typedef enum ControlButtonType {
     SELECT,
     CONFIRM,
