@@ -1069,6 +1069,8 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
     const Action oldAction = avatar->currentAction;
     avatar->currentAction = newAction;
     avatar->timePassed = GAME_TICK;
+    avatar->renderFlags = SDL_FLIP_NONE;
+
     setCurrentAnimation(&additionalAnimations, "nothing");
     if (newAction == WALKING) {
         setCurrentAnimation(&avatar->animationController, "walking");
