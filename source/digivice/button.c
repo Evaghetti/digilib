@@ -1,6 +1,6 @@
-#include "button.h"
+#include "digivice/button.h"
 
-#include "texture.h"
+#include "digivice/texture.h"
 
 Button initButton(const char* texturePath, SDL_Rect transform,
                   SDL_Rect spriteClip) {

@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "digivice/globals.h"
 
 #include <SDL_image.h>
 

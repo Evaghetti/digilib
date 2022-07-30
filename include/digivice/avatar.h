@@ -1,15 +1,14 @@
 #ifndef AVATAR_H
 #define AVATAR_H
 
+#include "digimon.h"
+#include "digivice/animation.h"
+#include "digivice/battle.h"
 #include "digivice/menu.h"
 
 #include <SDL_image.h>
 #include <SDL_rect.h>
 #include <SDL_render.h>
-
-#include "animation.h"
-#include "battle.h"
-#include "digimon.h"
 
 typedef enum Action {
     HATCHING = 0,

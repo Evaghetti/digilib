@@ -3,8 +3,8 @@
 #include "digiapi.h"
 #include "enums.h"
 
-#include "globals.h"
-#include "texture.h"
+#include "digivice/globals.h"
+#include "digivice/texture.h"
 
 #include <SDL_system.h>
 #include <SDL_ttf.h>

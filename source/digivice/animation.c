@@ -1,7 +1,11 @@
-#include "animation.h"
+#include "digivice/animation.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+static int isInitialized(const AnimationController* animationController) {
+    return animationController->animationCount > 0;
+}
 
 void addAnimation(AnimationController* animationController,
                   const char* animationName, int frameCount, ...) {
@@ -40,6 +44,10 @@ void addAnimation(AnimationController* animationController,
 
 void setCurrentAnimation(AnimationController* animationController,
                          const char* animationName) {
+    if (!isInitialized(animationController)) {
+        return;
+    }
+
     Animation* currentAnimation =
         &animationController->animations[animationController->currentAnimation];
     int i;
@@ -64,6 +72,10 @@ void setCurrentAnimation(AnimationController* animationController,
 
 void updateAnimation(AnimationController* animationController,
                      float deltaTime) {
+    if (!isInitialized(animationController)) {
+        return;
+    }
+
     Animation* animation =
         &animationController->animations[animationController->currentAnimation];
 
@@ -78,6 +90,10 @@ void updateAnimation(AnimationController* animationController,
 }
 
 void resetCurrentAnimation(AnimationController* animationController) {
+    if (!isInitialized(animationController)) {
+        return;
+    }
+
     animationController->animations[animationController->currentAnimation]
         .currentFrame =
         animationController->animations[animationController->currentAnimation]
@@ -89,12 +105,20 @@ void resetCurrentAnimation(AnimationController* animationController) {
 
 const SDL_Rect* getAnimationFrameClip(
     const AnimationController* animationController) {
+    if (!isInitialized(animationController)) {
+        return NULL;
+    }
+
     return &animationController
                 ->animations[animationController->currentAnimation]
                 .currentFrame->frameClip;
 }
 
 int finishedCurrentAnimation(AnimationController* animationController) {
+    if (!isInitialized(animationController)) {
+        return 0;
+    }
+
     const Animation* animation =
         &animationController->animations[animationController->currentAnimation];
 
@@ -102,12 +126,20 @@ int finishedCurrentAnimation(AnimationController* animationController) {
 }
 
 void markAnimationAsFinished(AnimationController* animationController) {
+    if (!isInitialized(animationController)) {
+        return;
+    }
+
     animationController->animations[animationController->currentAnimation]
         .finished = 1;
 }
 
 int isCurrentAnimation(AnimationController* animationController,
                        const char* name) {
+    if (!isInitialized(animationController)) {
+        return 0;
+    }
+
     const char* currentName =
         animationController->animations[animationController->currentAnimation]
             .animationName;
@@ -117,11 +149,19 @@ int isCurrentAnimation(AnimationController* animationController,
 
 int isCurrentAnimationAndFinished(AnimationController* animationController,
                                   const char* name) {
+    if (!isInitialized(animationController)) {
+        return 0;
+    }
+
     return isCurrentAnimation(animationController, name) &&
            finishedCurrentAnimation(animationController);
 }
 
 int isFirstFrame(const AnimationController* animationController) {
+    if (!isInitialized(animationController)) {
+        return 0;
+    }
+
     const Frame* currentFrame =
         animationController->animations[animationController->currentAnimation]
             .currentFrame;
@@ -134,6 +174,10 @@ int isFirstFrame(const AnimationController* animationController) {
 
 void freeAnimationController(AnimationController* animationController) {
     int i;
+
+    if (!isInitialized(animationController)) {
+        return;
+    }
 
     for (i = 0; i < animationController->animationCount; i++) {
         Animation* animation = animationController->animations + i;
