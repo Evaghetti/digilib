@@ -193,7 +193,7 @@ uint8_t DIGI_trainDigimon(uint8_t uiAmount) {
         stPlayingDigimon.uiTrainingCount);
     while (uiAmount) {
         stPlayingDigimon.uiTrainingCount++;
-        if (DIGI_stregthenDigimon(1, -2) != DIGI_RET_OK) {
+        if (DIGI_stregthenDigimon(1, -1) != DIGI_RET_OK) {
             LOG("Error during training");
             return DIGI_RET_ERROR;
         }
