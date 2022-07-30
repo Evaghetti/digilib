@@ -12,6 +12,10 @@
 #define MASK_DYING_STAGE 0b00100000
 #define MASK_SLEEPING    0b01000000
 
+// Timed Flags
+#define DIGI_TIMEDFLG_CAN_OVERFEED      0b00000001
+#define DIGI_TIMEDFLG_CAN_DISTURB_SLEEP 0b00000010
+
 // Getters
 #define GET_HUNGER_VALUE(x)   ((MASK_HUNGER & x) >> 0)
 #define GET_STRENGTH_VALUE(x) ((MASK_STRENGTH & x) >> 4)
@@ -42,6 +46,22 @@
 #define GET_MAX_VALUE(variable) ((uint8_t)variable)
 
 #define MAX_POSSIBLE_EVOLUTIONS 10
+
+#ifndef TIME_TO_GET_HUNGRY
+#define TIME_TO_GET_HUNGRY 5
+#endif
+
+#ifndef TIME_TO_GET_WEAKER
+#define TIME_TO_GET_WEAKER 10
+#endif
+
+#ifndef TIME_TO_POOP
+#define TIME_TO_POOP 15
+#endif
+
+#ifndef TIME_TO_GET_CARE_MISTAKE
+#define TIME_TO_GET_CARE_MISTAKE 10
+#endif
 
 typedef struct digimon_t {
     char szName[50];
@@ -92,6 +112,7 @@ typedef struct {
     uint8_t uiInjuredCount;
     uint8_t uiSickCount;
     uint8_t uiAge;
+    uint8_t uiTimedFlags;
 } playing_digimon_t;
 
 uint8_t DIGI_evolveDigimon();
@@ -123,5 +144,7 @@ uint8_t DIGI_poop(uint8_t uiAmount);
 void DIGI_cleanPoop();
 
 uint8_t DIGI_shouldBeKilledOff();
+
+uint16_t DIGI_timeToGetHungry();
 
 #endif  // DIGIMON_H

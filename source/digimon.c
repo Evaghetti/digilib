@@ -9,10 +9,6 @@
 
 #define NOT_IN_RANGE(value, min, max) (value < min || value > max)
 
-#ifndef TIME_TO_GET_CARE_MISTAKE
-#define TIME_TO_GET_CARE_MISTAKE 10
-#endif
-
 #define NOT_COUNTING_FOR_CARE_MISTAKE 0
 
 extern playing_digimon_t stPlayingDigimon;
@@ -129,6 +125,10 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
         stPlayingDigimon.uiHungerStrength &= ~MASK_HUNGER;
         return DIGI_RET_HUNGRY;
     } else if (iCurrentHungerAmount <= 4) {
+        if (GET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength) >
+            iCurrentHungerAmount)
+            stPlayingDigimon.uiTimedFlags |= DIGI_TIMEDFLG_CAN_OVERFEED;
+
         SET_HUNGER_VALUE(stPlayingDigimon.uiHungerStrength,
                          iCurrentHungerAmount);
     }
@@ -146,6 +146,7 @@ uint8_t DIGI_feedDigimon(int16_t uiAmount) {
     // Se foi dado comida apesar dele estar cheio, marca como overfeed.
     if (iCurrentHungerAmount > 4) {
         stPlayingDigimon.uiOverfeedingCount++;
+        stPlayingDigimon.uiTimedFlags &= ~DIGI_TIMEDFLG_CAN_OVERFEED;
         LOG("%s got overfed", stPlayingDigimon.pstCurrentDigimon->szName);
         return DIGI_RET_OVERFEED;
     }
@@ -385,4 +386,14 @@ uint8_t DIGI_shouldBeKilledOff() {
     }
 
     return DIGI_RET_ERROR;
+}
+
+uint16_t DIGI_timeToGetHungry() {
+    if (stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_OVERFEED)
+        return TIME_TO_GET_HUNGRY;
+
+    LOG("Digimon got overfed, it will take twice as long to get hungry again "
+        "(%d)",
+        TIME_TO_GET_HUNGRY << 1);
+    return TIME_TO_GET_HUNGRY << 1;
 }

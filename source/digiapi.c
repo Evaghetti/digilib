@@ -10,18 +10,6 @@
 
 #include "logging.h"
 
-#ifndef TIME_TO_GET_HUNGRY
-#define TIME_TO_GET_HUNGRY 5
-#endif
-
-#ifndef TIME_TO_GET_WEAKER
-#define TIME_TO_GET_WEAKER 10
-#endif
-
-#ifndef TIME_TO_POOP
-#define TIME_TO_POOP 15
-#endif
-
 const char* gszSaveFile = NULL;
 playing_digimon_t stPlayingDigimon;
 
@@ -39,9 +27,6 @@ uint8_t DIGI_init(const char* szSaveFile) {
 
     stPlayingDigimon.pstCurrentDigimon =
         &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
-
-    LOG("[DIGILIB] Current digimon: %s\n",
-        stPlayingDigimon.pstCurrentDigimon->szName);
 
     DIGI_saveGame();
     DIGIHW_setTime();
@@ -74,8 +59,12 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
     uint16_t uiIsDying = (stPlayingDigimon.uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
 
-    LOG("%s - E: %d - HS: %04x", stPlayingDigimon.pstCurrentDigimon->szName,
-        stPlayingDigimon.uiTimeToEvolve, stPlayingDigimon.uiHungerStrength);
+    LOG("%s - E: %d - HS: %04x CM: %d SD: %d TC: %d OF: %d",
+        stPlayingDigimon.pstCurrentDigimon->szName,
+        stPlayingDigimon.uiTimeToEvolve, stPlayingDigimon.uiHungerStrength,
+        stPlayingDigimon.uiCareMistakesCount,
+        stPlayingDigimon.uiSleepDisturbanceCount,
+        stPlayingDigimon.uiTrainingCount, stPlayingDigimon.uiOverfeedingCount);
 
     if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
         (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {
@@ -102,25 +91,25 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         return DIGI_RET_DIED;
     }
 
-    while (stPlayingDigimon.uiTimeSinceLastMeal >= TIME_TO_GET_HUNGRY) {
-        DIGI_feedDigimon(-1);
+    while (stPlayingDigimon.uiTimeSinceLastMeal >= DIGI_timeToGetHungry()) {
+        stPlayingDigimon.uiTimeSinceLastMeal -= DIGI_timeToGetHungry();
 
-        stPlayingDigimon.uiTimeSinceLastMeal -= TIME_TO_GET_HUNGRY;
+        DIGI_feedDigimon(-1);
     }
 
     while (stPlayingDigimon.uiTimeSinceLastTraining >= TIME_TO_GET_WEAKER) {
-        DIGI_stregthenDigimon(-1, 0);
-
         stPlayingDigimon.uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
+
+        DIGI_stregthenDigimon(-1, 0);
     }
 
     while (stPlayingDigimon.uiTimeSinceLastPoop >= TIME_TO_POOP &&
            stPlayingDigimon.uiPoopCount < 4) {
+        stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
+
         if (DIGI_poop(1) == DIGI_RET_SICK)
             *puiEvents |= DIGI_EVENT_MASK_SICK;
         *puiEvents |= DIGI_EVENT_MASK_POOP;
-
-        stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
     }
 
     if (DIGI_shouldEvolve() == DIGI_RET_OK) {
