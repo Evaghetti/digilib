@@ -346,8 +346,10 @@ static PossibleOperations handleOperation(PossibleOperations operation,
         case FEED_WAITING:
             if (finishedCurrentAnimation(&digimon.animationController) ||
                 hasSkipped) {
-                if (hasSkipped)
+                if (hasSkipped) {
                     markAnimationAsFinished(&digimon.animationController);
+                    setCurrentAction(&digimon, WALKING);
+                }
                 responseOperation = FEED;
             }
             break;
