@@ -528,7 +528,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                                             "sick");
                 } else
                     setCurrentAnimation(&avatar->animationController, "mad");
-            } else {
+            } else if (avatar->currentAction & NEGATING) {
                 setCurrentAnimation(&avatar->animationController, "negating");
                 avatar->renderFlags = avatar->renderFlags == SDL_FLIP_HORIZONTAL
                                           ? SDL_FLIP_NONE
