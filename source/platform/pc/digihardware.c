@@ -27,6 +27,7 @@
 #define TLV_INJURED_COUNT            0x11
 #define TLV_SICK_COUNT               0x12
 #define TLV_AGE                      0x13
+#define TLV_TIMED_FLAGS              0x14
 
 static uint16_t guiTime = 0xffff;
 
@@ -93,7 +94,8 @@ uint8_t DIGIHW_readDigimon(const char* szFileName,
                   pstPlayingDigimon->uiTimeSickOrInjured),
         TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
         TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount),
-        TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge)};
+        TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge),
+        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags)};
 
     uint8_t currentTag, currentLen;
     while (fread(&currentTag, sizeof(currentTag), 1, pstFileHandle) == 1) {
@@ -150,7 +152,8 @@ uint8_t DIGIHW_saveDigimon(const char* szFileName,
                   pstPlayingDigimon->uiTimeSickOrInjured),
         TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
         TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount),
-        TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge)};
+        TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge),
+        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags)};
 
     unsigned i;
     for (i = 0; i < sizeof(vstDataSave) / sizeof(vstDataSave[0]); i++) {
