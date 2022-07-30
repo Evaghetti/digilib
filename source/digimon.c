@@ -240,9 +240,13 @@ uint8_t DIGI_putSleep(uint8_t uiSleepMode) {
 
     uiSleepMode &= 1;
 
-    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0 && uiSleepMode) {
+    if ((stPlayingDigimon.uiStats & MASK_SLEEPING) &&
+        (stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP) &&
+        !uiSleepMode) {
         LOG("It is a sleep disturbance");
+
         stPlayingDigimon.uiSleepDisturbanceCount++;
+        stPlayingDigimon.uiTimedFlags &= ~DIGI_TIMEDFLG_CAN_DISTURB_SLEEP;
     }
 
     stPlayingDigimon.uiStats &= ~MASK_SLEEPING;
@@ -254,7 +258,9 @@ uint8_t DIGI_shouldSleep() {
     const digimon_t* pstCurrentDigimon = stPlayingDigimon.pstCurrentDigimon;
     const uint16_t uiCurrentTime = DIGIHW_timeMinutes();
 
-    if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1)
+    if (!(stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP))
+        return DIGI_RET_ERROR;
+    else if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1)
         return DIGI_RET_ERROR;
     else if ((stPlayingDigimon.uiStats & MASK_SLEEPING) != 0)
         return DIGI_RET_ERROR;
@@ -396,4 +402,16 @@ uint16_t DIGI_timeToGetHungry() {
         "(%d)",
         TIME_TO_GET_HUNGRY << 1);
     return TIME_TO_GET_HUNGRY << 1;
+}
+
+uint8_t DIGI_updateDisturbance(uint16_t uiDeltaTime) {
+    if ((stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP))
+        return DIGI_RET_ERROR;
+
+    stPlayingDigimon.uiTimeSinceSleepDisturbance += uiDeltaTime;
+    if (stPlayingDigimon.uiTimeSinceSleepDisturbance < TIME_TO_GET_CARE_MISTAKE)
+        return DIGI_RET_OK;
+
+    stPlayingDigimon.uiTimedFlags |= DIGI_TIMEDFLG_CAN_DISTURB_SLEEP;
+    return DIGI_RET_ERROR;
 }

@@ -7,27 +7,28 @@
 #include <time.h>
 
 // TLV savefile
-#define TLV_INDEX_CURRENT_DIGIMON    0x00
-#define TLV_STATS                    0x01
-#define TLV_HUNGER_STRENGTH          0x02
-#define TLV_WEIGHT                   0x03
-#define TLV_TRAINING_COUNT           0x04
-#define TLV_OVERFEEDING_COUNT        0x05
-#define TLV_SLEEP_DISTURBANCE_COUNT  0x06
-#define TLV_BATTLE_COUNT             0x07
-#define TLV_WIN_COUNT                0x08
-#define TLV_CARE_MISTAKES_COUNT      0x09
-#define TLV_TIME_SINCE_LAST_MEAL     0x0a
-#define TLV_TIME_SINCE_LAST_TRAINING 0x0b
-#define TLV_TIME_SINCE_LAST_POOP     0x0c
-#define TLV_TIME_TO_EVOLVE           0x0d
-#define TLV_POOP_COUNT               0x0e
-#define TLV_TIME_BEING_CALLED        0x0f
-#define TLV_TIME_SICK_OR_INJURED     0x10
-#define TLV_INJURED_COUNT            0x11
-#define TLV_SICK_COUNT               0x12
-#define TLV_AGE                      0x13
-#define TLV_TIMED_FLAGS              0x14
+#define TLV_INDEX_CURRENT_DIGIMON        0x00
+#define TLV_STATS                        0x01
+#define TLV_HUNGER_STRENGTH              0x02
+#define TLV_WEIGHT                       0x03
+#define TLV_TRAINING_COUNT               0x04
+#define TLV_OVERFEEDING_COUNT            0x05
+#define TLV_SLEEP_DISTURBANCE_COUNT      0x06
+#define TLV_BATTLE_COUNT                 0x07
+#define TLV_WIN_COUNT                    0x08
+#define TLV_CARE_MISTAKES_COUNT          0x09
+#define TLV_TIME_SINCE_LAST_MEAL         0x0a
+#define TLV_TIME_SINCE_LAST_TRAINING     0x0b
+#define TLV_TIME_SINCE_LAST_POOP         0x0c
+#define TLV_TIME_TO_EVOLVE               0x0d
+#define TLV_POOP_COUNT                   0x0e
+#define TLV_TIME_BEING_CALLED            0x0f
+#define TLV_TIME_SICK_OR_INJURED         0x10
+#define TLV_INJURED_COUNT                0x11
+#define TLV_SICK_COUNT                   0x12
+#define TLV_AGE                          0x13
+#define TLV_TIMED_FLAGS                  0x14
+#define TLV_TIME_SINCE_SLEEP_DISTURBANCE 0x15
 
 static uint16_t guiTime = 0xffff;
 
@@ -95,7 +96,9 @@ uint8_t DIGIHW_readDigimon(const char* szFileName,
         TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
         TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount),
         TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge),
-        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags)};
+        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags),
+        TLV_FIELD(TLV_TIME_SINCE_SLEEP_DISTURBANCE,
+                  pstPlayingDigimon->uiTimeSinceSleepDisturbance)};
 
     uint8_t currentTag, currentLen;
     while (fread(&currentTag, sizeof(currentTag), 1, pstFileHandle) == 1) {
@@ -153,7 +156,9 @@ uint8_t DIGIHW_saveDigimon(const char* szFileName,
         TLV_FIELD(TLV_INJURED_COUNT, pstPlayingDigimon->uiInjuredCount),
         TLV_FIELD(TLV_SICK_COUNT, pstPlayingDigimon->uiSickCount),
         TLV_FIELD(TLV_AGE, pstPlayingDigimon->uiAge),
-        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags)};
+        TLV_FIELD(TLV_TIMED_FLAGS, pstPlayingDigimon->uiTimedFlags),
+        TLV_FIELD(TLV_TIME_SINCE_SLEEP_DISTURBANCE,
+                  pstPlayingDigimon->uiTimeSinceSleepDisturbance)};
 
     unsigned i;
     for (i = 0; i < sizeof(vstDataSave) / sizeof(vstDataSave[0]); i++) {
