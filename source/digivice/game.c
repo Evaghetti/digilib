@@ -308,6 +308,7 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 
 static PossibleOperations handleOperation(PossibleOperations operation,
                                           int selectedOption) {
+    static int previousOption = -1;
     PossibleOperations responseOperation = operation;
     int hasSkipped = selectedOption == -2 || clickedControlButton < RESET;
 
@@ -334,14 +335,20 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             if (currentMenu.countOptions == 0) {
                 char* args[] = {"FEED", "VITAMIN"};
                 currentMenu = initMenuText(2, args);
+                if (previousOption >= 0) {
+                    currentMenu.currentOption = previousOption;
+                    previousOption = -1;
+                }
             } else if (selectedOption >= 0) {
                 setCurrentAction(&digimon,
                                  selectedOption == 0 ? EATING : STRENGTHNING);
                 freeMenu(&currentMenu);
                 responseOperation = FEED_WAITING;
+                previousOption = selectedOption;
             } else if (selectedOption == -2) {
                 freeMenu(&currentMenu);
                 responseOperation = NO_OPERATION;
+                previousOption = -1;
             }
             break;
         case FEED_WAITING:
