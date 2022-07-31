@@ -306,6 +306,14 @@ int initAvatar(Avatar* ret, char* saveGame) {
             createRect(config->normalSpriteSize, config->normalSpriteSize * 2,
                        config->normalSpriteSize, config->normalSpriteSize),
             GAME_TICK * 100);
+        addAnimation(
+            &ret->animationController, "sleeping", 2,
+            createRect(0, config->normalSpriteSize, config->normalSpriteSize,
+                       config->normalSpriteSize),
+            GAME_TICK,
+            createRect(config->normalSpriteSize, config->normalSpriteSize,
+                       config->normalSpriteSize, config->normalSpriteSize),
+            GAME_TICK);
 
         // Additional stuff for animations etc.
         textureAdditional = loadTexture("resource/feed.gif");
@@ -537,6 +545,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         }
 
         if (avatar->currentAction == SLEEPING) {
+            setCurrentAnimation(&avatar->animationController, "sleeping");
             setCurrentAnimation(&additionalAnimations, "snore");
         }
 
@@ -720,7 +729,7 @@ static void sendNotification(const unsigned char events) {
         if (events != 0) {
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_EVOLVE, EVOLUTION);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_CALL, CALLING);
-            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_SLEEPY, SLEEPY);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_SLEEPY, GOT_SLEEPY);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, WOKE);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, DYING);
             NOTIFY_IFTRUE(events,
@@ -733,38 +742,35 @@ static void sendNotification(const unsigned char events) {
 }
 
 void handleEvents(Avatar* avatar, const unsigned char events, int hasUi) {
-    if (hasUi) {
-        if (events & DIGI_EVENT_MASK_EVOLVE) {
-            if (avatar->infoApi.pstCurrentDigimon->uiStage ==
-                DIGI_STAGE_BABY_1) {
-                setCurrentAnimation(&avatar->animationController, "beingBorn");
-            } else {
-                setCurrentAnimation(&avatar->animationController,
-                                    "happy-short");
-                xOffsetSprites = xOffsetSprites2 = 0;
-                decreaseCurtains = 0;
-            }
-        }
-
-        if (events & DIGI_EVENT_MASK_WOKE_UP)
-            setCurrentAction(avatar, WALKING);
-    }
-
     if (events & DIGI_EVENT_MASK_EVOLVE) {
         avatar->currentAction = EVOLVING;
 
         SDL_Log("Evolving to %s", avatar->infoApi.pstCurrentDigimon->szName);
-        if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
+        if (avatar->infoApi.pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1) {
+            setCurrentAnimation(&avatar->animationController, "beingBorn");
             SDL_Log("It's a birth");
+        } else {
+            setCurrentAnimation(&avatar->animationController, "happy-short");
+            xOffsetSprites = xOffsetSprites2 = 0;
+            decreaseCurtains = 0;
+        }
     }
 
     if (events & DIGI_EVENT_MASK_WOKE_UP) {
         SDL_Log("Wake up time has arrived");
+        setCurrentAction(avatar, WALKING);
     }
 
     if (events & DIGI_EVENT_MASK_POOP) {
         SDL_Log("Digimon has pooped! Current amount %d",
                 avatar->infoApi.uiPoopCount);
+    }
+
+    if (events & DIGI_EVENT_MASK_SLEEPY) {
+        setCurrentAnimation(&avatar->animationController, "sick");
+        avatar->currentAction = SLEEPY;
+        avatar->transform = initialTransform;
+        avatar->renderFlags = SDL_FLIP_NONE;
     }
 
     avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
@@ -810,18 +816,7 @@ static void drawAvatarEvolution(SDL_Renderer* render, const Avatar* avatar) {
 void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     int i, j;
 
-    if (avatar->currentAction == SLEEPING) {
-        const SDL_Rect* currentSpriteRect =
-            getAnimationFrameClip(&additionalAnimations);
-
-        SDL_Rect transform = {.x = avatar->transform.x + config->widthSprite,
-                              .y = config->overlayArea.y + config->heightButton,
-                              .w = config->widthSmallSprite,
-                              .h = config->heightSmallSprite};
-        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
-                       &transform);
-        return;
-    } else if (avatar->currentAction == EVOLVING) {
+    if (avatar->currentAction == EVOLVING) {
         drawAvatarEvolution(render, avatar);
         return;
     }
@@ -835,11 +830,16 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
                      &alteredAvatarTransform, 0.f, NULL, avatar->renderFlags);
 
-    if (!finishedCurrentAnimation(&additionalAnimations)) {
+    if (!finishedCurrentAnimation(&additionalAnimations) ||
+        (avatar->currentAction == SLEEPING)) {
         currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
         SDL_Rect transform = {
-            .x = avatar->transform.x - config->widthSmallSprite,
-            .y = avatar->transform.y + config->heightSmallSprite,
+            .x = avatar->currentAction & (SLEEPING)
+                     ? avatar->transform.x + config->widthSprite
+                     : avatar->transform.x - config->widthSmallSprite,
+            .y = avatar->currentAction & (SLEEPING)
+                     ? avatar->transform.y
+                     : avatar->transform.y + config->heightSmallSprite,
             .w = config->widthSmallSprite,
             .h = config->heightSmallSprite};
 

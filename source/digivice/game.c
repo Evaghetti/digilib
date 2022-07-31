@@ -291,7 +291,8 @@ static PossibleOperations updateButtonsClick(int x, int y) {
     int i, indexClickedButton = NO_OPERATION;
 
     if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
-        (digimon.currentAction != WALKING && digimon.currentAction != SLEEPING))
+        (digimon.currentAction != WALKING &&
+         !(digimon.currentAction & SLEEPING)))
         return indexClickedButton;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {

@@ -17,6 +17,7 @@ typedef enum Action {
     EATING = 1 << 2,
     STRENGTHNING = 1 << 3,
     SLEEPING = 1 << 4,
+    SLEEPY,
     HEALING = 1 << 5,
     HAPPY = 1 << 6,
     HAPPY_TRAINING,
@@ -42,7 +43,7 @@ typedef enum Action {
 typedef enum MessageNotification {
     EVOLUTION,
     CALLING,
-    SLEEPY,
+    GOT_SLEEPY,
     TREATMENT,
     WOKE,
     DYING,
