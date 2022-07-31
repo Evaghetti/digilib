@@ -1,11 +1,11 @@
 from __future__ import annotations
-from queue import Queue
-import socket
 from typing import Dict, List, Tuple, Union
-import select
-from struct import *
-from urllib import response
 from uuid import uuid4 as uuid
+from queue import Queue
+from struct import *
+
+import socket
+import select
 
 # TODO: Leave match results on server side instead of client side
 
