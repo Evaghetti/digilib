@@ -148,6 +148,6 @@ uint8_t DIGI_shouldBeKilledOff();
 
 uint16_t DIGI_timeToGetHungry();
 
-uint8_t DIGI_updateDisturbance(uint16_t uiDeltaTime);
+uint8_t DIGI_updateSleepDisturbance(uint16_t uiDeltaTime);
 
 #endif  // DIGIMON_H

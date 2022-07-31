@@ -122,7 +122,7 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         }
     }
 
-    if (DIGI_updateDisturbance(uiDeltaTime) == DIGI_RET_OK) {
+    if (DIGI_updateSleepDisturbance(uiDeltaTime) == DIGI_RET_OK) {
         LOG("Digimon was woken up during sleep, waiting for it to be able to "
             "sleep again");
     } else if (DIGI_shouldSleep() == DIGI_RET_OK) {

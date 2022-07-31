@@ -404,9 +404,11 @@ uint16_t DIGI_timeToGetHungry() {
     return TIME_TO_GET_HUNGRY << 1;
 }
 
-uint8_t DIGI_updateDisturbance(uint16_t uiDeltaTime) {
-    if ((stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP))
+uint8_t DIGI_updateSleepDisturbance(uint16_t uiDeltaTime) {
+    if ((stPlayingDigimon.uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP)) {
+        stPlayingDigimon.uiTimeSinceSleepDisturbance = 0;
         return DIGI_RET_ERROR;
+    }
 
     stPlayingDigimon.uiTimeSinceSleepDisturbance += uiDeltaTime;
     if (stPlayingDigimon.uiTimeSinceSleepDisturbance < TIME_TO_GET_CARE_MISTAKE)
