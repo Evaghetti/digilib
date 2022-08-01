@@ -33,4 +33,6 @@ int updateSingleBattle(digimon_t* playerDigimon, Menu* menu,
 
 void resetPlayers();
 
+int cannBattle();
+
 #endif  // BATTLE_H

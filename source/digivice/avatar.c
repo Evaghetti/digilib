@@ -775,7 +775,7 @@ void handleEvents(Avatar* avatar, const unsigned char events, int hasUi) {
                 avatar->infoApi.uiPoopCount);
     }
 
-    if (events & DIGI_EVENT_MASK_SLEEPY) {
+    if ((events & DIGI_EVENT_MASK_SLEEPY) && avatar->currentAction == WALKING) {
         setCurrentAnimation(&avatar->animationController, "sick");
         avatar->currentAction = SLEEPY;
         avatar->transform = initialTransform;

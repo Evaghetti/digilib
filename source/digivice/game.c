@@ -415,6 +415,12 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             }
             break;
         case SELECTING_BATTLE_MODE:
+            if (!cannBattle()) {
+                setCurrentAction(&digimon, NEGATING);
+                responseOperation = NO_OPERATION;
+                break;
+            }
+
             if (currentMenu.countOptions == 0) {
                 char* options[] = {"SINGLEPLR", "MULTIPLR"};
                 currentMenu = initMenuText(2, options);

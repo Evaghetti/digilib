@@ -515,3 +515,7 @@ void resetPlayers() {
     memset(players, 0, sizeof(Player) * countPlayers);
     countPlayers = 0;
 }
+
+int cannBattle() {
+    return DIGIBATTLE_canBattle() == DIGIBATTLE_RET_OK;
+}
