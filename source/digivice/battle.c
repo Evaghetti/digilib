@@ -435,14 +435,14 @@ int disconnectFromServer() {
     return 1;
 }
 
-static void initCachedDigimon() {
+static void initCachedDigimon(unsigned char minimumStage) {
     countPlayers = 0;
     int i;
     while (countPlayers < 5) {
         const int currentIndex = rand() % MAX_COUNT_DIGIMON;
         const digimon_t* currentDigimon = &vstPossibleDigimon[currentIndex];
 
-        if (currentDigimon->uiStage < DIGI_STAGE_CHILD)
+        if (currentDigimon->uiStage < minimumStage)
             continue;
         else {
             for (i = 0; i < countPlayers; i++) {
@@ -466,10 +466,6 @@ static void initCachedDigimon() {
 }
 
 static void initMenuDigimon(Menu* menu) {
-    if (countPlayers == 0) {
-        initCachedDigimon();
-    }
-
     const SDL_Rect clip = {0, 0, config->normalSpriteSize,
                            config->normalSpriteSize};
     int i;
@@ -490,6 +486,10 @@ static int localBattle(digimon_t* playerDigimon, int selectedOption) {
 int updateSingleBattle(digimon_t* playerDigimon, Menu* menu,
                        int selectedOption) {
     config = getConfiguration();
+
+    if (countPlayers == 0) {
+        initCachedDigimon(playerDigimon->uiStage);
+    }
 
     if (menu->countOptions == 0) {
         initMenuDigimon(menu);
