@@ -28,4 +28,9 @@ int disconnectFromServer();
 
 SDL_Texture* getChallengedUserTexture();
 
+int updateSingleBattle(digimon_t* playerDigimon, Menu* menu,
+                       int selectedOption);
+
+void resetPlayers();
+
 #endif  // BATTLE_H

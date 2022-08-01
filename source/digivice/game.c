@@ -29,12 +29,14 @@ typedef enum {
     INFORMATION,
     FEED,
     TRAIN,
-    BATTLE,
+    SELECTING_BATTLE_MODE,
     CLEAN_POOP,
     LIGHTS,
     HEAL,
     COUNT_OPERATIONS,
     FEED_WAITING,
+    BATTLE_ONLINE,
+    BATTLE_SINGLE,
 } PossibleOperations;
 
 SDL_Window* window = NULL;
@@ -412,7 +414,47 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                     setCurrentAction(&digimon, TRAINING_DOWN);
             }
             break;
-        case BATTLE:
+        case SELECTING_BATTLE_MODE:
+            if (currentMenu.countOptions == 0) {
+                char* options[] = {"SINGLEPLR", "MULTIPLR"};
+                currentMenu = initMenuText(2, options);
+            } else if (selectedOption >= 0) {
+                switch (currentMenu.currentOption) {
+                    case 0:
+                        responseOperation = BATTLE_SINGLE;
+                        break;
+                    case 1:
+                        responseOperation = BATTLE_ONLINE;
+                        break;
+                    default:
+                        responseOperation = NO_OPERATION;
+                        break;
+                }
+
+                freeMenu(&currentMenu);
+            } else if (selectedOption == -2) {
+                freeMenu(&currentMenu);
+                responseOperation = NO_OPERATION;
+            }
+
+            break;
+        case BATTLE_SINGLE: {
+            int result = updateSingleBattle(digimon.infoApi.pstCurrentDigimon,
+                                            &currentMenu, selectedOption);
+            switch (result) {
+                case 1:
+                case 2:
+                    setBattleAction(&digimon, result,
+                                    getChallengedUserTexture());
+                    resetPlayers();
+                    responseOperation = NO_OPERATION;
+                    break;
+                case 0:
+                    responseOperation = NO_OPERATION;
+                    break;
+            }
+        } break;
+        case BATTLE_ONLINE:
             switch (connectToServer(digimon.infoApi.pstCurrentDigimon)) {
                 case 0:
                     SDL_Log("Not able to connect to server");

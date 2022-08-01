@@ -3,6 +3,7 @@
 #include "digivice/globals.h"
 #include "digivice/texture.h"
 #include "digiworld.h"
+#include "enums.h"
 
 #include <SDL_net.h>
 
@@ -432,4 +433,85 @@ int disconnectFromServer() {
     SDLNet_TCP_Close(connection);
     connection = NULL;
     return 1;
+}
+
+static void initCachedDigimon() {
+    countPlayers = 0;
+    int i;
+    while (countPlayers < 5) {
+        const int currentIndex = rand() % MAX_COUNT_DIGIMON;
+        const digimon_t* currentDigimon = &vstPossibleDigimon[currentIndex];
+
+        if (currentDigimon->uiStage < DIGI_STAGE_CHILD)
+            continue;
+        else {
+            for (i = 0; i < countPlayers; i++) {
+                if (players[i].slotPower == currentDigimon->uiSlotPower &&
+                    players[i].version == currentDigimon->uiVersion)
+                    break;
+            }
+
+            if (i < countPlayers)
+                continue;
+        }
+
+        players[countPlayers].slotPower = currentDigimon->uiSlotPower;
+        players[countPlayers].version = currentDigimon->uiVersion;
+        snprintf(players[countPlayers].pathSpriteSheet,
+                 sizeof(players[countPlayers].pathSpriteSheet),
+                 "resource/%s.gif", currentDigimon->szName);
+        toLowerStr(players[countPlayers].pathSpriteSheet);
+        countPlayers++;
+    }
+}
+
+static void initMenuDigimon(Menu* menu) {
+    if (countPlayers == 0) {
+        initCachedDigimon();
+    }
+
+    const SDL_Rect clip = {0, 0, config->normalSpriteSize,
+                           config->normalSpriteSize};
+    int i;
+    *menu = initMenu(countPlayers, IMAGE);
+    for (i = 0; i < countPlayers; i++) {
+        addMenuImage(menu, players[i].pathSpriteSheet, clip);
+    }
+}
+
+static int localBattle(digimon_t* playerDigimon, int selectedOption) {
+
+    unsigned char result = DIGIBATTLE_getBattleResult(
+        playerDigimon->uiSlotPower, players[selectedOption].slotPower);
+    DIGIBATTLE_changeStats(result);
+    return result;
+}
+
+int updateSingleBattle(digimon_t* playerDigimon, Menu* menu,
+                       int selectedOption) {
+    config = getConfiguration();
+
+    if (menu->countOptions == 0) {
+        initMenuDigimon(menu);
+        return -1;
+    }
+
+    switch (selectedOption) {
+        case -2:
+            freeMenu(menu);
+            return 0;
+
+        default:
+            freeMenu(menu);
+            selectedPlayer = selectedOption;
+            return localBattle(playerDigimon, selectedOption);
+        case -1:
+        case -3:
+            return -1;
+    }
+}
+
+void resetPlayers() {
+    memset(players, 0, sizeof(Player) * countPlayers);
+    countPlayers = 0;
 }

@@ -18,8 +18,8 @@ Menu initMenu(int count, TypeMenu type) {
                 .currentOption = 0,
                 .customs = NONE};
 
-    ret.options = calloc(count, sizeof(Option));
-
+    ret.options = malloc(sizeof(Option) * count);
+    memset(ret.options, 0, sizeof(Option) * count);
     if (cursorTexture == NULL)
         cursorTexture = loadTexture("resource/hud.png");
 
@@ -78,8 +78,28 @@ void addMenuImage(Menu* menu, const char* path, SDL_Rect spriteRect) {
         currentOption++;
     }
 
-    currentOption->texture = loadTexture(path);
-    currentOption->spriteRect = spriteRect;
+    if (i < menu->countOptions) {
+        currentOption->texture = loadTexture(path);
+        currentOption->spriteRect = spriteRect;
+    } else {
+        SDL_Log("Error adding %s to menu", path);
+    }
+}
+
+void addMenuText(Menu* menu, const char* text) {
+    Option* currentOption = &menu->options[0];
+    int i;
+
+    for (i = 0; i < menu->countOptions; i++) {
+        if (*currentOption->text == '\0')
+            break;
+        currentOption++;
+    }
+
+    if (i < menu->countOptions)
+        strncpy(currentOption->text, text, sizeof(currentOption->text));
+    else
+        SDL_Log("Error adding %s to menu", text);
 }
 
 Menu initMenuImageRaw(int count, SDL_Texture* textures[]) {
