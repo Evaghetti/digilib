@@ -512,10 +512,19 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                         selectOptionTraining = 0;
                         break;
                     case SAD_BATTLE:
-                        setCurrentAction(avatar, CLEANING_DEFEAT);
+                        if (isCurrentAnimation(&avatar->animationController,
+                                               "sick"))
+                            setCurrentAction(avatar, CLEANING_DEFEAT);
                         break;
                     case HAPPY_BATTLE:
-                        avatar->timePassed = GAME_TICK;
+                        if (isCurrentAnimation(&avatar->animationController,
+                                               "happy"))
+                            avatar->timePassed = GAME_TICK;
+                        else {
+                            setCurrentAnimation(&avatar->animationController,
+                                                "happy");
+                            break;
+                        }
                         // Fallthrough
                     default:
                         setCurrentAnimation(&avatar->animationController,
@@ -887,7 +896,9 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
             transform.x = config->overlayArea.w - config->widthSmallSprite -
                           xOffsetSprites;
         }
-    } else {
+    }
+
+    if (avatar->currentAction & (WALKING | EATING | SLEEPING)) {
         for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
             SDL_Rect transformPoop = {
                 .x = config->overlayArea.w - config->widthSmallSprite -
@@ -1069,7 +1080,6 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
     const Action oldAction = avatar->currentAction;
     avatar->currentAction = newAction;
     avatar->timePassed = GAME_TICK;
-    avatar->renderFlags = SDL_FLIP_NONE;
 
     setCurrentAnimation(&additionalAnimations, "nothing");
     if (newAction == WALKING) {
