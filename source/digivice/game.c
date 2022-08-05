@@ -17,6 +17,7 @@
 #include "digivice/globals.h"
 #include "digivice/menu.h"
 #include "digivice/texture.h"
+#include "digivice/w0rld.h"
 
 static const SDL_Rect spritesButtons[] = {
     {0, 8, 16, 16},  {16, 8, 16, 16}, {32, 8, 16, 16}, {48, 8, 16, 16},
@@ -37,10 +38,11 @@ typedef enum {
     FEED_WAITING,
     BATTLE_ONLINE,
     BATTLE_SINGLE,
+    BATTLE_W0RLD,
 } PossibleOperations;
 
 SDL_Window* window = NULL;
-SDL_Texture *overlay, *background;
+SDL_Texture *overlay, *background, *popup;
 
 Menu currentMenu;
 Button buttonsOperations[COUNT_OPERATIONS];
@@ -52,16 +54,13 @@ static const Configuration* config;
 static char saveFile[100];
 static int currentHoveringButton = -1;
 static ControlButtonType clickedControlButton = COUNT_CONTROL_BUTTON_TYPE;
+static PossibleOperations responseOperation = NO_OPERATION;
 
 static void setFileName() {
     if (strlen(saveFile))
         return;
 
-#ifdef _ANDROID_BUILD
-    char* path = SDL_AndroidGetInternalStoragePath();
-#else
     char* path = SDL_GetPrefPath("digilib", "digivice");
-#endif
 
     snprintf(saveFile, sizeof(saveFile), "%sdigimon.save", path);
     free(path);
@@ -130,6 +129,7 @@ int initGame() {
 
     background = loadTexture("resource/background.png");
     overlay = loadTexture("resource/overlay.png");
+    popup = loadTexture("resource/popups.gif");
     initAvatar(&digimon, saveFile);
 
     int i;
@@ -311,7 +311,7 @@ static PossibleOperations updateButtonsClick(int x, int y) {
 static PossibleOperations handleOperation(PossibleOperations operation,
                                           int selectedOption) {
     static int previousOption = -1;
-    PossibleOperations responseOperation = operation;
+    responseOperation = operation;
     int hasSkipped = selectedOption == -2 || clickedControlButton < RESET;
 
     switch (operation) {
@@ -422,8 +422,8 @@ static PossibleOperations handleOperation(PossibleOperations operation,
             }
 
             if (currentMenu.countOptions == 0) {
-                char* options[] = {"SINGLEPLR", "MULTIPLR"};
-                currentMenu = initMenuText(2, options);
+                char* options[] = {"SINGLEPLR", "MULTIPLR", "W0RLD"};
+                currentMenu = initMenuText(3, options);
             } else if (selectedOption >= 0) {
                 switch (currentMenu.currentOption) {
                     case 0:
@@ -431,6 +431,9 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                         break;
                     case 1:
                         responseOperation = BATTLE_ONLINE;
+                        break;
+                    case 2:
+                        responseOperation = BATTLE_W0RLD;
                         break;
                     default:
                         responseOperation = NO_OPERATION;
@@ -492,6 +495,32 @@ static PossibleOperations handleOperation(PossibleOperations operation,
                 }
             }
             break;
+        case BATTLE_W0RLD: {
+            if (selectedOption == -2) {
+                releaseDCOMLogic();
+                responseOperation = NO_OPERATION;
+                break;
+            }
+
+            int result = doBattleWithDCOM();
+            switch (result) {
+                case 5:
+                case 4:
+                    responseOperation = NO_OPERATION;
+                    releaseDCOMLogic();
+                    // Fallthrough
+                case 3:
+                    setCurrentAction(&digimon, NEGATING);
+                    break;
+                case 0:
+                    break;
+                default:
+                    setBattleAction(&digimon, result, NULL);
+                    releaseDCOMLogic();
+                    responseOperation = NO_OPERATION;
+                    break;
+            }
+        } break;
         default:
             responseOperation = NO_OPERATION;
             break;
@@ -621,10 +650,27 @@ void drawGame() {
 
     SDL_RenderCopy(gRenderer, background, NULL, &config->overlayArea);
 
-    if (currentMenu.countOptions)
-        drawMenu(gRenderer, &currentMenu);
-    else
-        drawAvatar(gRenderer, &digimon);
+    if (responseOperation != BATTLE_W0RLD) {
+        if (currentMenu.countOptions)
+            drawMenu(gRenderer, &currentMenu);
+        else
+            drawAvatar(gRenderer, &digimon);
+    } else {
+        if (digimon.currentAction == NEGATING) {
+            drawAvatar(gRenderer, &digimon);
+        } else {
+            const SDL_Rect clip = {.x = 0,
+                                   .y = config->normalSpriteSize * 4,
+                                   .w = config->normalSpriteSize * 2,
+                                   .h = config->normalSpriteSize};
+            const SDL_Rect transform = {
+                .x = config->overlayArea.x,
+                .y = config->overlayArea.y + config->heightButton,
+                .w = config->overlayArea.w,
+                .h = config->heightSprite};
+            SDL_RenderCopy(gRenderer, popup, &clip, &transform);
+        }
+    }
 
     int i;
     for (i = 0; i < COUNT_OPERATIONS; i++)
@@ -651,6 +697,7 @@ void cleanUpGame() {
         if (i < COUNT_CONTROL_BUTTON_TYPE)
             freeButton(&buttonsControl[i]);
     }
+    freeTexture(popup);
     freeButton(&buttonCallStatus);
     freeMenu(&currentMenu);
 

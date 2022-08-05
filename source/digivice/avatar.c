@@ -619,7 +619,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                     }
                 } else if (avatar->currentAction == BATTLE_WIN) {
                     setCurrentAction(avatar, HAPPY_BATTLE);
-                    freeTexture(textureEnemy);
+                    if (textureEnemy)
+                        freeTexture(textureEnemy);
                 }
             }
         }
@@ -726,7 +727,8 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
         setCurrentAnimation(&avatar->animationController, "preparing");
         if (roundBattle > 3 && avatar->currentAction == BATTLE_LOSE) {
             setCurrentAction(avatar, SAD_BATTLE);
-            freeTexture(textureEnemy);
+            if (textureEnemy)
+                freeTexture(textureEnemy);
         }
     }
 }
@@ -1024,7 +1026,7 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
         return;
     }
 
-    if (avatar->currentAction == STANDOFF) {
+    if (avatar->currentAction == STANDOFF && textureEnemy != NULL) {
         SDL_Rect transformChallenged = avatar->transform;
         transformChallenged.x = config->overlayArea.x;
 
@@ -1048,8 +1050,9 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
                                      .y = config->normalSpriteSize * 5,
                                      .w = config->normalSmallSpriteSize,
                                      .h = config->normalSmallSpriteSize};
-    SDL_Texture* textureProjectile =
-        xProjectileSpeed < 0 ? avatar->spriteSheet : textureEnemy;
+    SDL_Texture* textureProjectile = avatar->spriteSheet;
+    if (textureEnemy != NULL && xProjectileSpeed > 0)
+        textureProjectile = textureEnemy;
 
     SDL_RenderCopyEx(render, avatar->spriteSheet, playerClip,
                      &avatar->transform, 0, NULL, avatar->renderFlags);

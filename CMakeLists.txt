@@ -60,12 +60,12 @@ target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET
 
 if(${BUILD_DIGIVICE})
     message(STATUS "Will build digivice")
-    set(SOURCES_DIGIVICE digivice.c source/digivice/game.c source/digivice/texture.c source/digivice/animation.c source/digivice/menu.c source/digivice/avatar.c source/digivice/button.c source/digivice/battle.c source/digivice/globals.c)
+    set(SOURCES_DIGIVICE digivice.c source/digivice/game.c source/digivice/texture.c source/digivice/animation.c source/digivice/menu.c source/digivice/avatar.c source/digivice/button.c source/digivice/battle.c source/digivice/globals.c source/digivice/w0rld.c)
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
         set(DIGIVICE_TARGET "libmain")
         add_library(${DIGIVICE_TARGET} SHARED)
         target_compile_definitions(${DIGIVICE_TARGET} PUBLIC _NEEDS_SDL_MAIN_ _USE_DISPLAY_MODE_ _ANDROID_BUILD_)
-        set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/dv_android.c)
+        set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/dv_android.c source/digivice/w0rld_unix.c)
     else()
         set(DIGIVICE_TARGET "digivice")
 
@@ -74,6 +74,10 @@ if(${BUILD_DIGIVICE})
         
         add_executable(${DIGIVICE_TARGET})
         include_directories(${SDL2_INCLUDE_DIR})
+        if (WIN32)
+        else()
+            set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/w0rld_unix.c)
+        endif()
     endif()
     
     target_sources(${DIGIVICE_TARGET} PRIVATE ${SOURCES_DIGIVICE})
