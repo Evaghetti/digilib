@@ -280,6 +280,11 @@ static ControlButtonType updateControlsButtonsClick(int x, int y,
             currentHoveringButton = -1;
             *forcedScancode = SDL_SCANCODE_ESCAPE;
             break;
+        case RESET:
+            freeAvatar(&digimon);
+            remove(saveFile);
+            initAvatar(&digimon, saveFile);
+            break;
         default:
             clickedControlButton = COUNT_CONTROL_BUTTON_TYPE;
             break;
