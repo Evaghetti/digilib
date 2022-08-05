@@ -38,6 +38,7 @@ typedef enum Action {
     BATTLE_WIN,
     BATTLE_LOSE,
     STANDOFF = 1 << 13,
+    SICK = 1 << 14
 } Action;
 
 typedef enum MessageNotification {

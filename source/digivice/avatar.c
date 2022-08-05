@@ -392,6 +392,17 @@ int initAvatar(Avatar* ret, char* saveGame) {
             createRect(0, config->normalSpriteSize * 3,
                        config->normalSpriteSize * 2, config->normalSpriteSize),
             0.15f);
+        addAnimation(&additionalAnimations, "skull", 2,
+                     createRect(4 * config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK,
+                     createRect(5 * config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize,
+                                config->normalSmallSpriteSize),
+                     GAME_TICK);
 
         addAnimation(&animationsForPoop, "poop", 2,
                      createRect(0, config->normalSmallSpriteSize,
@@ -485,11 +496,6 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 setCurrentAnimation(&additionalAnimations, "nothing");
                 avatar->currentAction = WALKING;
             }
-        } else if (avatar->currentAction == HEALING) {
-            DIGI_healDigimon(MASK_SICK);
-            DIGI_healDigimon(MASK_INJURIED);
-
-            avatar->currentAction = HAPPY;
         }
 
         if ((avatar->currentAction & (HAPPY | NEGATING | MAD))) {
@@ -784,6 +790,15 @@ void handleEvents(Avatar* avatar, const unsigned char events, int hasUi) {
         avatar->renderFlags = SDL_FLIP_NONE;
     }
 
+    if ((events & DIGI_EVENT_MASK_SICK) ||
+        (avatar->infoApi.uiStats & (MASK_SICK | MASK_INJURIED))) {
+        setCurrentAnimation(&avatar->animationController, "sick");
+        setCurrentAnimation(&additionalAnimations, "skull");
+        avatar->currentAction = SICK;
+        avatar->transform = initialTransform;
+        avatar->renderFlags = SDL_FLIP_NONE;
+    }
+
     avatar->calling = (events & DIGI_EVENT_MASK_CALL) != 0;
 
     sendNotification(events);
@@ -842,13 +857,13 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                      &alteredAvatarTransform, 0.f, NULL, avatar->renderFlags);
 
     if (!finishedCurrentAnimation(&additionalAnimations) ||
-        (avatar->currentAction == SLEEPING)) {
+        (avatar->currentAction & (SLEEPING | SICK))) {
         currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
         SDL_Rect transform = {
-            .x = avatar->currentAction & (SLEEPING)
+            .x = avatar->currentAction & (SLEEPING | SICK)
                      ? avatar->transform.x + config->widthSprite
                      : avatar->transform.x - config->widthSmallSprite,
-            .y = avatar->currentAction & (SLEEPING)
+            .y = avatar->currentAction & (SLEEPING | SICK)
                      ? avatar->transform.y
                      : avatar->transform.y + config->heightSmallSprite,
             .w = config->widthSmallSprite,
@@ -898,9 +913,7 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
             transform.x = config->overlayArea.w - config->widthSmallSprite -
                           xOffsetSprites;
         }
-    }
-
-    if (avatar->currentAction & (WALKING | EATING | SLEEPING)) {
+    } else {
         for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
             SDL_Rect transformPoop = {
                 .x = config->overlayArea.w - config->widthSmallSprite -
@@ -1121,6 +1134,12 @@ void setCurrentAction(Avatar* avatar, Action newAction) {
                 (config->widthSprite + config->widthSmallSprite);
             xOffsetSprites = 0;
             selectOptionTraining = 1;
+            break;
+        case HEALING:
+            DIGI_healDigimon(MASK_SICK);
+            DIGI_healDigimon(MASK_INJURIED);
+
+            avatar->currentAction = HAPPY;
             break;
         default:
             break;
