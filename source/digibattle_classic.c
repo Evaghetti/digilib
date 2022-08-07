@@ -85,6 +85,9 @@ uint8_t DIGIBATTLE_canBattle() {
 }
 
 void DIGIBATTLE_changeStats(uint8_t uiResultBattle) {
+    if ((uiResultBattle & (DIGIBATTLE_RET_WIN | DIGIBATTLE_RET_LOSE)) == 0)
+        return;
+
     stPlayingDigimon.uiBattleCount++;
     if (uiResultBattle == DIGIBATTLE_RET_WIN)
         stPlayingDigimon.uiWinCount++;

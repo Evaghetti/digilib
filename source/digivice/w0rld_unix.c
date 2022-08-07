@@ -17,7 +17,7 @@ static int fd = -1;
 static int createFd() {
     int result = -1;
 #ifndef _ANDROID_BUILD_
-    result = open("/dev/pts/5", O_RDWR | O_APPEND | O_NONBLOCK);
+    result = open("/dev/pts/5", O_RDWR | O_APPEND);
 #else
     struct sockaddr_in server;
 
@@ -70,13 +70,12 @@ void releaseDCOMLogic() {
 }
 
 int readDataDCOM(void* dst, int sizeDst) {
-#ifdef _ANDROID_BUILD_
     fd_set set;
 
     FD_ZERO(&set);
     FD_SET(fd, &set);
 
-    switch (select(1, &set, NULL, NULL, &timeout)) {
+    switch (select(fd + 1, &set, NULL, NULL, &timeout)) {
         case -1:
             return -1;
         case 0:
@@ -84,9 +83,6 @@ int readDataDCOM(void* dst, int sizeDst) {
         default:
             return read(fd, dst, sizeDst) > 0;
     }
-#endif
-
-    return read(fd, dst, sizeDst) > 0;
 }
 
 int writeDataDCOM(const void* dst, int sizeDst) {

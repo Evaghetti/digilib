@@ -173,6 +173,8 @@ int doBattleWithDCOM() {
         result = DIGIBATTLE_continue(&sendCallBack, &recvCallBack);
     }
 
+    DIGIBATTLE_changeStats(result);
+
     char* simulatedDcom = detokenize();
     sendData(simulatedDcom, strlen(simulatedDcom));
     while (1) {
