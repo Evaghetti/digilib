@@ -1268,9 +1268,10 @@ Menu createTexturesInfoMenu(Avatar* avatar, SDL_Renderer* renderer) {
     const int currentStrength =
         GET_STRENGTH_VALUE(avatar->infoApi.uiHungerStrength);
     const int currentWinPercentage =
-        avatar->infoApi.uiBattleCount
-            ? avatar->infoApi.uiWinCount / avatar->infoApi.uiBattleCount
-            : 0;
+        avatar->infoApi.uiBattleCount ? ((float)avatar->infoApi.uiWinCount /
+                                         (float)avatar->infoApi.uiBattleCount) *
+                                            100.f
+                                      : 0;
 
     SDL_Texture* textureWins =
         createTextTexture(color, "WINS %d %%", currentWinPercentage);
