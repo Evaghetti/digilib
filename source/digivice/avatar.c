@@ -321,9 +321,7 @@ int initAvatar(Avatar* ret, char* saveGame) {
         // Work around
         // TODO: define that the controlelr should not play the first animation.
         addAnimation(&additionalAnimations, "nothing", 1,
-                     createRect(config->normalSmallSpriteSize * 7, 0,
-                                config->normalSmallSpriteSize,
-                                config->normalSmallSpriteSize));
+                     createRect(0, 0, 0, 0), GAME_TICK);
 
         addAnimation(&additionalAnimations, "meat", 4,
                      createRect(0, 0, config->normalSmallSpriteSize,
