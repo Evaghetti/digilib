@@ -746,7 +746,7 @@ static void sendNotification(const unsigned char events) {
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_CALL, CALLING);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_SLEEPY, GOT_SLEEPY);
             NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, WOKE);
-            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_WOKE_UP, DYING);
+            NOTIFY_IFTRUE(events, DIGI_EVENT_MASK_DIE, DYING);
             NOTIFY_IFTRUE(events,
                           DIGI_EVENT_MASK_SICK | DIGI_EVENT_MASK_INJURED,
                           TREATMENT);
