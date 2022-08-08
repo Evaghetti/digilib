@@ -13,11 +13,23 @@ Button initButton(const char* texturePath, SDL_FRect transform,
 }
 
 void setButtonHovering(Button* button, SDL_FPoint position) {
-    button->hovering = SDL_PointInFRect(&position, &button->transform);
+    SDL_Rect localTransform = {.x = button->transform.x,
+                               .y = button->transform.y,
+                               .w = button->transform.w,
+                               .h = button->transform.h};
+    SDL_Point point = {.x = position.x, .y = position.y};
+
+    button->hovering = SDL_PointInRect(&point, &localTransform);
 }
 
 void setButtonClicked(Button* button, SDL_FPoint position) {
-    button->clicked = SDL_PointInFRect(&position, &button->transform);
+    SDL_Rect localTransform = {.x = button->transform.x,
+                               .y = button->transform.y,
+                               .w = button->transform.w,
+                               .h = button->transform.h};
+    SDL_Point point = {.x = position.x, .y = position.y};
+
+    button->clicked = SDL_PointInRect(&point, &localTransform);
 }
 
 void drawButton(SDL_Renderer* renderer, Button* button) {
