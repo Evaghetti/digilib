@@ -80,53 +80,54 @@ const Configuration* initConfiguration(int width, int height) {
     configuration.normalSmallSpriteSize = configuration.normalSpriteSize / 2;
 
     configuration.overlayArea.w =
-        RULE_OF_THREE(552, configuration.widthScreen, 912);
+        RULE_OF_THREE(552.f, (float)configuration.widthScreen, 912.f);
     configuration.overlayArea.h =
-        RULE_OF_THREE(395, configuration.heightScreen, 661);
-    configuration.overlayArea.x = 0;
+        RULE_OF_THREE(395.f, (float)configuration.heightScreen, 661.f);
+    configuration.overlayArea.x = 0.f;
     configuration.overlayArea.y =
-        RULE_OF_THREE(131, configuration.heightScreen, 661);
+        RULE_OF_THREE(131.f, (float)configuration.heightScreen, 661.f);
 
     configuration.overlayButtons[SELECT].y =
-        RULE_OF_THREE(129, configuration.heightScreen, 661);
+        RULE_OF_THREE(129.f, (float)configuration.heightScreen, 661.f);
     configuration.overlayButtons[CONFIRM].y =
-        RULE_OF_THREE(289, configuration.heightScreen, 661);
+        RULE_OF_THREE(289.f, (float)configuration.heightScreen, 661.f);
     configuration.overlayButtons[CANCEL].y =
-        RULE_OF_THREE(452, configuration.heightScreen, 661);
+        RULE_OF_THREE(452.f, (float)configuration.heightScreen, 661.f);
 
     for (i = SELECT; i <= CANCEL; i++) {
         configuration.overlayButtons[i].x =
-            RULE_OF_THREE(775, configuration.widthScreen, 912);
+            RULE_OF_THREE(775.f, (float)configuration.widthScreen, 912.f);
         configuration.overlayButtons[i].w =
-            RULE_OF_THREE(79, configuration.widthScreen, 912);
+            RULE_OF_THREE(79.f, (float)configuration.widthScreen, 912.f);
         configuration.overlayButtons[i].h =
-            RULE_OF_THREE(83, configuration.heightScreen, 661);
+            RULE_OF_THREE(83.f, (float)configuration.heightScreen, 661.f);
     }
 
     configuration.overlayButtons[RESET].x =
-        RULE_OF_THREE(725, configuration.widthScreen, 912);
+        RULE_OF_THREE(725.f, (float)configuration.widthScreen, 912.f);
     configuration.overlayButtons[RESET].y =
-        RULE_OF_THREE(390, configuration.heightScreen, 661);
+        RULE_OF_THREE(390.f, (float)configuration.heightScreen, 661.f);
     configuration.overlayButtons[RESET].w =
-        RULE_OF_THREE(39, configuration.widthScreen, 912);
+        RULE_OF_THREE(39.f, (float)configuration.widthScreen, 912.f);
     configuration.overlayButtons[RESET].h =
-        RULE_OF_THREE(39, configuration.heightScreen, 661);
+        RULE_OF_THREE(39.f, (float)configuration.heightScreen, 661.f);
 
     configuration.widthSprite =
-        (((configuration.normalSpriteSize * 10) * configuration.overlayArea.w) /
-         MIN_WIDTH_SCREEN);
+        RULE_OF_THREE((float)(configuration.normalSpriteSize * 10),
+                      configuration.overlayArea.w, (float)MIN_WIDTH_SCREEN);
+
     configuration.heightSprite =
-        (((configuration.normalSpriteSize * 10) * configuration.overlayArea.h) /
-         MIN_HEIGHT_SCREEN);
+        RULE_OF_THREE((float)(configuration.normalSpriteSize * 10),
+                      configuration.overlayArea.h, (float)MIN_HEIGHT_SCREEN);
 
     configuration.widthSmallSprite = configuration.widthSprite / 2.f;
     configuration.heightSmallSprite = configuration.heightSprite / 2.f;
 
-    configuration.widthButton = configuration.overlayArea.w / 4;
+    configuration.widthButton = configuration.overlayArea.w / 4.f;
     configuration.heightButton = configuration.heightSmallSprite;
 
-    configuration.stepSprite = -(RULE_OF_THREE(1, configuration.widthSprite,
-                                               configuration.normalSpriteSize));
+    configuration.stepSprite = -(RULE_OF_THREE(
+        1.f, configuration.widthSprite, (float)configuration.normalSpriteSize));
     return getConfiguration();
 }
 

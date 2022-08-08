@@ -37,7 +37,7 @@ static GuessShadowBox patternsShadowBox[][5] = {
 static const int COUNT_PATTERNS_SHADOWBOX =
     sizeof(patternsShadowBox) / sizeof(patternsShadowBox[0]);
 
-static SDL_Rect initialTransform;
+static SDL_FRect initialTransform;
 static SDL_Rect flushClip;
 
 static SDL_Texture *textureAdditional, *textureEnemy, *texturePopup;
@@ -816,23 +816,25 @@ static void drawAvatarEvolution(SDL_Renderer* render, const Avatar* avatar) {
     const SDL_Rect* playerClip =
         getAnimationFrameClip(&avatar->animationController);
 
-    SDL_RenderCopy(render, avatar->spriteSheet, playerClip, &avatar->transform);
+    SDL_RenderCopyF(render, avatar->spriteSheet, playerClip,
+                    &avatar->transform);
 
     if (!isFirstFrame(&avatar->animationController)) {
-        SDL_Rect transformEvolve = {
+        SDL_FRect transformEvolve = {
             .x = config->overlayArea.x,
             .y = config->overlayArea.y + config->heightButton,
             .w = config->overlayArea.w,
             .h = -config->stepSprite * currentLine};
 
-        SDL_Rect transformBlackout = {
+        SDL_FRect transformBlackout = {
             .x = config->overlayArea.x,
             .y = config->overlayArea.y + config->heightButton,
             .w = config->overlayArea.w,
             .h = -config->stepSprite * currentLine2};
 
-        SDL_RenderCopy(render, texturePopup, &clipEvolve, &transformEvolve);
-        SDL_RenderCopy(render, texturePopup, &clipBlackout, &transformBlackout);
+        SDL_RenderCopyF(render, texturePopup, &clipEvolve, &transformEvolve);
+        SDL_RenderCopyF(render, texturePopup, &clipBlackout,
+                        &transformBlackout);
     }
     SDL_Log("Desenhando evolução");
 }
@@ -848,16 +850,16 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
     const SDL_Rect* currentSpriteRect =
         getAnimationFrameClip(&avatar->animationController);
 
-    SDL_Rect alteredAvatarTransform = avatar->transform;
+    SDL_FRect alteredAvatarTransform = avatar->transform;
     alteredAvatarTransform.x -= (int)xOffsetSprites;
 
-    SDL_RenderCopyEx(render, avatar->spriteSheet, currentSpriteRect,
-                     &alteredAvatarTransform, 0.f, NULL, avatar->renderFlags);
+    SDL_RenderCopyExF(render, avatar->spriteSheet, currentSpriteRect,
+                      &alteredAvatarTransform, 0.f, NULL, avatar->renderFlags);
 
     if (!finishedCurrentAnimation(&additionalAnimations) ||
         (avatar->currentAction & (SLEEPING | SICK))) {
         currentSpriteRect = getAnimationFrameClip(&additionalAnimations);
-        SDL_Rect transform = {
+        SDL_FRect transform = {
             .x = avatar->currentAction & (SLEEPING | SICK)
                      ? avatar->transform.x + config->widthSprite
                      : avatar->transform.x - config->widthSmallSprite,
@@ -867,19 +869,19 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
             .w = config->widthSmallSprite,
             .h = config->heightSmallSprite};
 
-        SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
-                       &transform);
+        SDL_RenderCopyF(render, textureAdditional, currentSpriteRect,
+                        &transform);
     }
 
     if (avatar->currentAction & CLEANING) {
-        SDL_Rect transform = {config->overlayArea.w - xOffsetSprites,
-                              config->overlayArea.y + config->heightButton,
-                              config->widthSmallSprite,
-                              config->heightSmallSprite};
-        SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
+        SDL_FRect transform = {config->overlayArea.w - xOffsetSprites,
+                               config->overlayArea.y + config->heightButton,
+                               config->widthSmallSprite,
+                               config->heightSmallSprite};
+        SDL_RenderCopyF(render, textureAdditional, &flushClip, &transform);
 
         transform.y += config->heightSmallSprite;
-        SDL_RenderCopy(render, textureAdditional, &flushClip, &transform);
+        SDL_RenderCopyF(render, textureAdditional, &flushClip, &transform);
     }
 
     if ((avatar->currentAction == SAD_BATTLE ||
@@ -894,16 +896,16 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                                .y = avatar->currentAction == HAPPY_BATTLE
                                         ? 0
                                         : config->normalSmallSpriteSize};
-        SDL_Rect transform = {.x = config->overlayArea.x - xOffsetSprites,
-                              .y = config->overlayArea.y,
-                              .w = config->widthSmallSprite,
-                              .h = config->heightSmallSprite};
+        SDL_FRect transform = {.x = config->overlayArea.x - xOffsetSprites,
+                               .y = config->overlayArea.y,
+                               .w = config->widthSmallSprite,
+                               .h = config->heightSmallSprite};
 
         for (i = 0; i < 2; i++) {
             transform.y = config->overlayArea.y + config->heightButton;
 
             for (j = 0; j < 2; j++) {
-                SDL_RenderCopy(render, textureAdditional, &clip, &transform);
+                SDL_RenderCopyF(render, textureAdditional, &clip, &transform);
 
                 transform.y += transform.h;
             }
@@ -913,7 +915,7 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
         }
     } else {
         for (i = 0; i < avatar->infoApi.uiPoopCount; i++) {
-            SDL_Rect transformPoop = {
+            SDL_FRect transformPoop = {
                 .x = config->overlayArea.w - config->widthSmallSprite -
                      config->widthSmallSprite * (i % 2) - (int)xOffsetSprites,
                 .y = config->overlayArea.y + config->heightButton +
@@ -921,8 +923,8 @@ void drawAvatarNormal(SDL_Renderer* render, const Avatar* avatar) {
                 .w = config->widthSmallSprite,
                 .h = config->heightSmallSprite};
             currentSpriteRect = getAnimationFrameClip(&animationsForPoop);
-            SDL_RenderCopy(render, textureAdditional, currentSpriteRect,
-                           &transformPoop);
+            SDL_RenderCopyF(render, textureAdditional, currentSpriteRect,
+                            &transformPoop);
         }
     }
 }
@@ -937,24 +939,24 @@ void drawTrainingScore(SDL_Renderer* render) {
     SDL_Rect botamonSpriteClip = {0, 0, config->normalSmallSpriteSize,
                                   config->normalSmallSpriteSize};
 
-    SDL_Rect botamonTransform = {
+    SDL_FRect botamonTransform = {
         config->overlayArea.x + config->widthSmallSprite,
         config->overlayArea.y + config->heightButton, config->widthSmallSprite,
         config->heightSmallSprite};
-    SDL_Rect shieldTranform = {
+    SDL_FRect shieldTranform = {
         config->overlayArea.x + config->widthSmallSprite * 4,
         config->overlayArea.y + config->heightButton, config->widthSmallSprite,
         config->heightSmallSprite};
 
-    SDL_RenderCopy(render, hudTexture, &botamonSpriteClip, &botamonTransform);
-    SDL_RenderCopy(render, textureAdditional, &shieldClip, &shieldTranform);
+    SDL_RenderCopyF(render, hudTexture, &botamonSpriteClip, &botamonTransform);
+    SDL_RenderCopyF(render, textureAdditional, &shieldClip, &shieldTranform);
 
     SDL_Color textColor = {0, 0, 0, 255};
     SDL_Texture* scoreTexture = createTextTexture(
         textColor, "%d\tx\t%d", correctTrainingGuess, 5 - correctTrainingGuess);
     botamonTransform.w = config->overlayArea.w - botamonTransform.w * 2;
     botamonTransform.y += botamonTransform.h;
-    SDL_RenderCopy(render, scoreTexture, NULL, &botamonTransform);
+    SDL_RenderCopyF(render, scoreTexture, NULL, &botamonTransform);
     freeTexture(hudTexture);
 }
 
@@ -964,12 +966,12 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
         return;
     }
 
-    SDL_Rect transformAvatar = {
+    SDL_FRect transformAvatar = {
         .x = config->overlayArea.w - config->widthSprite - xOffsetSprites,
         .y = config->overlayArea.y + config->heightButton,
         .w = config->widthSprite,
         .h = config->heightSprite};
-    SDL_Rect transformShadowAvatar = transformAvatar;
+    SDL_FRect transformShadowAvatar = transformAvatar;
     transformShadowAvatar.x = -xOffsetSprites;
 
     const SDL_Rect* spriteClip =
@@ -983,9 +985,9 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
                                      .w = config->normalSmallSpriteSize,
                                      .h = config->normalSmallSpriteSize};
 
-    SDL_RenderCopy(render, avatar->spriteSheet, spriteClip, &transformAvatar);
-    SDL_RenderCopyEx(render, avatar->spriteSheet, spriteClip,
-                     &transformShadowAvatar, 0.f, NULL, SDL_FLIP_HORIZONTAL);
+    SDL_RenderCopyF(render, avatar->spriteSheet, spriteClip, &transformAvatar);
+    SDL_RenderCopyExF(render, avatar->spriteSheet, spriteClip,
+                      &transformShadowAvatar, 0.f, NULL, SDL_FLIP_HORIZONTAL);
 
     if (avatar->currentAction == TRAINING_UP ||
         avatar->currentAction == TRAINING_DOWN) {
@@ -1001,15 +1003,15 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
         if (avatar->currentAction == TRAINING_DOWN)
             transformAvatar.y += transformAvatar.h;
 
-        SDL_RenderCopy(render, avatar->spriteSheet, &projectileClip,
-                       &transformAvatar);
-        SDL_RenderCopy(render, textureAdditional, &shieldClip,
-                       &transformShadowAvatar);
+        SDL_RenderCopyF(render, avatar->spriteSheet, &projectileClip,
+                        &transformAvatar);
+        SDL_RenderCopyF(render, textureAdditional, &shieldClip,
+                        &transformShadowAvatar);
     }
 
     int i;
     for (i = 0; i < 4; i++) {
-        SDL_Rect transformProjectile = {
+        SDL_FRect transformProjectile = {
             .x = config->overlayArea.w + config->widthSmallSprite * (i % 2) -
                  (int)xOffsetSprites,
             .y = config->overlayArea.y + config->heightButton +
@@ -1017,15 +1019,15 @@ void drawAvatarTraining(SDL_Renderer* render, const Avatar* avatar) {
             .w = config->widthSmallSprite,
             .h = config->heightSmallSprite};
 
-        SDL_RenderCopy(render, avatar->spriteSheet, &projectileClip,
-                       &transformProjectile);
+        SDL_RenderCopyF(render, avatar->spriteSheet, &projectileClip,
+                        &transformProjectile);
     }
 }
 
 void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
     if (isCurrentAnimation(&additionalAnimations, "damage") &&
         !finishedCurrentAnimation(&additionalAnimations)) {
-        SDL_Rect transformDamage = {
+        SDL_FRect transformDamage = {
             .x = config->overlayArea.x,
             .y = config->overlayArea.y + config->heightButton,
             .w = config->overlayArea.w,
@@ -1033,24 +1035,24 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
         const SDL_Rect* clipPopup =
             getAnimationFrameClip(&additionalAnimations);
 
-        SDL_RenderCopy(render, texturePopup, clipPopup, &transformDamage);
+        SDL_RenderCopyF(render, texturePopup, clipPopup, &transformDamage);
         return;
     }
 
     if (avatar->currentAction == STANDOFF && textureEnemy != NULL) {
-        SDL_Rect transformChallenged = avatar->transform;
+        SDL_FRect transformChallenged = avatar->transform;
         transformChallenged.x = config->overlayArea.x;
 
         const SDL_Rect* clip =
             getAnimationFrameClip(&avatar->animationController);
-        SDL_RenderCopyEx(render, avatar->spriteSheet, clip, &avatar->transform,
-                         0.f, NULL, avatar->renderFlags);
-        SDL_RenderCopyEx(render, textureEnemy, clip, &transformChallenged, 0.f,
-                         NULL, !avatar->renderFlags);
+        SDL_RenderCopyExF(render, avatar->spriteSheet, clip, &avatar->transform,
+                          0.f, NULL, avatar->renderFlags);
+        SDL_RenderCopyExF(render, textureEnemy, clip, &transformChallenged, 0.f,
+                          NULL, !avatar->renderFlags);
         return;
     }
 
-    SDL_Rect transformProjectile = {
+    SDL_FRect transformProjectile = {
         .x = config->overlayArea.x + xProjectileOffset,
         .y = config->overlayArea.y + config->heightButton,
         .w = config->widthSmallSprite,
@@ -1065,16 +1067,16 @@ void drawAvatarBattle(SDL_Renderer* render, const Avatar* avatar) {
     if (textureEnemy != NULL && xProjectileSpeed > 0)
         textureProjectile = textureEnemy;
 
-    SDL_RenderCopyEx(render, avatar->spriteSheet, playerClip,
-                     &avatar->transform, 0, NULL, avatar->renderFlags);
-    SDL_RenderCopyEx(render, textureProjectile, &projectileClip,
-                     &transformProjectile, 0, NULL, projectileRenderFlags);
+    SDL_RenderCopyExF(render, avatar->spriteSheet, playerClip,
+                      &avatar->transform, 0, NULL, avatar->renderFlags);
+    SDL_RenderCopyExF(render, textureProjectile, &projectileClip,
+                      &transformProjectile, 0, NULL, projectileRenderFlags);
     if (roundBattle == 3) {
         if ((xProjectileSpeed < 0 && avatar->currentAction == BATTLE_WIN) ||
             (xProjectileSpeed > 0 && avatar->currentAction == BATTLE_LOSE))
             transformProjectile.y += transformProjectile.h;
-        SDL_RenderCopyEx(render, textureProjectile, &projectileClip,
-                         &transformProjectile, 0, NULL, projectileRenderFlags);
+        SDL_RenderCopyExF(render, textureProjectile, &projectileClip,
+                          &transformProjectile, 0, NULL, projectileRenderFlags);
     }
 }
 
@@ -1164,13 +1166,13 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
                           SDL_TEXTUREACCESS_TARGET, config->overlayArea.w,
                           config->overlayArea.h - config->heightButton * 2);
     SDL_Texture* textureHud = loadTexture("resource/hud.png");
-    SDL_Rect transform = {0, 0, config->widthSprite, config->heightSprite};
+    SDL_FRect transform = {0, 0, config->widthSprite, config->heightSprite};
 
     SDL_SetRenderTarget(renderer, result);
     SDL_RenderClear(renderer);
     SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
 
-    SDL_RenderCopy(
+    SDL_RenderCopyF(
         renderer, avatar->spriteSheet,
         &avatar->animationController.animations[0].firstFrame->frameClip,
         &transform);
@@ -1179,25 +1181,25 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
     transform.w = ((config->overlayArea.w - transform.w) / 4) / 2;
     transform.h -= config->heightSmallSprite;
     SDL_Rect currentHud = {0, 0, 8, 8};
-    SDL_RenderCopy(renderer, textureHud, &currentHud, &transform);
+    SDL_RenderCopyF(renderer, textureHud, &currentHud, &transform);
 
     transform.x += transform.w;
     transform.w *= 4;
     SDL_Texture* textureNumber =
         createTextTexture(transparent, "%d yr.", avatar->infoApi.uiAge);
-    SDL_RenderCopy(renderer, textureNumber, NULL, &transform);
+    SDL_RenderCopyF(renderer, textureNumber, NULL, &transform);
     SDL_DestroyTexture(textureNumber);
 
     transform.x += transform.w;
     transform.w /= 4;
     currentHud.x += 8;
-    SDL_RenderCopy(renderer, textureHud, &currentHud, &transform);
+    SDL_RenderCopyF(renderer, textureHud, &currentHud, &transform);
 
     transform.x += transform.w;
     transform.w *= 2;
     textureNumber =
         createTextTexture(transparent, "%d G", avatar->infoApi.uiWeight);
-    SDL_RenderCopy(renderer, textureNumber, NULL, &transform);
+    SDL_RenderCopyF(renderer, textureNumber, NULL, &transform);
     SDL_DestroyTexture(textureNumber);
 
     transform.x = config->widthSprite;
@@ -1205,7 +1207,7 @@ static SDL_Texture* createInfoSurface(Avatar* avatar, SDL_Renderer* renderer) {
     transform.y += config->heightSmallSprite - config->stepSprite;
     SDL_Texture* textureName = createTextTexture(
         transparent, avatar->infoApi.pstCurrentDigimon->szName);
-    SDL_RenderCopy(renderer, textureName, NULL, &transform);
+    SDL_RenderCopyF(renderer, textureName, NULL, &transform);
     SDL_DestroyTexture(textureName);
 
     SDL_SetRenderTarget(renderer, NULL);
@@ -1228,10 +1230,10 @@ static SDL_Texture* heartInfoSurface(const char* text, const int count,
     SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
 
     SDL_Texture* textureText = createTextTexture(color, "%s", text);
-    SDL_Rect transform = {0, 0, config->overlayArea.w,
-                          config->heightSmallSprite};
+    SDL_FRect transform = {0, 0, config->overlayArea.w,
+                           config->heightSmallSprite};
 
-    SDL_RenderCopy(renderer, textureText, NULL, &transform);
+    SDL_RenderCopyF(renderer, textureText, NULL, &transform);
     SDL_DestroyTexture(textureText);
 
     SDL_Texture* textureHud = loadTexture("resource/hud.png");
@@ -1242,13 +1244,13 @@ static SDL_Texture* heartInfoSurface(const char* text, const int count,
 
     int i;
     for (i = 0; i < count; i++) {
-        SDL_RenderCopy(renderer, textureHud, &spriteClip, &transform);
+        SDL_RenderCopyF(renderer, textureHud, &spriteClip, &transform);
         transform.x += transform.w;
     }
 
     spriteClip.x += 8;
     for (; i < 4; i++) {
-        SDL_RenderCopy(renderer, textureHud, &spriteClip, &transform);
+        SDL_RenderCopyF(renderer, textureHud, &spriteClip, &transform);
         transform.x += transform.w;
     }
 

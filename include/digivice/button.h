@@ -6,18 +6,19 @@
 #include <SDL_render.h>
 
 typedef struct Buttton {
-    SDL_Rect transform, spriteClip;
+    SDL_FRect transform;
+    SDL_Rect spriteClip;
     SDL_Texture* texture;
 
     int hovering, clicked;
 } Button;
 
-Button initButton(const char* texturePath, SDL_Rect transform,
+Button initButton(const char* texturePath, SDL_FRect transform,
                   SDL_Rect spriteClip);
 
-void setButtonHovering(Button* button, SDL_Point position);
+void setButtonHovering(Button* button, SDL_FPoint position);
 
-void setButtonClicked(Button* button, SDL_Point position);
+void setButtonClicked(Button* button, SDL_FPoint position);
 
 void drawButton(SDL_Renderer* renderer, Button* button);
 

@@ -54,7 +54,7 @@ typedef struct {
     char name[256];
 
     SDL_Texture* spriteSheet;
-    SDL_Rect transform;
+    SDL_FRect transform;
     SDL_RendererFlip renderFlags;
 
     AnimationController animationController;

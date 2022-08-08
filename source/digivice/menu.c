@@ -139,12 +139,12 @@ void advanceMenu(Menu* menu, int step) {
 
 static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
-    SDL_Rect currentTransform = {
+    SDL_FRect currentTransform = {
         .x = config->overlayArea.x + config->widthSmallSprite / 2,
         .y = config->overlayArea.y + config->heightButton,
         .w = config->overlayArea.w / 2,
         .h = config->heightSmallSprite};
-    SDL_Rect cursorTransform = {
+    SDL_FRect cursorTransform = {
         .x = currentTransform.x - config->widthSmallSprite / 4,
         .y = (currentTransform.y - config->heightSmallSprite / 12),
         .w = config->widthSmallSprite / 2,
@@ -163,23 +163,23 @@ static void drawNormalTextMenu(SDL_Renderer* renderer, Menu* menu) {
         if (currentText == NULL)
             continue;
 
-        SDL_RenderCopy(renderer, currentText, NULL, &currentTransform);
+        SDL_RenderCopyF(renderer, currentText, NULL, &currentTransform);
         SDL_DestroyTexture(currentText);
 
         currentTransform.y += currentTransform.h;
     }
 
     if ((menu->customs & NO_CURSOR) == 0)
-        SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &cursorTransform);
+        SDL_RenderCopyF(renderer, cursorTexture, &cursorClip, &cursorTransform);
 }
 
 static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
     static const SDL_Color textColor = {0, 0, 0};
-    SDL_Rect currentTransform = {
+    SDL_FRect currentTransform = {
         config->overlayArea.x, config->overlayArea.y + config->heightButton,
         config->overlayArea.w, config->heightSmallSprite};
 
-    SDL_RenderCopy(renderer, menu->header, NULL, &currentTransform);
+    SDL_RenderCopyF(renderer, menu->header, NULL, &currentTransform);
     currentTransform.y += currentTransform.h;
     currentTransform.w *= .25f;
     currentTransform.x += currentTransform.w * .5f;
@@ -195,15 +195,15 @@ static void drawHeaderTextMenu(SDL_Renderer* renderer, Menu* menu) {
         if (currentText == NULL)
             continue;
 
-        SDL_RenderCopy(renderer, currentText, NULL, &currentTransform);
+        SDL_RenderCopyF(renderer, currentText, NULL, &currentTransform);
         SDL_DestroyTexture(currentText);
 
         if (index == menu->currentOption && (menu->customs & NO_CURSOR) == 0) {
-            SDL_Rect cursorTransform = currentTransform;
+            SDL_FRect cursorTransform = currentTransform;
             cursorTransform.x -= currentTransform.w / 2;
 
-            SDL_RenderCopy(renderer, cursorTexture, &cursorClip,
-                           &cursorTransform);
+            SDL_RenderCopyF(renderer, cursorTexture, &cursorClip,
+                            &cursorTransform);
         }
 
         currentTransform.x += currentTransform.w * 2.f;
@@ -219,8 +219,8 @@ static void drawTextMenu(SDL_Renderer* renderer, Menu* menu) {
 }
 
 static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
-    SDL_Rect transform = {.y = config->overlayArea.y + config->heightButton,
-                          .h = config->heightSprite};
+    SDL_FRect transform = {.y = config->overlayArea.y + config->heightButton,
+                           .h = config->heightSprite};
     if (menu->customs & FILL_SCREEN) {
         transform.x = config->overlayArea.x;
         transform.w = config->overlayArea.w;
@@ -231,20 +231,20 @@ static void drawImageMenu(SDL_Renderer* renderer, Menu* menu) {
     }
 
     const Option* currentOption = &menu->options[menu->currentOption];
-    SDL_RenderCopy(renderer, currentOption->texture, &currentOption->spriteRect,
-                   &transform);
+    SDL_RenderCopyF(renderer, currentOption->texture,
+                    &currentOption->spriteRect, &transform);
 
     if ((menu->customs & NO_CURSOR) == 0) {
-        SDL_Rect transformCursor = transform;
+        SDL_FRect transformCursor = transform;
         transformCursor.x =
             transform.x + (config->widthSprite / 2 + config->widthSmallSprite +
                            config->widthSmallSprite / 2);
-        SDL_RenderCopy(renderer, cursorTexture, &cursorClip, &transformCursor);
+        SDL_RenderCopyF(renderer, cursorTexture, &cursorClip, &transformCursor);
         transformCursor.x =
             transform.x - (config->widthSprite / 2 + config->widthSmallSprite +
                            config->widthSmallSprite / 2);
-        SDL_RenderCopyEx(renderer, cursorTexture, &cursorClip, &transformCursor,
-                         0.f, NULL, SDL_FLIP_HORIZONTAL);
+        SDL_RenderCopyExF(renderer, cursorTexture, &cursorClip,
+                          &transformCursor, 0.f, NULL, SDL_FLIP_HORIZONTAL);
     }
 }
 

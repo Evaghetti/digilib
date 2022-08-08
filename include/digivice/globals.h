@@ -18,16 +18,16 @@ typedef struct Configuration {
     int widthScreen;
     int heightScreen;
 
-    SDL_Rect overlayArea;
-    SDL_Rect overlayButtons[COUNT_CONTROL_BUTTON_TYPE];
+    SDL_FRect overlayArea;
+    SDL_FRect overlayButtons[COUNT_CONTROL_BUTTON_TYPE];
 
     int normalSpriteSize, normalSmallSpriteSize;
-    int widthSprite, heightSprite;
+    float widthSprite, heightSprite;
 
-    int widthSmallSprite, heightSmallSprite;
-    int widthButton, heightButton;
+    float widthSmallSprite, heightSmallSprite;
+    float widthButton, heightButton;
 
-    int stepSprite;
+    float stepSprite;
 } Configuration;
 
 SDL_Renderer* gRenderer;

@@ -2,7 +2,7 @@
 
 #include "digivice/texture.h"
 
-Button initButton(const char* texturePath, SDL_Rect transform,
+Button initButton(const char* texturePath, SDL_FRect transform,
                   SDL_Rect spriteClip) {
     Button ret = {.transform = transform,
                   .spriteClip = spriteClip,
@@ -12,18 +12,18 @@ Button initButton(const char* texturePath, SDL_Rect transform,
     return ret;
 }
 
-void setButtonHovering(Button* button, SDL_Point position) {
-    button->hovering = SDL_PointInRect(&position, &button->transform);
+void setButtonHovering(Button* button, SDL_FPoint position) {
+    button->hovering = SDL_PointInFRect(&position, &button->transform);
 }
 
-void setButtonClicked(Button* button, SDL_Point position) {
-    button->clicked = SDL_PointInRect(&position, &button->transform);
+void setButtonClicked(Button* button, SDL_FPoint position) {
+    button->clicked = SDL_PointInFRect(&position, &button->transform);
 }
 
 void drawButton(SDL_Renderer* renderer, Button* button) {
     Uint8 r, g, b;
 
-    SDL_Rect iconTransform = {
+    SDL_FRect iconTransform = {
         .x = button->transform.x + button->transform.w / 4,
         .w = button->transform.w / 2,
         .y = button->transform.y + button->transform.h / 3,
@@ -36,8 +36,8 @@ void drawButton(SDL_Renderer* renderer, Button* button) {
     else
         SDL_SetTextureColorMod(button->texture, 50, 50, 50);
 
-    SDL_RenderCopy(renderer, button->texture, &button->spriteClip,
-                   &iconTransform);
+    SDL_RenderCopyF(renderer, button->texture, &button->spriteClip,
+                    &iconTransform);
     SDL_SetTextureColorMod(button->texture, r, g, b);
 }
 

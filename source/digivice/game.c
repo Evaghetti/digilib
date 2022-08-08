@@ -134,20 +134,21 @@ int initGame() {
 
     int i;
     for (i = 0; i < 4; i++) {
-        SDL_Rect transform = {.x = config->widthButton * i,
-                              .y = config->overlayArea.y,
-                              .w = config->widthButton,
-                              .h = config->heightButton};
+        SDL_FRect transform = {.x = config->widthButton * i,
+                               .y = config->overlayArea.y,
+                               .w = config->widthButton,
+                               .h = config->heightButton};
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
 
     for (; i < COUNT_OPERATIONS; i++) {
-        SDL_Rect transform = {.x = config->widthButton * (i - 4),
-                              .y = config->overlayArea.y +
-                                   config->overlayArea.h - config->heightButton,
-                              .w = config->widthButton,
-                              .h = config->heightButton};
+        SDL_FRect transform = {.x = config->widthButton * (i - 4),
+                               .y = config->overlayArea.y +
+                                    config->overlayArea.h -
+                                    config->heightButton,
+                               .w = config->widthButton,
+                               .h = config->heightButton};
         buttonsOperations[i] =
             initButton("resource/hud.png", transform, spritesButtons[i]);
     }
@@ -157,7 +158,7 @@ int initGame() {
         buttonsControl[i] = initButton("resource/hud.png",
                                        config->overlayButtons[i], transform);
     }
-    SDL_Rect transformCall = buttonsOperations[COUNT_OPERATIONS - 1].transform;
+    SDL_FRect transformCall = buttonsOperations[COUNT_OPERATIONS - 1].transform;
     transformCall.x += transformCall.w;
     buttonCallStatus =
         initButton("resource/hud.png", transformCall, clipCallStatus);
@@ -219,11 +220,11 @@ static int handleMenu(SDL_Scancode scanCode) {
 }
 
 static void updateButtonsHovering(int x, int y) {
-    SDL_Point point = {x, y};
+    SDL_FPoint point = {x, y};
     int i;
 
     if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
-        !SDL_PointInRect(&point, &config->overlayArea))
+        !SDL_PointInFRect(&point, &config->overlayArea))
         return;
 
     for (i = 0; i < COUNT_OPERATIONS; i++) {
@@ -236,7 +237,7 @@ static void updateButtonsHovering(int x, int y) {
 
 static ControlButtonType updateControlsButtonsClick(int x, int y,
                                                     int* forcedScancode) {
-    SDL_Point point = {x, y};
+    SDL_FPoint point = {x, y};
     int i;
 
     for (i = 0; i < COUNT_CONTROL_BUTTON_TYPE; i++) {
@@ -294,7 +295,7 @@ static ControlButtonType updateControlsButtonsClick(int x, int y,
 }
 
 static PossibleOperations updateButtonsClick(int x, int y) {
-    SDL_Point point = {x, y};
+    SDL_FPoint point = {x, y};
     int i, indexClickedButton = NO_OPERATION;
 
     if (!digimon.initiated || digimon.infoApi.pstCurrentDigimon->uiStage == 0 ||
@@ -584,7 +585,7 @@ int updateGame() {
                     setUpdateCoordinatesAvatar(&digimon);
 
                     for (i = 0; i <= COUNT_OPERATIONS; i++) {
-                        SDL_Rect transform = {
+                        SDL_FRect transform = {
                             .x = i < 4 ? config->widthButton * i
                                        : config->widthButton * (i - 4),
                             .y = i < 4 ? config->overlayArea.y
@@ -653,7 +654,7 @@ int updateBackGround(int deltaTime) {
 void drawGame() {
     SDL_RenderClear(gRenderer);
 
-    SDL_RenderCopy(gRenderer, background, NULL, &config->overlayArea);
+    SDL_RenderCopyF(gRenderer, background, NULL, &config->overlayArea);
 
     if (responseOperation != BATTLE_W0RLD) {
         if (currentMenu.countOptions)
@@ -668,12 +669,12 @@ void drawGame() {
                                    .y = config->normalSpriteSize * 4,
                                    .w = config->normalSpriteSize * 2,
                                    .h = config->normalSpriteSize};
-            const SDL_Rect transform = {
+            const SDL_FRect transform = {
                 .x = config->overlayArea.x,
                 .y = config->overlayArea.y + config->heightButton,
                 .w = config->overlayArea.w,
                 .h = config->heightSprite};
-            SDL_RenderCopy(gRenderer, popup, &clip, &transform);
+            SDL_RenderCopyF(gRenderer, popup, &clip, &transform);
         }
     }
 
@@ -682,7 +683,7 @@ void drawGame() {
         drawButton(gRenderer, &buttonsOperations[i]);
     drawButton(gRenderer, &buttonCallStatus);
 
-    SDL_RenderCopy(gRenderer, overlay, NULL, NULL);
+    SDL_RenderCopyF(gRenderer, overlay, NULL, NULL);
     SDL_RenderPresent(gRenderer);
 
     SDL_Delay(1000 / 60);  // 60 fps

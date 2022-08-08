@@ -243,22 +243,22 @@ static SDL_Texture* generateHeaderChallenge(SDL_Renderer* renderer) {
     SDL_Texture *texturePlayer = loadTexture(player.pathSpriteSheet),
                 *textureChallenger = getChallengedUserTexture();
 
-    SDL_Rect transform = {config->widthSmallSprite / 2, 0,
-                          config->widthSmallSprite, config->heightSmallSprite};
+    SDL_FRect transform = {config->widthSmallSprite / 2, 0,
+                           config->widthSmallSprite, config->heightSmallSprite};
     SDL_Rect clip = {0, 0, config->normalSpriteSize, config->normalSpriteSize};
 
     SDL_SetRenderTarget(renderer, result);
     SDL_RenderClear(renderer);
     SDL_SetTextureBlendMode(result, SDL_BLENDMODE_BLEND);
 
-    SDL_RenderCopyEx(renderer, textureChallenger, &clip, &transform, 0.f, NULL,
-                     SDL_FLIP_HORIZONTAL);
+    SDL_RenderCopyExF(renderer, textureChallenger, &clip, &transform, 0.f, NULL,
+                      SDL_FLIP_HORIZONTAL);
     transform.x = config->widthScreen - transform.w * 1.5f;
-    SDL_RenderCopy(renderer, texturePlayer, &clip, &transform);
+    SDL_RenderCopyF(renderer, texturePlayer, &clip, &transform);
 
     SDL_Texture* versusText = createTextTexture(color, "VS");
     transform.x = config->widthScreen * .45f;
-    SDL_RenderCopy(renderer, versusText, NULL, &transform);
+    SDL_RenderCopyF(renderer, versusText, NULL, &transform);
 
     SDL_SetRenderTarget(renderer, NULL);
     SDL_DestroyTexture(versusText);
