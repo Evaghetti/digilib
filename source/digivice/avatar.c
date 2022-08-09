@@ -44,8 +44,8 @@ static SDL_Texture *textureAdditional, *textureEnemy, *texturePopup;
 static AnimationController additionalAnimations;
 static AnimationController animationsForPoop;
 static float xOffsetSprites = 0,
-             xOffsetSprites2 = 0;    // Used for the cleaning animation
-static float xProjectileOffset = 0;  // Used for position of projectile
+             xOffsetSprites2 = 0;      // Used for the cleaning animation
+static float xProjectileOffset = 0.f;  // Used for position of projectile
 static int offsetTraining = 0, correctTrainingGuess = 0;
 static int skipFirstFrameScroll, decreaseCurtains = 0;
 static int selectOptionTraining = 0;
@@ -143,7 +143,7 @@ int initAvatar(Avatar* ret, char* saveGame) {
 
         char spriteSheetFile[270] = {0};
         int i;
-        snprintf(spriteSheetFile, sizeof(spriteSheetFile), "resource/%s.gif",
+        snprintf(spriteSheetFile, sizeof(spriteSheetFile), "resource/%s.png",
                  ret->name);
         for (i = 0; i < strlen(spriteSheetFile); i++) {
             spriteSheetFile[i] = tolower(spriteSheetFile[i]);
@@ -460,7 +460,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                 char spriteSheetFile[270] = {0};
                 int i;
                 snprintf(spriteSheetFile, sizeof(spriteSheetFile),
-                         "resource/%s.gif",
+                         "resource/%s.png",
                          avatar->infoApi.pstCurrentDigimon->szName);
                 for (i = 0; i < strlen(spriteSheetFile); i++) {
                     spriteSheetFile[i] = tolower(spriteSheetFile[i]);
@@ -589,7 +589,7 @@ void updateAvatar(Avatar* avatar, const float deltaTime) {
                     skipFirstFrameScroll = 0;
 
                     if (xProjectileOffset <=
-                        -config->widthSprite / 2 + config->widthSprite * 1.5f) {
+                        config->overlayArea.x + config->widthSmallSprite) {
                         advanceTraining(avatar, 1);
                     }
                 } else if (finishedCurrentAnimation(

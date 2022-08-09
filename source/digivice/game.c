@@ -178,7 +178,7 @@ static void initiateDigitamaMenu() {
     int i, j;
     for (i = 0; i < count; i++) {
         fileNames[i] = calloc(sizeFileName, sizeof(char));
-        snprintf(fileNames[i], sizeFileName, "resource/%s.gif",
+        snprintf(fileNames[i], sizeFileName, "resource/%s.png",
                  digitamas[i]->szName);
         for (j = 9; j < sizeFileName; j++)
             fileNames[i][j] = tolower(fileNames[i][j]);

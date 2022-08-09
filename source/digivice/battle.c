@@ -99,7 +99,7 @@ int connectToServer(digimon_t* playerDigimon) {
     }
 
     snprintf(player.pathSpriteSheet, sizeof(player.pathSpriteSheet),
-             "resource/%s.gif", playerDigimon->szName);
+             "resource/%s.png", playerDigimon->szName);
     toLowerStr(player.pathSpriteSheet);
     player.slotPower = playerDigimon->uiSlotPower;
     player.version = playerDigimon->uiVersion;
@@ -207,7 +207,7 @@ static Menu handleUserListRequest() {
         }
 
         snprintf(players[i].pathSpriteSheet, sizeof(players[i].pathSpriteSheet),
-                 "resource/%s.gif", currentDigimon->szName);
+                 "resource/%s.png", currentDigimon->szName);
         toLowerStr(players[i].pathSpriteSheet);
         addMenuImage(&result, players[i].pathSpriteSheet, clip);
 
@@ -459,7 +459,7 @@ static void initCachedDigimon(unsigned char minimumStage) {
         players[countPlayers].version = currentDigimon->uiVersion;
         snprintf(players[countPlayers].pathSpriteSheet,
                  sizeof(players[countPlayers].pathSpriteSheet),
-                 "resource/%s.gif", currentDigimon->szName);
+                 "resource/%s.png", currentDigimon->szName);
         toLowerStr(players[countPlayers].pathSpriteSheet);
         countPlayers++;
     }
