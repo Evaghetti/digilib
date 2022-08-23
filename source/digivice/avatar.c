@@ -316,8 +316,8 @@ int initAvatar(Avatar* ret, char* saveGame) {
             GAME_TICK);
 
         // Additional stuff for animations etc.
-        textureAdditional = loadTexture("resource/feed.gif");
-        texturePopup = loadTexture("resource/popups.gif");
+        textureAdditional = loadTexture("resource/feed.png");
+        texturePopup = loadTexture("resource/popups.png");
         // Work around
         // TODO: define that the controlelr should not play the first animation.
         addAnimation(&additionalAnimations, "nothing", 1,

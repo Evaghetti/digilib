@@ -129,7 +129,7 @@ int initGame() {
 
     background = loadTexture("resource/background.png");
     overlay = loadTexture("resource/overlay.png");
-    popup = loadTexture("resource/popups.gif");
+    popup = loadTexture("resource/popups.png");
     initAvatar(&digimon, saveFile);
 
     int i;

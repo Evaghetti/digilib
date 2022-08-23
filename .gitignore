@@ -22,3 +22,4 @@ import-digimon.csv
 .vscode/
 *ninja*
 .cmake
+*.*~

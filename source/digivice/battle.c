@@ -225,7 +225,7 @@ static int handleBattleChallenge(Menu* menu) {
 
     SDL_Log("Response from challenged -> %d", dataReceived[2]);
     if (dataReceived[2] == 0) {
-        char* paths[] = {"resource/popups.gif"};
+        char* paths[] = {"resource/popups.png"};
         SDL_Rect clip = {0, config->normalSpriteSize * 4,
                          config->normalSpriteSize * 2,
                          config->normalSpriteSize};
