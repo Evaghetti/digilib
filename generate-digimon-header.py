@@ -3,7 +3,7 @@ from sys import argv
 fileName = argv[1]
 folderOut = argv[2]
 FILE_OUTPUT = f"{folderOut}/include/digiworld.h"
-FILE_OUTPUT_SOURCE = "source/digiworld.c"
+FILE_OUTPUT_SOURCE = f"{folderOut}/source/digiworld.c"
 
 NAME = 0
 SLOT_OR_POWER = 1
@@ -140,10 +140,10 @@ if __name__ == "__main__":
             f"#define MAX_COUNT_EVOLUTION_REQUIREMTNS {len(evolutionsRequirements)}\n", file=outFile)
 
         print(
-            f"evolution_requirement_t vstPossibleRequirements[MAX_COUNT_EVOLUTION_REQUIREMTNS];\n", file=outFile)
+            f"extern evolution_requirement_t vstPossibleRequirements[MAX_COUNT_EVOLUTION_REQUIREMTNS];\n", file=outFile)
 
         print(
-            f"digimon_t vstPossibleDigimon[MAX_COUNT_DIGIMON];\n", file=outFile)
+            f"extern digimon_t vstPossibleDigimon[MAX_COUNT_DIGIMON];\n", file=outFile)
 
         print("#endif\n", file=outFile)
 

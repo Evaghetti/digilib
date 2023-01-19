@@ -22,14 +22,18 @@ option(BUILD_DIGIVICE off)
 find_package(Python REQUIRED Interpreter)
 add_custom_command(
     OUTPUT include/digiworld.h source/digiworld.c
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-digimon-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-digimon-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR}
     DEPENDS import-digimon.csv
 )
 
 # Build the lib
-include_directories(include)
 add_library(digilib SHARED)
-target_sources(digilib PRIVATE source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c source/digiworld.c)
+target_include_directories(
+    digilib 
+    PRIVATE include
+    PRIVATE ${PROJECT_BINARY_DIR}/include
+)
+target_sources(digilib PRIVATE source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c ${PROJECT_BINARY_DIR}/source/digiworld.c)
 target_sources(digilib PRIVATE source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/logging.c)
 
 message(STATUS "Using ${DEVICE}'s times for events")
@@ -58,29 +62,6 @@ target_compile_definitions(digilib PUBLIC TIME_TO_GET_WEAKER=${TIME_TO_GET_WEAKE
 target_compile_definitions(digilib PUBLIC TIME_TO_POOP=${TIME_TO_POOP})
 target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET_CARE_MISTAKE})
 
-if(${BUILD_DIGIVICE})
-    message(STATUS "Will build digivice")
-    set(SOURCES_DIGIVICE digivice.c source/digivice/game.c source/digivice/texture.c source/digivice/animation.c source/digivice/menu.c source/digivice/avatar.c source/digivice/button.c source/digivice/battle.c source/digivice/globals.c source/digivice/w0rld.c)
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-        set(DIGIVICE_TARGET "libmain")
-        add_library(${DIGIVICE_TARGET} SHARED)
-        target_compile_definitions(${DIGIVICE_TARGET} PUBLIC _NEEDS_SDL_MAIN_ _USE_DISPLAY_MODE_ _ANDROID_BUILD_)
-        set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/dv_android.c source/digivice/w0rld_unix.c)
-    else()
-        set(DIGIVICE_TARGET "digivice")
-
-        # Get SDL2 include dir
-        find_package(SDL2 REQUIRED) 
-        
-        add_executable(${DIGIVICE_TARGET})
-        include_directories(${SDL2_INCLUDE_DIR})
-        if (WIN32)
-        else()
-            set(SOURCES_DIGIVICE ${SOURCES_DIGIVICE} source/digivice/w0rld_unix.c)
-        endif()
-    endif()
-    
-    target_sources(${DIGIVICE_TARGET} PRIVATE ${SOURCES_DIGIVICE})
-    target_link_libraries(${DIGIVICE_TARGET} digilib SDL2 SDL2main SDL2_image SDL2_ttf SDL2_net)
-    include_directories(include/digivice)
-endif()
+add_executable(digitest main.c)
+target_link_libraries(digitest digilib)
+target_include_directories(digitest PRIVATE include)
