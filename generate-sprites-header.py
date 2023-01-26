@@ -1,0 +1,291 @@
+from sys import argv, exit
+from PIL import Image
+from typing import Tuple, List
+
+dataBase = argv[1]
+folderOut = argv[2]
+FILE_OUTPUT_HEADER = f"{folderOut}/include/digivice/sprites.h"
+FILE_OUTPUT_SOURCE = f"{folderOut}/source/digivice/sprites.c"
+
+WIDTH_TILE  = 8
+HEIGHT_TILE = 8
+
+WIDTH_SPRITE  = WIDTH_TILE * 2
+HEIGHT_SPRITE = HEIGHT_TILE * 2
+
+# Multiple frame animations
+
+ANIMATION_WALK_BEGIN = 0
+ANIMATION_WALK_END   = 3
+
+ANIMATION_SLEEP_BEGIN = 3
+ANIMATION_SLEEP_END   = 5
+
+ANIMATION_HAPPY_BEGIN = 6
+ANIMATION_HAPPY_END   = 8
+
+ANIMATION_ANGRY_BEGIN = 8
+ANIMATION_ANGRY_END   = 10
+
+ANIMATION_SHOOTING_BEGIN = 10
+ANIMATION_SHOOTING_END   = 12
+
+ANIMATION_EATING_BEGIN = 12
+ANIMATION_EATING_END   = 14
+
+# One frame animations
+
+ANIMATION_REFUSAL_BEGIN = 5
+ANIMATION_REFUSAL_END   = 6
+
+ANIMATION_SICK_BEGIN   = 14
+ANIMATION_SICK_END     = 15
+
+MASK_INVERTED     = 0b1000000000000000
+MASK_INDEX_SPRITE = 0b0111111111111111
+
+
+def reverseBits(bits: int) -> int:
+    result = 0b00000000
+    for i in range(8):
+        result |= (bits & 1) << (7 - i)
+        bits >>= 1
+    return result
+
+def getBinaryValuesTile(tile: Image.Image) -> List[int]:
+    width, height = tile.size
+
+    lines = []
+    for y in range(height):
+        currentLine = 0b00000000
+        for x in range(width):
+            r, g, b, a = tile.getpixel((x, y))
+            currentLine |= (1 if a != 0 else 0) << (WIDTH_TILE - 1 - x)
+        
+        lines.append(currentLine)
+    return lines
+
+def getTilesIndicesSprite(sprite: Image.Image) -> Tuple[List[str], List[str]]:
+    sprite = sprite.convert("RGBA")
+
+    width, height = sprite.size
+
+    indices = []
+    values = []
+
+    for y in range(0, height, HEIGHT_TILE):
+        for x in range(0, width, WIDTH_TILE):
+            tile = sprite.crop((x, y, x + WIDTH_TILE, y + HEIGHT_TILE))
+            binaryValuesTile = getBinaryValuesTile(tile)
+            reversedBinaryValuesTile = [reverseBits(i) for i in binaryValuesTile]
+
+            try:
+                stringfiedBinary = convertBinaryValuesToString(binaryValuesTile)
+                currentIndex = values.index(stringfiedBinary)
+            except ValueError:
+                try:
+                    stringfiedBinary = convertBinaryValuesToString(reversedBinaryValuesTile)
+                    currentIndex = values.index(stringfiedBinary)
+                    currentIndex |= MASK_INVERTED
+                except ValueError:
+                    currentIndex = len(values)
+                    stringfiedBinary = convertBinaryValuesToString(binaryValuesTile)
+            
+            if currentIndex == len(values):
+                values.append(stringfiedBinary)
+            indices.append(currentIndex)
+
+    return values, indices
+
+def convertBinaryValuesToString(binaryValues: List[int]) -> str:
+    lines = ""
+    for i in binaryValues:
+        currentLine = ""
+        for _ in range(WIDTH_TILE):
+            carry, i = (i & 0b10000000) >> 7, i << 1
+            currentLine += str(carry)
+        lines += f"0b{currentLine},\n"
+    
+    return lines[:-1]
+
+def addTilesWithoutDuplicates(inTiles: List[str], inIndices: List[int], outTiles: List[str], outIndices: List[List[int]]):
+    updated = []
+    for i, stringSprite in enumerate(inTiles):
+        if not stringSprite in outTiles:
+            indexToUpdate = len(outTiles)
+
+            outTiles.append(stringSprite)
+        else:
+            indexToUpdate = outTiles.index(stringSprite)
+
+        position = -1
+        while True:
+            try:
+                if i in inIndices:
+                    position = inIndices.index(i, position + 1)
+                else:
+                    position = inIndices.index(i | MASK_INVERTED, position + 1)
+                    
+                if position in updated:
+                    continue
+                else:
+                    updated.append(position)
+
+                isInverted = inIndices[position] & MASK_INVERTED
+                inIndices[position] = indexToUpdate | isInverted
+            except ValueError:
+                break
+    outIndices.append(inIndices)
+
+def addTilesWithoutDuplicatesGlobal(inTiles: List[str], inIndiceDatabase: List[List[int]], outTiles: List[str], outIndices: List[List[int]]):
+    for i in inIndiceDatabase:
+        addTilesWithoutDuplicates(inTiles, i, outTiles, outIndices)
+
+def parseImage(pathImage: str) -> Tuple[List[str], List[str]]:
+    image: Image.Image = Image.open(pathImage)
+    
+    width, height = image.size
+
+    tileSheetImage, indicesSpriteImage = [], []
+
+    for y in range(0, height, HEIGHT_SPRITE):
+        for x in range(0, width, WIDTH_SPRITE):
+            sprite = image.crop((x, y, x + WIDTH_SPRITE, y + WIDTH_SPRITE))
+            tiles, indices = getTilesIndicesSprite(sprite)
+            addTilesWithoutDuplicates(tiles, indices, tileSheetImage, indicesSpriteImage)
+    if height > HEIGHT_SPRITE:
+        indicesSpriteImage = indicesSpriteImage[:-1]
+        indicesSpriteImage[-1] = [indicesSpriteImage[-1][0]]
+    return tileSheetImage, indicesSpriteImage
+
+def removeDuplicateIndices(indices: List[List[int]]) -> List[List[int]]:
+    for i, index in enumerate(indices):
+        if type(index) is int:
+            continue
+        
+        position = i
+        while True:
+            try:
+                position = indices.index(index, position + 1)
+                indices[position] = i
+            except ValueError:
+                break
+    return indices
+
+def getTransformedIndex(index: int) -> int:
+    return ((index & MASK_INDEX_SPRITE) * 8) | (index & MASK_INVERTED)
+
+def getCountTile(tileDataBase: List[str]) -> int:
+    return sum([tile.count(',') for tile in tileDataBase])
+
+def getPointerToTileFromIndices(spriteDataBase: List[List[int] | int]) -> List[str]:
+    return [list(map(lambda tile: f"{getTransformedIndex(tile)}", sprite)) if type(sprite) is list else sprite for sprite in spriteDataBase ]
+
+def getDigimonNameAsVariable(digimonName: str) -> str:
+    return digimonName.title().replace(" ", "")
+
+def getVariablesAndDeclarations(digimonSprites: List[List[int] | int], digimonName: str):
+    variables, declarations = [], []
+    count = 0
+
+    digimonAnimation = getPointerToTileFromIndices(digimonSprites[digimonName])
+    for animation in digimonAnimation:
+        if type(animation) is int:
+            variables.append(variables[animation])
+            continue
+
+        currentVariableContent = ','.join(animation)
+    
+        variableName = f"guiSpriteTileIndex{getDigimonNameAsVariable(digimonName)}{count}"
+        declaration = f"const uint16_t {variableName}[] = {{{currentVariableContent}}};"
+        
+        variables.append(f"&{variableName}")
+        declarations.append(declaration)
+        
+        count += 1
+    return variables, declarations
+
+def writeAnimation(animationDataBase, begin: int, end: int, out):
+    print("{", end="", file=out) # Animation
+    print(",".join(animationDataBase[begin:end]), end="", file=out)
+    print("},", file=out)
+
+def main():
+    spriteDataBase = {}
+    tileDatabase, indiceDatabase = [], []
+    with open(dataBase, "r") as file:
+        next(file) # first line is just a comment
+        next(file) # first line is just a comment
+
+        for line in file:
+            digimonName = line.split(";")[0].lower()
+            
+            print(digimonName)
+            digimonTiles, digimonIndices = parseImage(f"resource/{digimonName}.gif")
+            addTilesWithoutDuplicatesGlobal(digimonTiles, digimonIndices, tileDatabase, indiceDatabase)
+            spriteDataBase[digimonName] = removeDuplicateIndices(digimonIndices)
+            print("Done")
+
+        print("Finished reading images")
+
+    with open(FILE_OUTPUT_HEADER, "w") as outHeader:
+        print("#ifndef SPRITES_H", file=outHeader)
+        print("#define SPRITES_H\n", file=outHeader)
+
+        print("#include \"digitype.h\"", file=outHeader)
+        print("#include \"digiworld.h\"\n", file=outHeader)
+
+        print(f"#define COUNT_TILES {getCountTile(tileDatabase)}", file=outHeader)
+        print(f"#define MAX_COUNT_ANIMATIONS             5", file=outHeader)
+        print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 2", file=outHeader)
+        print(f"#define MAX_FRAMES_ANIMATION_WALKING     3", file=outHeader)
+        print(f"#define MAX_FRAMES_ANIMATION             2\n", file=outHeader)
+        
+        print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
+        print(f"extern const uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION];", file=outHeader)
+        print(f"extern const uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING];", file=outHeader)
+        print(f"extern const uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION];", file=outHeader)
+
+        print("\n#endif // SPRITES_H", file=outHeader)
+
+    
+    with open(FILE_OUTPUT_SOURCE, "w") as outSource:
+        print("#include \"sprites.h\"\n", file=outSource)
+
+        print("const uint8_t guiTileDatabase[COUNT_TILES] = {", file=outSource)
+        print("\n".join(tileDatabase), file=outSource)
+        print("};\n", file=outSource)
+
+        animationDatabase = []
+        for digimonName in spriteDataBase.keys():
+            variables, declarations = getVariablesAndDeclarations(spriteDataBase, digimonName)
+            animationDatabase.append(variables)
+            print("\n".join(declarations), file=outSource)
+
+        print("\nconst uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION] = {", file=outSource)
+        for i, digimonName in enumerate(spriteDataBase.keys()):
+            print("{", file=outSource) # Digimon
+            
+            writeAnimation(animationDatabase[i], ANIMATION_SLEEP_BEGIN, ANIMATION_SLEEP_END, outSource)
+            writeAnimation(animationDatabase[i], ANIMATION_HAPPY_BEGIN, ANIMATION_HAPPY_END, outSource)
+            writeAnimation(animationDatabase[i], ANIMATION_ANGRY_BEGIN, ANIMATION_ANGRY_END, outSource)
+            writeAnimation(animationDatabase[i], ANIMATION_SHOOTING_BEGIN, ANIMATION_SHOOTING_END, outSource)
+            writeAnimation(animationDatabase[i], ANIMATION_EATING_BEGIN, ANIMATION_EATING_END, outSource)
+            
+            print("}", end=",\n", file=outSource)
+        print("};", file=outSource)
+
+        print("\nconst uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING] = {", file=outSource)
+        for i, digimonName in enumerate(spriteDataBase.keys()):            
+            writeAnimation(animationDatabase[i], ANIMATION_WALK_BEGIN, ANIMATION_WALK_END, outSource)
+        print("};", file=outSource)
+
+        print("\nconst uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION] = {", file=outSource)
+        for i, digimonName in enumerate(spriteDataBase.keys()):
+            print("{", end="", file=outSource)
+            print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], animationDatabase[i][ANIMATION_SICK_BEGIN], sep=",", end="", file=outSource)            
+            print("},", end="\n", file=outSource)
+        print("};", file=outSource)
+
+if __name__ == "__main__":
+    exit(main())

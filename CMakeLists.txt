@@ -62,6 +62,11 @@ target_compile_definitions(digilib PUBLIC TIME_TO_POOP=${TIME_TO_POOP})
 target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET_CARE_MISTAKE})
 
 # TODO: change when making logic of vpet
+add_custom_command(
+    OUTPUT include/digivice/sprites.h source/digivice/sprites.c
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR}
+    DEPENDS import-digimon.csv
+)
 add_executable(digitest digitest.c)
 target_link_libraries(digitest digilib)
-target_include_directories(digitest PRIVATE include)
+target_include_directories(digitest PRIVATE include include/digivice)
