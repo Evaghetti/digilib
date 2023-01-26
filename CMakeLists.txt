@@ -33,8 +33,7 @@ target_include_directories(
     PRIVATE include
     PRIVATE ${PROJECT_BINARY_DIR}/include
 )
-target_sources(digilib PRIVATE source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c ${PROJECT_BINARY_DIR}/source/digiworld.c)
-target_sources(digilib PRIVATE source/platform/${PLATFORM}/digihardware.c source/platform/${PLATFORM}/logging.c)
+target_sources(digilib PRIVATE source/digimon.c source/digiapi.c source/digiworld.c source/digibattle_classic.c source/digihal.c ${PROJECT_BINARY_DIR}/source/digiworld.c)
 
 message(STATUS "Using ${DEVICE}'s times for events")
 if(${DEVICE} STREQUAL "Digital Monster")
@@ -62,6 +61,7 @@ target_compile_definitions(digilib PUBLIC TIME_TO_GET_WEAKER=${TIME_TO_GET_WEAKE
 target_compile_definitions(digilib PUBLIC TIME_TO_POOP=${TIME_TO_POOP})
 target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET_CARE_MISTAKE})
 
-add_executable(digitest main.c)
+# TODO: change when making logic of vpet
+add_executable(digitest digitest.c)
 target_link_libraries(digitest digilib)
 target_include_directories(digitest PRIVATE include)

@@ -1,6 +1,6 @@
 #include "digiapi.h"
 
-#include "digihardware.h"
+#include "digihal.h"
 #include "digiworld.h"
 #include "enums.h"
 
@@ -8,32 +8,46 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "logging.h"
+uint32_t guiCurrentTime;
 
-const char* gszSaveFile = NULL;
-playing_digimon_t stPlayingDigimon;
-
-uint8_t DIGI_init(const char* szSaveFile) {
-    gszSaveFile = szSaveFile;
-
-    // If no save file exists, needs to choose a digitama
-    if (DIGIHW_readDigimon(gszSaveFile, &stPlayingDigimon) != DIGI_RET_OK)
+int DIGI_init(digihal_t stConfig, playing_digimon_t** pstPlayingDigimon) {
+    if (DIGI_setHal(stConfig) != DIGI_RET_OK) {
+        LOG("Incorrect hal provided");
         return DIGI_RET_ERROR;
+    }
 
-    // If true, it means a previous digimon has died, need to select a
-    // new digitama
-    if (stPlayingDigimon.uiIndexCurrentDigimon >= MAX_COUNT_DIGIMON)
+    *pstPlayingDigimon = gstHal.malloc(sizeof(playing_digimon_t));
+    if (pstPlayingDigimon == NULL) {
+        LOG("Error allocating digimon");
         return DIGI_RET_ERROR;
+    }
 
-    stPlayingDigimon.pstCurrentDigimon =
-        &vstPossibleDigimon[stPlayingDigimon.uiIndexCurrentDigimon];
+    if (DIGI_initDigimon(*pstPlayingDigimon) != DIGI_RET_OK) {
+        LOG("Error loading digimon");
+        return DIGI_RET_CHOOSE_DIGITAMA;
+    }
 
-    DIGI_saveGame();
-    DIGIHW_setTime();
     return DIGI_RET_OK;
 }
 
-uint8_t DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
+uint8_t DIGI_initDigimon(playing_digimon_t* pstPlayingDigimon) {
+    // If no save file exists, needs to choose a digitama
+    if (DIGI_readGame(pstPlayingDigimon) != DIGI_RET_OK)
+        return DIGI_RET_CHOOSE_DIGITAMA;
+
+    // If true, it means a previous digimon has died, need to select a
+    // new digitama
+    if (pstPlayingDigimon->uiIndexCurrentDigimon >= MAX_COUNT_DIGIMON)
+        return DIGI_RET_CHOOSE_DIGITAMA;
+
+    pstPlayingDigimon->pstCurrentDigimon =
+        &vstPossibleDigimon[pstPlayingDigimon->uiIndexCurrentDigimon];
+    DIGI_saveGame(pstPlayingDigimon);
+    return DIGI_RET_OK;
+}
+
+uint8_t DIGI_selectDigitama(playing_digimon_t* pstPlayingDigimon,
+                            uint8_t uiDigitamaIndex) {
     uint16_t i;
     uint8_t uiCountDigitama;
 
@@ -47,73 +61,82 @@ uint8_t DIGI_initDigitama(const char* szSaveFile, uint8_t uiDigitamaIndex) {
             break;
     }
 
-    memset(&stPlayingDigimon, 0, sizeof(stPlayingDigimon));
-    stPlayingDigimon.uiIndexCurrentDigimon = i;
-    gszSaveFile = szSaveFile;
-    DIGI_saveGame();
-    return DIGI_init(szSaveFile);
+    memset(pstPlayingDigimon, 0, sizeof(*pstPlayingDigimon));
+    pstPlayingDigimon->uiIndexCurrentDigimon = i;
+    pstPlayingDigimon->pstCurrentDigimon = &vstPossibleDigimon[i];
+    pstPlayingDigimon->uiTimedFlags =
+        DIGI_TIMEDFLG_CAN_OVERFEED | DIGI_TIMEDFLG_CAN_DISTURB_SLEEP;
+    DIGI_saveGame(pstPlayingDigimon);
+    return DIGI_RET_OK;
 }
 
-uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
-    uint16_t uiCurrentTime = DIGIHW_timeMinutes();
-    uint16_t uiIsDying = (stPlayingDigimon.uiStats & MASK_DYING_STAGE);
+uint8_t DIGI_updateEventsDeltaTime(playing_digimon_t* pstPlayingDigimon,
+                                   uint16_t uiDeltaTime, uint8_t* puiEvents) {
+    uint16_t uiCurrentTime = guiCurrentTime;
+    uint16_t uiIsDying = (pstPlayingDigimon->uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
 
     LOG("%s - E: %d - HS: %04x CM: %d SD: %d TC: %d OF: %d",
-        stPlayingDigimon.pstCurrentDigimon->szName,
-        stPlayingDigimon.uiTimeToEvolve, stPlayingDigimon.uiHungerStrength,
-        stPlayingDigimon.uiCareMistakesCount,
-        stPlayingDigimon.uiSleepDisturbanceCount,
-        stPlayingDigimon.uiTrainingCount, stPlayingDigimon.uiOverfeedingCount);
+        pstPlayingDigimon->pstCurrentDigimon->szName,
+        pstPlayingDigimon->uiTimeToEvolve, pstPlayingDigimon->uiHungerStrength,
+        pstPlayingDigimon->uiCareMistakesCount,
+        pstPlayingDigimon->uiSleepDisturbanceCount,
+        pstPlayingDigimon->uiTrainingCount,
+        pstPlayingDigimon->uiOverfeedingCount);
 
-    if (stPlayingDigimon.pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
-        (stPlayingDigimon.uiStats & MASK_SLEEPING) == 0) {
+    if (pstPlayingDigimon->pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1 &&
+        (pstPlayingDigimon->uiStats & MASK_SLEEPING) == 0) {
         // If dying, then hearts and deplete twice as fast
         const uint16_t uiAlteredDeltaTime = uiDeltaTime << uiIsDying;
 
-        stPlayingDigimon.uiTimeSinceLastMeal += uiAlteredDeltaTime;
-        stPlayingDigimon.uiTimeSinceLastTraining += uiAlteredDeltaTime;
-        stPlayingDigimon.uiTimeSinceLastPoop += uiAlteredDeltaTime;
+        pstPlayingDigimon->uiTimeSinceLastMeal += uiAlteredDeltaTime;
+        pstPlayingDigimon->uiTimeSinceLastTraining += uiAlteredDeltaTime;
+        pstPlayingDigimon->uiTimeSinceLastPoop += uiAlteredDeltaTime;
 
-        if ((stPlayingDigimon.uiStats & MASK_SICK) ||
-            (stPlayingDigimon.uiStats & MASK_INJURIED))
-            stPlayingDigimon.uiTimeSickOrInjured += uiDeltaTime;
+        if ((pstPlayingDigimon->uiStats & MASK_SICK) ||
+            (pstPlayingDigimon->uiStats & MASK_INJURIED))
+            pstPlayingDigimon->uiTimeSickOrInjured += uiDeltaTime;
     }
 
     if (!uiIsDying)
-        stPlayingDigimon.uiTimeToEvolve += uiDeltaTime;
+        pstPlayingDigimon->uiTimeToEvolve += uiDeltaTime;
 
-    if (DIGI_shouldBeKilledOff() == DIGI_RET_OK) {
-        stPlayingDigimon.uiIndexCurrentDigimon = MAX_COUNT_DIGIMON;
+    if (pstPlayingDigimon->pstCurrentDigimon->uiStage >= DIGI_STAGE_BABY_1) {
+        if (DIGI_shouldBeKilledOff(pstPlayingDigimon) == DIGI_RET_OK) {
+            pstPlayingDigimon->uiIndexCurrentDigimon = MAX_COUNT_DIGIMON;
 
-        DIGIHW_addTime(uiDeltaTime);
-        DIGI_saveGame();
-        return DIGI_RET_DIED;
+            guiCurrentTime += uiDeltaTime;
+            DIGI_saveGame(pstPlayingDigimon);
+            return DIGI_RET_DIED;
+        }
+
+        while (pstPlayingDigimon->uiTimeSinceLastMeal >=
+               DIGI_timeToGetHungry(pstPlayingDigimon)) {
+            pstPlayingDigimon->uiTimeSinceLastMeal -=
+                DIGI_timeToGetHungry(pstPlayingDigimon);
+
+            DIGI_feedDigimon(pstPlayingDigimon, -1);
+        }
+
+        while (pstPlayingDigimon->uiTimeSinceLastTraining >=
+               TIME_TO_GET_WEAKER) {
+            pstPlayingDigimon->uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
+
+            DIGI_stregthenDigimon(pstPlayingDigimon, -1, 0);
+        }
+
+        while (pstPlayingDigimon->uiTimeSinceLastPoop >= TIME_TO_POOP &&
+               pstPlayingDigimon->uiPoopCount < 4) {
+            pstPlayingDigimon->uiTimeSinceLastPoop -= TIME_TO_POOP;
+
+            if (DIGI_poop(pstPlayingDigimon, 1) == DIGI_RET_SICK)
+                *puiEvents |= DIGI_EVENT_MASK_SICK;
+            *puiEvents |= DIGI_EVENT_MASK_POOP;
+        }
     }
 
-    while (stPlayingDigimon.uiTimeSinceLastMeal >= DIGI_timeToGetHungry()) {
-        stPlayingDigimon.uiTimeSinceLastMeal -= DIGI_timeToGetHungry();
-
-        DIGI_feedDigimon(-1);
-    }
-
-    while (stPlayingDigimon.uiTimeSinceLastTraining >= TIME_TO_GET_WEAKER) {
-        stPlayingDigimon.uiTimeSinceLastTraining -= TIME_TO_GET_WEAKER;
-
-        DIGI_stregthenDigimon(-1, 0);
-    }
-
-    while (stPlayingDigimon.uiTimeSinceLastPoop >= TIME_TO_POOP &&
-           stPlayingDigimon.uiPoopCount < 4) {
-        stPlayingDigimon.uiTimeSinceLastPoop -= TIME_TO_POOP;
-
-        if (DIGI_poop(1) == DIGI_RET_SICK)
-            *puiEvents |= DIGI_EVENT_MASK_SICK;
-        *puiEvents |= DIGI_EVENT_MASK_POOP;
-    }
-
-    if (DIGI_shouldEvolve() == DIGI_RET_OK) {
-        uint8_t uiResult = DIGI_evolveDigimon();
+    if (DIGI_shouldEvolve(pstPlayingDigimon) == DIGI_RET_OK) {
+        uint8_t uiResult = DIGI_evolveDigimon(pstPlayingDigimon);
 
         if (uiResult == DIGI_NO_EVOLUTION) {
             *puiEvents |= DIGI_EVENT_MASK_DIE;
@@ -122,35 +145,29 @@ uint8_t DIGI_updateEventsDeltaTime(uint16_t uiDeltaTime, uint8_t* puiEvents) {
         }
     }
 
-    if (DIGI_updateSleepDisturbance(uiDeltaTime) == DIGI_RET_OK) {
+    if (DIGI_updateSleepDisturbance(pstPlayingDigimon, uiDeltaTime) ==
+        DIGI_RET_OK) {
         LOG("Digimon was woken up during sleep, waiting for it to be able to "
             "sleep again");
-    } else if (DIGI_shouldSleep() == DIGI_RET_OK) {
+    } else if (DIGI_shouldSleep(pstPlayingDigimon) == DIGI_RET_OK) {
         LOG("Bedtime for digimon");
         *puiEvents |= DIGI_EVENT_MASK_SLEEPY;
-    } else if (DIGI_shouldWakeUp() == DIGI_RET_OK) {
+    } else if (DIGI_shouldWakeUp(pstPlayingDigimon) == DIGI_RET_OK) {
         *puiEvents |= DIGI_EVENT_MASK_WOKE_UP;
-        stPlayingDigimon.uiStats &= ~MASK_SLEEPING;
+        pstPlayingDigimon->uiStats &= ~MASK_SLEEPING;
     }
 
-    if (DIGI_setCalled() == DIGI_RET_OK) {
+    if (DIGI_setCalled(pstPlayingDigimon) == DIGI_RET_OK) {
         *puiEvents |= DIGI_EVENT_MASK_CALL;
-        if (DIGI_proccesCalling(uiDeltaTime) != DIGI_RET_OK)
+        if (DIGI_proccesCalling(pstPlayingDigimon, uiDeltaTime) != DIGI_RET_OK)
             *puiEvents &= ~DIGI_EVENT_MASK_CALL;
     }
 
-    DIGIHW_addTime(uiDeltaTime);
-    if (uiCurrentTime + uiDeltaTime >= 1440 && stPlayingDigimon.uiAge < 99)
-        stPlayingDigimon.uiAge++;
-
-    // TODO: Find another way to save current digimon state
-    // So the NULLing before saving isn't neccessary anymore.
-    DIGI_saveGame();
+    guiCurrentTime += uiDeltaTime;
+    if (uiCurrentTime + uiDeltaTime >= 1440 && pstPlayingDigimon->uiAge < 99)
+        pstPlayingDigimon->uiAge++;
+    DIGI_saveGame(pstPlayingDigimon);
     return DIGI_RET_OK;
-}
-
-playing_digimon_t DIGI_playingDigimon() {
-    return stPlayingDigimon;
 }
 
 digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
@@ -170,6 +187,23 @@ digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
     return vstDigitamas;
 }
 
-void DIGI_saveGame() {
-    DIGIHW_saveDigimon(gszSaveFile, &stPlayingDigimon);
+uint8_t DIGI_readGame(playing_digimon_t* pstPlayingDigimon) {
+    if (gstHal.readData == NULL)
+        return DIGI_RET_ERROR;
+
+    // TODO: TLV
+    int32_t iRet =
+        gstHal.readData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
+    return iRet == sizeof(playing_digimon_t) ? DIGI_RET_OK : DIGI_RET_ERROR;
+}
+
+void DIGI_saveGame(const playing_digimon_t* pstPlayingDigimon) {
+    if (gstHal.saveData == NULL)
+        return;
+    // TODO: TLV
+    int32_t iRet =
+        gstHal.saveData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
+    if (iRet != sizeof(playing_digimon_t)) {
+        LOG("Error saving game");
+    }
 }

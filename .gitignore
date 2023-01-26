@@ -22,4 +22,5 @@ import-digimon.csv
 .vscode/
 *ninja*
 .cmake
-digitest*
+digitest
+save.data

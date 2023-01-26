@@ -1,7 +1,7 @@
 #ifndef DIGIMON_H
 #define DIGIMON_H
 
-#include <stdint.h>
+#include "digitype.h"
 
 // Stats
 #define MASK_HUNGER      0b00001111
@@ -48,15 +48,15 @@
 #define MAX_POSSIBLE_EVOLUTIONS 10
 
 #ifndef TIME_TO_GET_HUNGRY
-#define TIME_TO_GET_HUNGRY 5
+#define TIME_TO_GET_HUNGRY 10
 #endif
 
 #ifndef TIME_TO_GET_WEAKER
-#define TIME_TO_GET_WEAKER 10
+#define TIME_TO_GET_WEAKER 15
 #endif
 
 #ifndef TIME_TO_POOP
-#define TIME_TO_POOP 15
+#define TIME_TO_POOP 30
 #endif
 
 #ifndef TIME_TO_GET_CARE_MISTAKE
@@ -116,38 +116,44 @@ typedef struct {
     uint16_t uiTimeSinceSleepDisturbance;
 } playing_digimon_t;
 
-uint8_t DIGI_evolveDigimon();
+uint8_t DIGI_evolveDigimon(playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_shouldEvolve();
+uint8_t DIGI_shouldEvolve(const playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_feedDigimon(int16_t uiAmount);
+uint8_t DIGI_feedDigimon(playing_digimon_t* pstPlayingDigimon,
+                         int16_t uiAmount);
 
-uint8_t DIGI_stregthenDigimon(int16_t uiAmount, int8_t iWeightChange);
+uint8_t DIGI_stregthenDigimon(playing_digimon_t* pstPlayingDigimon,
+                              int16_t uiAmount, int8_t iWeightChange);
 
-uint8_t DIGI_trainDigimon(uint8_t uiAmount);
+uint8_t DIGI_trainDigimon(playing_digimon_t* pstPlayingDigimon,
+                          uint8_t uiAmount);
 
-uint8_t DIGI_healDigimon(uint8_t uiType);
+uint8_t DIGI_healDigimon(playing_digimon_t* pstPlayingDigimon, uint8_t uiType);
 
-uint8_t DIGI_putSleep(uint8_t uiSleepMode);
+uint8_t DIGI_putSleep(playing_digimon_t* pstPlayingDigimon,
+                      uint8_t uiSleepMode);
 
-uint8_t DIGI_shouldSleep();
+uint8_t DIGI_shouldSleep(const playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_shouldWakeUp();
+uint8_t DIGI_shouldWakeUp(const playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_proccesCalling(uint8_t uiTimePassed);
+uint8_t DIGI_proccesCalling(playing_digimon_t* pstPlayingDigimon,
+                            uint8_t uiTimePassed);
 
-uint8_t DIGI_setCalled();
+uint8_t DIGI_setCalled(playing_digimon_t* pstPlayingDigimon);
 
-void DIGI_addCareMistakes();
+void DIGI_addCareMistakes(playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_poop(uint8_t uiAmount);
+uint8_t DIGI_poop(playing_digimon_t* pstPlayingDigimon, uint8_t uiAmount);
 
-void DIGI_cleanPoop();
+void DIGI_cleanPoop(playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_shouldBeKilledOff();
+uint8_t DIGI_shouldBeKilledOff(const playing_digimon_t* pstPlayingDigimon);
 
-uint16_t DIGI_timeToGetHungry();
+uint16_t DIGI_timeToGetHungry(const playing_digimon_t* pstPlayingDigimon);
 
-uint8_t DIGI_updateSleepDisturbance(uint16_t uiDeltaTime);
+uint8_t DIGI_updateSleepDisturbance(playing_digimon_t* pstPlayingDigimon,
+                                    uint16_t uiDeltaTime);
 
 #endif  // DIGIMON_H
