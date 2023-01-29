@@ -17,10 +17,13 @@ libdigilib.dll.a
 libdigivice.dll.a
 *.save*
 include/digiworld.h
+include/digivice/sprites.h
 source/digiworld.c
+source/digivice/sprites.c
 import-digimon.csv
 .vscode/
 *ninja*
 .cmake
 digitest
 save.data
+build/
