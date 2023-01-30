@@ -1,118 +1,76 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
-#include "include/digiapi.h"
-#include "include/digihal.h"
-#include "include/digitype.h"
-#include "include/enums.h"
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
 
-#ifdef __linux__
-#include <unistd.h>
-#define sleep(x) usleep(x * 1000)
-#elif _WIN32
-#include <windows.h>
-#define sleep(x) Sleep(sleepMs)
-#endif
+SDL_Texture* loadTexture(const char* path) {
+    // SDL_Surface* surface = IMG_Lo
+    SDL_Surface* surface = IMG_Load(path);
+    if (surface == NULL) {
+        SDL_Log("Error loading %s -> %s", path, IMG_GetError());
+        return NULL;
+    }
 
-size_t getRandom() {
-    srand(time(NULL));
-    return rand() % 16;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    if (texture == NULL) {
+        SDL_Log("Erro criando textura %s -> %s", path, SDL_GetError());
+        return NULL;
+    }
+
+    return texture;
 }
-
-size_t getTime() {
-    return time(NULL);
-}
-
-void* alloc(size_t i) {
-    return malloc(i);
-}
-
-int32_t save(const void* data, size_t size) {
-    FILE* file = fopen("save.data", "wb");
-    if (file == NULL)
-        return 0;
-
-    int32_t ret = fwrite(data, 1, size, file);
-    fclose(file);
-    return ret;
-}
-
-int32_t load(void* data, size_t size) {
-    FILE* file = fopen("save.data", "rb");
-    if (file == NULL)
-        return 0;
-
-    int32_t ret = fread(data, 1, size, file);
-    fclose(file);
-    return ret;
-}
-
-digihal_t hal = {
-    .malloc = alloc,
-    .free = free,
-    .log = printf,
-    .randomNumber = getRandom,
-    .getTimeStamp = getTime,
-    .readData = load,
-    .saveData = save,
-};
 
 int main() {
-    uint8_t events, ret;
-    playing_digimon_t* player;
-    // Init HAL
-    ret = DIGI_init(hal, &player);
-    if (player == NULL) {
-        fprintf(stderr, "Error Initializing");
+
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         return 1;
     }
 
-    // Select first digitama by default
-    if (ret == 11 && DIGI_selectDigitama(player, 0) != 0) {
-        fprintf(stderr, "Not possible to select digitama");
+    window = SDL_CreateWindow("Digivice", SDL_WINDOWPOS_CENTERED,
+                              SDL_WINDOWPOS_CENTERED, 640, 480, 0);
+    if (window == NULL) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error init",
+                                 SDL_GetError(), NULL);
         return 1;
     }
 
-    while (1) {
-        system("clear");
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    if (renderer == NULL) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error init",
+                                 SDL_GetError(), window);
+        SDL_DestroyWindow(window);
+        return 1;
+    }
 
-        DIGI_updateEventsDeltaTime(player, 1, &events);
-        printf("Events %d\n", events);
-        printf("F) Food\n");
-        printf("V) Vitamin\n");
-        printf("C) Clean\n");
-        printf("H) Heal\n");
-        printf("S) Sleep\n");
+    SDL_Texture* background = loadTexture("resource/background.png");
+    if (background == NULL) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error init",
+                                 "Error loading background", window);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        return 1;
+    }
 
-        char op;
-        scanf("%c", &op);
-        switch (op) {
-            case 'F':
-            case 'f':
-                ret = DIGI_feedDigimon(player, 1);
-                break;
-            case 'V':
-            case 'v':
-                ret = DIGI_stregthenDigimon(player, 1, 4);
-                break;
-            case 'C':
-            case 'c':
-                DIGI_cleanPoop(player);
-                break;
-            case 'H':
-            case 'h':
-                ret = DIGI_healDigimon(player, MASK_SICK | MASK_INJURIED);
-                break;
-            case 'S':
-            case 's':
-                ret = DIGI_putSleep(player, 1);
-            default:
-                printf("Invalid\n");
-                break;
+    int run = 1;
+    while (run) {
+        SDL_Event e;
+        while (SDL_PollEvent(&e)) {
+            switch (e.type) {
+                case SDL_QUIT:
+                    run = 0;
+                    break;
+            }
         }
-        printf("Result %d\n", ret);
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, background, NULL, NULL);
+        SDL_RenderPresent(renderer);
     }
 
+    SDL_DestroyTexture(background);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
     return 0;
 }

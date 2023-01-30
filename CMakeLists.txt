@@ -9,6 +9,7 @@ if ( MSVC )
 endif()
 
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/toolchain/sdl2)
 
 set(PLATFORM "pc" CACHE STRING "Which platform to build")
 set_property(CACHE PLATFORM PROPERTY STRINGS "pc")
@@ -62,16 +63,23 @@ target_compile_definitions(digilib PUBLIC TIME_TO_POOP=${TIME_TO_POOP})
 target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET_CARE_MISTAKE})
 
 # TODO: change when making logic of vpet
-add_custom_command(
-    OUTPUT include/digivice/sprites.h source/digivice/sprites.c
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
-    DEPENDS import-digimon.csv
-)
-add_executable(digitest digitest.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c)
-target_link_libraries(digitest digilib)
-target_include_directories(
-    digitest 
-    PRIVATE include
-    PRIVATE ${PROJECT_BINARY_DIR}/include
-    PRIVATE ${PROJECT_BINARY_DIR}/include/digivice
-)
+if (${BUILD_DIGIVICE})
+    # Get SDL2 include dir
+    find_package(SDL2 REQUIRED)
+    find_package(SDL2_image REQUIRED)
+
+    add_custom_command(
+        OUTPUT include/digivice/sprites.h source/digivice/sprites.c
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
+        DEPENDS import-digimon.csv
+    )
+    add_executable(digitest digitest.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c)
+    target_link_libraries(digitest digilib SDL2::Main SDL2::Image)
+    target_include_directories(
+        digitest 
+        PRIVATE include
+        PRIVATE ${PROJECT_BINARY_DIR}/include
+        PRIVATE ${PROJECT_BINARY_DIR}/include/digivice
+        PRIVATE ${SDL2_INCLUDE_DIR}
+    )
+endif()
