@@ -1,4 +1,5 @@
 from sys import argv
+from os import makedirs
 
 fileName = argv[1]
 folderOut = argv[2]
@@ -30,6 +31,14 @@ PROGRESSION_OVERFEED = 0b00000100
 PROGRESSION_WIN_COUNT = 0b00001000
 PROGRESSION_SLEEP_DISTURBANCE = 0b00010000
 
+def createDirAndOpenFile(path: str, mode: str = "w"):
+    if path.find("/") != -1:
+        try:
+            makedirs("/".join(path.split("/")[:-1]))
+        except FileExistsError:
+            pass
+        
+    return open(path, mode)
 
 def getMin(value):
     return value >> 8
@@ -131,7 +140,7 @@ if __name__ == "__main__":
                 digimon.evolutionRequirements.append(
                     len(evolutionsRequirements) - 1)
 
-    with open(FILE_OUTPUT, "w") as outFile:
+    with createDirAndOpenFile(FILE_OUTPUT) as outFile:
         print("#ifndef DIGIWORLD_H\n#define DIGIWORLD_H\n", file=outFile)
         print("#include \"digimon.h\"", file=outFile)
 
@@ -147,7 +156,7 @@ if __name__ == "__main__":
 
         print("#endif\n", file=outFile)
 
-    with open(FILE_OUTPUT_SOURCE, "w") as outFile:
+    with createDirAndOpenFile(FILE_OUTPUT_SOURCE) as outFile:
         print("#include \"digiworld.h\"", file=outFile)
         print("#include \"digimon.h\"", file=outFile)
         print("#include \"enums.h\"\n", file=outFile)

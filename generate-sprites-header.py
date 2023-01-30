@@ -1,6 +1,7 @@
 from sys import argv, exit
 from PIL import Image
 from typing import Tuple, List
+from os import makedirs
 
 dataBase = argv[1]
 folderOut = argv[2]
@@ -44,6 +45,15 @@ ANIMATION_SICK_END     = 15
 
 MASK_INVERTED     = 0b1000000000000000
 MASK_INDEX_SPRITE = 0b0111111111111111
+
+def createDirAndOpenFile(path: str, mode: str = "w"):
+    if path.find("/") != -1:
+        try:
+            makedirs("/".join(path.split("/")[:-1]))
+        except FileExistsError:
+            pass
+
+    return open(path, mode)
 
 
 def reverseBits(bits: int) -> int:
@@ -229,7 +239,7 @@ def main():
 
         print("Finished reading images")
 
-    with open(FILE_OUTPUT_HEADER, "w") as outHeader:
+    with createDirAndOpenFile(FILE_OUTPUT_HEADER) as outHeader:
         print("#ifndef SPRITES_H", file=outHeader)
         print("#define SPRITES_H\n", file=outHeader)
 
@@ -252,8 +262,7 @@ def main():
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
-    
-    with open(FILE_OUTPUT_SOURCE, "w") as outSource:
+    with createDirAndOpenFile(FILE_OUTPUT_SOURCE) as outSource:
         print("#include \"sprites.h\"\n", file=outSource)
 
         print("const uint8_t guiTileDatabase[COUNT_TILES] = {", file=outSource)
