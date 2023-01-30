@@ -4,6 +4,7 @@ from typing import Tuple, List
 
 dataBase = argv[1]
 folderOut = argv[2]
+resourceFolder = argv[3]
 FILE_OUTPUT_HEADER = f"{folderOut}/include/digivice/sprites.h"
 FILE_OUTPUT_SOURCE = f"{folderOut}/source/digivice/sprites.c"
 
@@ -199,7 +200,7 @@ def getVariablesAndDeclarations(digimonSprites: List[List[int] | int], digimonNa
         variableName = f"guiSpriteTileIndex{getDigimonNameAsVariable(digimonName)}{count}"
         declaration = f"const uint16_t {variableName}[] = {{{currentVariableContent}}};"
         
-        variables.append(f"&{variableName}")
+        variables.append(f"{variableName}")
         declarations.append(declaration)
         
         count += 1
@@ -221,7 +222,7 @@ def main():
             digimonName = line.split(";")[0].lower()
             
             print(digimonName)
-            digimonTiles, digimonIndices = parseImage(f"resource/{digimonName}.gif")
+            digimonTiles, digimonIndices = parseImage(f"{resourceFolder}/{digimonName}.gif")
             addTilesWithoutDuplicatesGlobal(digimonTiles, digimonIndices, tileDatabase, indiceDatabase)
             spriteDataBase[digimonName] = removeDuplicateIndices(digimonIndices)
             print("Done")
@@ -234,6 +235,9 @@ def main():
 
         print("#include \"digitype.h\"", file=outHeader)
         print("#include \"digiworld.h\"\n", file=outHeader)
+
+        print("#define GET_INDEX_TILE(x)   (x & 0b0111111111111111)", file=outHeader)
+        print("#define IS_TILE_INVERTED(x) ((x & 0b1000000000000000) != 0)\n", file=outHeader)
 
         print(f"#define COUNT_TILES {getCountTile(tileDatabase)}", file=outHeader)
         print(f"#define MAX_COUNT_ANIMATIONS             5", file=outHeader)

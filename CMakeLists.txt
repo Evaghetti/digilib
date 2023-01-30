@@ -64,9 +64,14 @@ target_compile_definitions(digilib PUBLIC TIME_TO_GET_CARE_MISTAKE=${TIME_TO_GET
 # TODO: change when making logic of vpet
 add_custom_command(
     OUTPUT include/digivice/sprites.h source/digivice/sprites.c
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR}
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
     DEPENDS import-digimon.csv
 )
-add_executable(digitest digitest.c)
+add_executable(digitest digitest.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c)
 target_link_libraries(digitest digilib)
-target_include_directories(digitest PRIVATE include include/digivice)
+target_include_directories(
+    digitest 
+    PRIVATE include
+    PRIVATE ${PROJECT_BINARY_DIR}/include
+    PRIVATE ${PROJECT_BINARY_DIR}/include/digivice
+)
