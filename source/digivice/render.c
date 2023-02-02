@@ -29,7 +29,7 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
             if (j < 0)
                 continue;
 
-            stDigiviceHal.setLCDStatus(j, i, uiIsSet);
+            gpstDigiviceHal->setLCDStatus(j, i, uiIsSet);
         }
     }
 }

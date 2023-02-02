@@ -1,6 +1,10 @@
 #ifndef DIGITYPE_H
 #define DIGITYPE_H
 
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
+
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;

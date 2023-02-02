@@ -8,15 +8,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define FPS  30
+#define FREQ 1000000
+
 uint32_t guiCurrentTime;
 
-int DIGI_init(digihal_t stConfig, playing_digimon_t** pstPlayingDigimon) {
-    if (DIGI_setHal(stConfig) != DIGI_RET_OK) {
+int DIGI_init(const digihal_t* pstConfig, playing_digimon_t** pstPlayingDigimon) {
+    if (DIGI_setHal(pstConfig) != DIGI_RET_OK) {
         LOG("Incorrect hal provided");
         return DIGI_RET_ERROR;
     }
 
-    *pstPlayingDigimon = gstHal.malloc(sizeof(playing_digimon_t));
+    *pstPlayingDigimon = gpstHal->malloc(sizeof(playing_digimon_t));
     if (pstPlayingDigimon == NULL) {
         LOG("Error allocating digimon");
         return DIGI_RET_ERROR;
@@ -188,21 +191,21 @@ digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
 }
 
 uint8_t DIGI_readGame(playing_digimon_t* pstPlayingDigimon) {
-    if (gstHal.readData == NULL)
+    if (gpstHal->readData == NULL)
         return DIGI_RET_ERROR;
 
     // TODO: TLV
-    int32_t iRet =
-        gstHal.readData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
+    size_t iRet =
+        gpstHal->readData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
     return iRet == sizeof(playing_digimon_t) ? DIGI_RET_OK : DIGI_RET_ERROR;
 }
 
 void DIGI_saveGame(const playing_digimon_t* pstPlayingDigimon) {
-    if (gstHal.saveData == NULL)
+    if (gpstHal->saveData == NULL)
         return;
     // TODO: TLV
-    int32_t iRet =
-        gstHal.saveData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
+    size_t iRet =
+        gpstHal->saveData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
     if (iRet != sizeof(playing_digimon_t)) {
         LOG("Error saving game");
     }

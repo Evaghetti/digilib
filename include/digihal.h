@@ -7,8 +7,8 @@
 #ifndef NDEBUG
 
 #define LOG(x, ...)                        \
-    if (gstHal.log) {                      \
-        gstHal.log(x "\n", ##__VA_ARGS__); \
+    if (gpstHal && gpstHal->log) {                      \
+        gpstHal->log(x "\n", ##__VA_ARGS__); \
     }
 
 #else
@@ -22,14 +22,13 @@ typedef struct digihal_t {
     void (*free)(void* pBuff);
     int32_t (*log)(const char* buff, ...);
 
-    size_t (*getTimeStamp)();
-    int32_t (*saveData)(const void* pData, size_t size);
-    int32_t (*readData)(void* pData, size_t size);
-    size_t (*randomNumber)();
+    size_t (*saveData)(const void* pData, size_t size);
+    size_t (*readData)(void* pData, size_t size);
+    uint8_t (*randomNumber)();
 } digihal_t;
 
-extern digihal_t gstHal;
+extern const digihal_t* gpstHal;
 
-uint8_t DIGI_setHal(digihal_t stHal);
+uint8_t DIGI_setHal(const digihal_t* pstConfig);
 
 #endif  // DIGIHAL_H

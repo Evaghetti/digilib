@@ -4,23 +4,20 @@
 
 #include <stdio.h>
 
-digihal_t gstHal;
+const digihal_t* gpstHal;
 
-uint8_t DIGI_setHal(digihal_t stConfig) {
+uint8_t DIGI_setHal(const digihal_t* pstConfig) {
     uint8_t iRet = DIGI_RET_OK;
 
-    if (stConfig.malloc == NULL)
+    if (pstConfig->malloc == NULL)
         iRet = DIGI_RET_ERROR;
-    else if (stConfig.free == NULL)
+    else if (pstConfig->free == NULL)
         iRet = DIGI_RET_ERROR;
-    else if (stConfig.randomNumber == NULL)
-        iRet = DIGI_RET_ERROR;
-
-    if (stConfig.getTimeStamp == NULL)
+    else if (pstConfig->randomNumber == NULL)
         iRet = DIGI_RET_ERROR;
 
     if (iRet == DIGI_RET_OK) {
-        gstHal = stConfig;
+        gpstHal = pstConfig;
     }
     return iRet;
 }

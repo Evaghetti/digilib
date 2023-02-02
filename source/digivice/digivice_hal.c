@@ -1,3 +1,3 @@
 #include "digivice_hal.h"
 
-digivice_hal_t stDigiviceHal;
+const digivice_hal_t* gpstDigiviceHal;

@@ -1,9 +1,14 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <time.h>
 
+#include "digivice.h"
 #include "digivice_hal.h"
-#include "render.h"
-#include "sprites.h"
+#include "digihal.h"
+#include "digitype.h"
 
 #define PIXEL_SIZE 20
 #define PIXEL_STRIDE 0.9f
@@ -46,8 +51,6 @@ void renderWindow() {
                              .h = PIXEL_SIZE * PIXEL_STRIDE};
             uint8_t pixelStatus = screen[i][j] ? 255 : 20;
 
-            SDL_Log("%d %d %d %d", rect.x, rect.y, rect.w, rect.h);
-
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, pixelStatus);
             SDL_RenderFillRect(renderer, &rect);
         }
@@ -62,10 +65,66 @@ void setLCDStatus(uint8_t x, uint8_t y, uint8_t uiStatus) {
     screen[y][x] = uiStatus;
 }
 
+int logLine(const char* fmt, ...) {
+    char line[500];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(line, sizeof(line), fmt, args);
+    va_end(args);
+
+    SDL_Log("[DIGILIB] %s", line);
+    return 0;
+}
+
+size_t readGame(void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save.data", "rb");
+    if (file == NULL) {
+        logLine("Erro lendo arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWread(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
+size_t saveGame(const void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save.data", "wb");
+    if (file == NULL) {
+        logLine("Erro criando arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWwrite(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
+uint8_t getRandomNumber() {
+    srand(time(NULL));
+    return rand() % 16;
+}
+
 int main() {
 
-    stDigiviceHal.render = renderWindow;
-    stDigiviceHal.setLCDStatus = setLCDStatus;
+    digivice_hal_t stDigiviceHal = {
+        .render = renderWindow,
+        .setLCDStatus = setLCDStatus,
+        .getTimeStamp = SDL_GetTicks64, // teste
+    };
+
+    digihal_t stHal = {
+        .malloc = SDL_malloc, 
+        .free = SDL_free, 
+        .log = logLine, 
+        .readData = readGame,
+        .saveData = saveGame,
+        .randomNumber = getRandomNumber,
+    };
+
+    if (DIGIVICE_init(&stHal, &stDigiviceHal, SDL_GetPerformanceFrequency()) != 0) {
+        return 1;
+    }
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         return 1;
@@ -108,8 +167,7 @@ int main() {
             }
         }
 
-        DIGIVICE_drawSprite(guiDigimonWalkingAnimationDatabase[2][0], 8, 0, 0);
-        stDigiviceHal.render();
+        DIGIVICE_update();
     }
 
     SDL_DestroyTexture(background);

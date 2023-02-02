@@ -4,7 +4,7 @@
 #include "digihal.h"
 #include "digimon.h"
 
-int DIGI_init(digihal_t stConfig, playing_digimon_t** pstPlayingDigimon);
+int DIGI_init(const digihal_t* pstConfig, playing_digimon_t** pstPlayingDigimon);
 
 uint8_t DIGI_initDigimon(playing_digimon_t* pstPlayingDigimon);
 

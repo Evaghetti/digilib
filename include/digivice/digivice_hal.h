@@ -6,8 +6,9 @@
 typedef struct digivice_hal_t {
     void (*setLCDStatus)(uint8_t x, uint8_t y, uint8_t uiStatus);
     void (*render)();
+    size_t (*getTimeStamp)();
 } digivice_hal_t;
 
-extern digivice_hal_t stDigiviceHal;
+extern const digivice_hal_t* gpstDigiviceHal;
 
 #endif // DIGIVICE_HAL_H

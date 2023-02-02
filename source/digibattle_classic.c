@@ -46,7 +46,7 @@ uint16_t DIGIBATTLE_createSecondPacket(
 }
 
 uint8_t DIGIBATTLE_getBattleResult(uint8_t uiMySlot, uint8_t uiEnemySlot) {
-    uint8_t uiDiceRoll = gstHal.randomNumber();
+    uint8_t uiDiceRoll = gpstHal->randomNumber();
 
     uiMySlot -= 3;
     uiEnemySlot -= 3;

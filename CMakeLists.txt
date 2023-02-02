@@ -73,7 +73,7 @@ if (${BUILD_DIGIVICE})
         COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
         DEPENDS import-digimon.csv
     )
-    add_executable(digitest digitest.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c)
+    add_executable(digitest digitest.c source/digivice/digivice.c source/digivice/animation.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c)
     target_link_libraries(digitest digilib SDL2::Main SDL2::Image)
     target_include_directories(
         digitest 
