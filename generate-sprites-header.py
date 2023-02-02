@@ -226,7 +226,6 @@ def main():
     tileDatabase, indiceDatabase = [], []
     with open(dataBase, "r") as file:
         next(file) # first line is just a comment
-        next(file) # first line is just a comment
 
         for line in file:
             digimonName = line.split(";")[0].lower()
@@ -277,8 +276,10 @@ def main():
 
         print("\nconst uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION] = {", file=outSource)
         for i, digimonName in enumerate(spriteDataBase.keys()):
+            if len(spriteDataBase[digimonName]) <= 3:
+                continue
+
             print("{", file=outSource) # Digimon
-            
             writeAnimation(animationDatabase[i], ANIMATION_SLEEP_BEGIN, ANIMATION_SLEEP_END, outSource)
             writeAnimation(animationDatabase[i], ANIMATION_HAPPY_BEGIN, ANIMATION_HAPPY_END, outSource)
             writeAnimation(animationDatabase[i], ANIMATION_ANGRY_BEGIN, ANIMATION_ANGRY_END, outSource)
@@ -295,6 +296,9 @@ def main():
 
         print("\nconst uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION] = {", file=outSource)
         for i, digimonName in enumerate(spriteDataBase.keys()):
+            if len(spriteDataBase[digimonName]) <= 3:
+                continue
+
             print("{", end="", file=outSource)
             print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], animationDatabase[i][ANIMATION_SICK_BEGIN], sep=",", end="", file=outSource)            
             print("},", end="\n", file=outSource)
