@@ -34,19 +34,22 @@ uint8_t DIGIVICE_init(const digihal_t* pstHal,
     return uiRet;
 }
 
-uint8_t DIGIVICE_update() {
+static uint32_t getDeltaTime() {
     static size_t uiLastTime = 0;
     size_t uiCurrentTime = gpstDigiviceHal->getTimeStamp();
-    static uint32_t uiTimePassed = 0;
-
     if (uiLastTime == 0)
         uiLastTime = uiCurrentTime;
     uint32_t uiDeltaTime = uiCurrentTime - uiLastTime;
-    // LOG("Deltatime: %ld A: %ld B: %ld", uiDeltaTime, uiLastTime, uiCurrentTime);
     uiLastTime = uiCurrentTime;
+    return uiDeltaTime;
+}
 
+uint8_t DIGIVICE_update() {
+    static uint32_t uiTimePassed = 0;
+
+    uint32_t uiDeltaTime = getDeltaTime();
     uint8_t uiRet = DIGI_RET_OK, uiEvents;
-
+    
     uiTimePassed += uiDeltaTime;
     if (uiTimePassed >= ONE_MINUTE) {
         uiRet = DIGI_updateEventsDeltaTime(gpstPlayingDigimon, 1, &uiEvents);
