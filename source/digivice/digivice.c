@@ -3,34 +3,35 @@
 #include "digiapi.h"
 #include "enums.h"
 
-#include "animation.h"
 #include "render.h"
-#include "sprites.h"
+#include "player.h"
 
 #define ONE_MINUTE 60000
 
-static playing_digimon_t* gpstPlayingDigimon;
+static player_t stPlayer;
 
 static size_t guiFrequency;
-
-animation_t animation;
 
 uint8_t DIGIVICE_init(const digihal_t* pstHal,
                       const digivice_hal_t* pstDigiviceHal,
                       size_t uiFrequency) {
-    uint8_t uiRet = DIGI_init(pstHal, &gpstPlayingDigimon);
+    uint8_t uiRet = DIGI_init(pstHal, &stPlayer.pstPet);
     if (uiRet == DIGI_RET_CHOOSE_DIGITAMA)
-        uiRet = DIGI_selectDigitama(gpstPlayingDigimon, 0);
-    
-    if (uiRet)
+        uiRet = DIGI_selectDigitama(stPlayer.pstPet, 0);
+
+    if (uiRet) {
+        LOG("Error initializing digilib -> %d", uiRet);
         return uiRet;
+    }
+
+    uiRet = DIGIVICE_initPlayer(&stPlayer);
+    if (uiRet) {
+        LOG("Error initializing player -> %d", uiRet);
+        return uiRet;
+    }
 
     gpstDigiviceHal = pstDigiviceHal;
     guiFrequency = uiFrequency;
-    animation.puiCurrentAnimation =
-        guiDigimonWalkingAnimationDatabase[gpstPlayingDigimon
-                                               ->uiIndexCurrentDigimon];
-    animation.uiMaxFrameCount = 2;
     return uiRet;
 }
 
@@ -52,15 +53,12 @@ uint8_t DIGIVICE_update() {
     
     uiTimePassed += uiDeltaTime;
     if (uiTimePassed >= ONE_MINUTE) {
-        uiRet = DIGI_updateEventsDeltaTime(gpstPlayingDigimon, 1, &uiEvents);
+        DIGI_updateEventsDeltaTime(stPlayer.pstPet, 1, &uiEvents);
         uiTimePassed = 0;
     }
 
-    DIGIVICE_updateAnimation(&animation, uiDeltaTime);
-
-    DIGIVICE_drawSprite(DIGIVICE_getCurrentSpriteAnimation(&animation), 8, 0,
-                        0);
-
+    DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
+    DIGIVICE_renderPlayer(&stPlayer);
     gpstDigiviceHal->render();
     return uiRet;
 }

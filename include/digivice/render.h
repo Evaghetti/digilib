@@ -3,6 +3,12 @@
 
 #include "digitype.h"
 
+#define LCD_SCREEN_WIDTH  32
+#define LCD_SCREEN_HEIGHT 16
+
+#define TILE_WIDTH  8
+#define TILE_HEIGHT 8
+
 void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
                        const uint8_t uiInverted);
 
