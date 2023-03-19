@@ -43,7 +43,10 @@ static uint8_t uiLineEvolutionCount = 0;
 int DIGIVICE_initPlayer(player_t* pstPlayer) {
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;
     pstPlayer->uiIndexBeforeEvolve = pstPlayer->pstPet->uiIndexCurrentDigimon;
-    DIGIVICE_changeStatePlayer(pstPlayer, WAITING_HATCH);
+    if (pstPlayer->pstPet->pstCurrentDigimon->uiStage > DIGI_STAGE_EGG)
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+    else
+        DIGIVICE_changeStatePlayer(pstPlayer, WAITING_HATCH);
     return DIGI_RET_OK;
 }
 
@@ -217,6 +220,9 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState
             case HATCHING:
                 pstPlayer->uiCurrentStep = STEP_TIME_HATCHING;
                 pstPlayer->uiCurrentFrame = 0x00;
+                break;
+            case WALKING:
+                prepareForWalking(pstPlayer);
                 break;
             default:
                 DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
