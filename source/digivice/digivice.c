@@ -6,8 +6,6 @@
 #include "render.h"
 #include "player.h"
 
-#define ONE_MINUTE 60000
-
 static player_t stPlayer;
 
 static size_t guiFrequency;
@@ -46,19 +44,9 @@ static uint32_t getDeltaTime() {
 }
 
 uint8_t DIGIVICE_update() {
-    static uint32_t uiTimePassed = 0;
-
     uint32_t uiDeltaTime = getDeltaTime();
-    uint8_t uiRet = DIGI_RET_OK, uiEvents;
-    
-    uiTimePassed += uiDeltaTime;
-    if (uiTimePassed >= ONE_MINUTE) {
-        DIGI_updateEventsDeltaTime(stPlayer.pstPet, 1, &uiEvents);
-        uiTimePassed = 0;
-    }
-
     DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
     DIGIVICE_renderPlayer(&stPlayer);
     gpstDigiviceHal->render();
-    return uiRet;
+    return DIGI_RET_OK;
 }
