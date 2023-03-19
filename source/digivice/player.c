@@ -1,6 +1,7 @@
 #include "player.h"
 
 #include "enums.h"
+#include "digivice.h"
 
 #include "digiapi.h"
 #include "digihal.h"
@@ -9,15 +10,22 @@
 
 #define STEP_TIME_WALKING                   500
 #define STEP_TIME_HATCHING                  75
+#define STEP_TIME_EVOLVING                  75
 #define ONE_MINUTE                          60000
 
 #define FRAME_TO_HATCH_FROM_EGG             50
 #define FRAME_TO_CHANGE_FROM_HATCH_TO_WALK (FRAME_TO_HATCH_FROM_EGG + 15)
 
+#define FRAME_TO_START_SMILE_EVOLUTION          15
+#define FRAME_TO_START_COUNTING_LINES_EVOLUTION FRAME_TO_START_SMILE_EVOLUTION + 15
+#define FRAME_TO_STOP_EVOLUTION                 100
+
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
 #define DEFAULT_ERROR_CHANGING_STATE(x) LOG("Swapping from state %d to %d is not permitted",x->eState, eNewState); return DIGI_RET_ERROR
 #define INSIDE_OF_DIGITAMA(x) \
     (x->uiCurrentFrame < FRAME_TO_HATCH_FROM_EGG || x->uiPosition != LCD_CENTER_SPRITE)
+#define SHOULD_BE_SMILING(x) \
+    (x->uiCurrentFrame >= FRAME_TO_START_SMILE_EVOLUTION)
 
 static const int8_t uiWalkCycleMove[] = {
     -2, -2, 0, 2, 0,  -2, -2, 2, -2, -2, 2,  0, 0,  0,  2,  2,
@@ -28,6 +36,8 @@ static const uint8_t uiWalkCycleFlips[] = {0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0,
 static const uint8_t uiWalkCycleIndices[] = {0, 1, 1, 0, 0, 1, 1, 1, 1, 2, 1,
                                              2, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0,
                                              0, 1, 1, 2, 1, 2, 1, 1, 0, 0};
+
+static uint8_t uiLineEvolutionCount = 0;
 
 int DIGIVICE_initPlayer(player_t* pstPlayer) {
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;
@@ -63,6 +73,27 @@ static void updateWalking(player_t* pstPlayer) {
     pstPlayer->uiPosition += uiWalkCycleMove[pstPlayer->uiCurrentFrame];
 }
 
+static void updateEvolving(player_t* pstPlayer) {
+    pstPlayer->uiCurrentFrame++;
+
+    if (pstPlayer->uiCurrentFrame >= FRAME_TO_STOP_EVOLUTION) {
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+    }
+    else if (pstPlayer->uiCurrentFrame >= FRAME_TO_START_COUNTING_LINES_EVOLUTION) {
+        if (!pstPlayer->uiFlipped) {
+            uiLineEvolutionCount++;
+            if (uiLineEvolutionCount == 32) {
+                pstPlayer->uiFlipped = 1;
+                pstPlayer->uiIndexBeforeEvolve =
+                    pstPlayer->pstPet->uiIndexCurrentDigimon;
+            }
+        }
+        else if (uiLineEvolutionCount > 0) {
+            uiLineEvolutionCount--;
+        }
+    }
+}
+
 static void handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
     if (uiEvents & DIGI_EVENT_MASK_EVOLVE) {
         if (pstPlayer->pstPet->pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
@@ -87,6 +118,7 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
         }
 
         handleEvents(pstPlayer, uiEvents);
+        pstPlayer->uiDeltaTimeLib = 50000;
     }
 
     if (pstPlayer->uiDeltaTimeStep >= pstPlayer->uiCurrentStep) {
@@ -101,12 +133,32 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
             case WALKING:
                 updateWalking(pstPlayer);
                 break;
-
+            case EVOLVING:
+                updateEvolving(pstPlayer);
+                break;
             default:
                 break;
         }
     }
     return DIGI_RET_OK;
+}
+
+static void drawEvolutionLine(uint8_t uiCountLine) {
+    int8_t i, j;
+    for (i = 0; i < LCD_SCREEN_HEIGHT && i < uiCountLine; i++) {
+        for (j = !(i & 1); j < LCD_SCREEN_WIDTH; j += 2) {
+            gpstDigiviceHal->setLCDStatus(j, i, 1);
+        }
+    }
+
+    if (uiCountLine >= LCD_SCREEN_HEIGHT) {
+        uiCountLine = uiCountLine - LCD_SCREEN_HEIGHT;
+        for (i = LCD_SCREEN_HEIGHT - 1; i >= LCD_SCREEN_HEIGHT - uiCountLine; i--) {
+            for (j = (i & 1); j < LCD_SCREEN_WIDTH; j += 2) {
+                gpstDigiviceHal->setLCDStatus(j, i, 1);
+            }
+        }
+    }
 }
 
 void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
@@ -131,9 +183,24 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                       [pstPlayer->uiIndexBeforeEvolve][2];
         DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
     } break;
+    case EVOLVING: {
+        uint8_t uiCurrentFrame = SHOULD_BE_SMILING(pstPlayer) ? 1 : 0;
+        uint8_t uiIndexDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
+
+        DIGIVICE_drawSprite(
+            guiDigimonAnimationDatabase[uiIndexDigimon][1][uiCurrentFrame],
+            pstPlayer->uiPosition, 0, 0);
+        drawEvolutionLine(uiLineEvolutionCount);
+    } break;
     default:
         break;
     }
+}
+
+static void prepareForWalking(player_t* pstPlayer) {
+    pstPlayer->uiIndexBeforeEvolve = pstPlayer->pstPet->uiIndexCurrentDigimon;
+    pstPlayer->uiCurrentStep = STEP_TIME_WALKING;
+    pstPlayer->uiCurrentFrame = 0xFF;
 }
 
 uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState) {    
@@ -154,11 +221,29 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState
     case HATCHING:
         switch (eNewState) {
         case WALKING:
-            pstPlayer->uiIndexBeforeEvolve =
-                pstPlayer->pstPet->uiIndexCurrentDigimon;
-            pstPlayer->uiCurrentStep = STEP_TIME_WALKING;
-            pstPlayer->uiCurrentFrame = 0xFF;
+            prepareForWalking(pstPlayer);
             break;
+        default:
+            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+        }
+        break;
+    case WALKING:
+        switch (eNewState) {
+        case EVOLVING:
+            pstPlayer->uiCurrentStep = STEP_TIME_EVOLVING;
+            uiLineEvolutionCount = 0;
+            break;
+
+        default:
+            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+        }
+        break;
+    case EVOLVING:
+        switch (eNewState) {
+        case WALKING:
+            prepareForWalking(pstPlayer);
+            break;
+
         default:
             DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
         }
