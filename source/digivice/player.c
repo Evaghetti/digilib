@@ -1,6 +1,7 @@
 #include "player.h"
 
 #include "enums.h"
+#include "enums_digivice.h"
 #include "digivice.h"
 
 #include "digiapi.h"
@@ -94,31 +95,34 @@ static void updateEvolving(player_t* pstPlayer) {
     }
 }
 
-static void handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
+static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
     if (uiEvents & DIGI_EVENT_MASK_EVOLVE) {
         if (pstPlayer->pstPet->pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
             DIGIVICE_changeStatePlayer(pstPlayer, HATCHING);
         else
             DIGIVICE_changeStatePlayer(pstPlayer, EVOLVING);
     }
+
+    return uiEvents ? DIGIVICE_CHANGED_STATE : DIGIVICE_RET_OK;
 }
 
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
+    uint8_t uiRet = DIGI_RET_OK;
+
     pstPlayer->uiDeltaTimeLib += uiDeltaTime;
     pstPlayer->uiDeltaTimeStep += uiDeltaTime;
 
     if (pstPlayer->uiDeltaTimeLib >= ONE_MINUTE) {
         pstPlayer->uiDeltaTimeLib = 0;
 
-        uint8_t uiEvents,
-            uiRet = DIGI_updateEventsDeltaTime(pstPlayer->pstPet, 1, &uiEvents);
+        uint8_t uiEvents;
+        uiRet = DIGI_updateEventsDeltaTime(pstPlayer->pstPet, 1, &uiEvents);
         if (uiRet) {
             LOG("Error on update lib -> %d", uiRet);
             return uiRet;
         }
 
-        handleEvents(pstPlayer, uiEvents);
-        pstPlayer->uiDeltaTimeLib = 50000;
+        uiRet = handleEvents(pstPlayer, uiEvents);
     }
 
     if (pstPlayer->uiDeltaTimeStep >= pstPlayer->uiCurrentStep) {
@@ -140,7 +144,7 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 break;
         }
     }
-    return DIGI_RET_OK;
+    return uiRet;
 }
 
 static void drawEvolutionLine(uint8_t uiCountLine) {
