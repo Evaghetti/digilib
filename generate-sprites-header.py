@@ -152,19 +152,19 @@ def addTilesWithoutDuplicatesGlobal(inTiles: List[str], inIndiceDatabase: List[L
     for i in inIndiceDatabase:
         addTilesWithoutDuplicates(inTiles, i, outTiles, outIndices)
 
-def parseImage(pathImage: str) -> Tuple[List[str], List[str]]:
+def parseImage(pathImage: str, widthSprite: int, heightSprite: int) -> Tuple[List[str], List[str]]:
     image: Image.Image = Image.open(pathImage)
     
     width, height = image.size
 
     tileSheetImage, indicesSpriteImage = [], []
 
-    for y in range(0, height, HEIGHT_SPRITE):
-        for x in range(0, width, WIDTH_SPRITE):
-            sprite = image.crop((x, y, x + WIDTH_SPRITE, y + WIDTH_SPRITE))
+    for y in range(0, height, heightSprite):
+        for x in range(0, width, widthSprite):
+            sprite = image.crop((x, y, x + widthSprite, y + heightSprite))
             tiles, indices = getTilesIndicesSprite(sprite)
             addTilesWithoutDuplicates(tiles, indices, tileSheetImage, indicesSpriteImage)
-    if height > HEIGHT_SPRITE:
+    if height > heightSprite:
         indicesSpriteImage = indicesSpriteImage[:-1]
         indicesSpriteImage[-1] = [indicesSpriteImage[-1][0]]
     return tileSheetImage, indicesSpriteImage
@@ -231,12 +231,19 @@ def main():
             digimonName = line.split(";")[0].lower()
             
             print(digimonName)
-            digimonTiles, digimonIndices = parseImage(f"{resourceFolder}/{digimonName}.gif")
+            digimonTiles, digimonIndices = parseImage(f"{resourceFolder}/{digimonName}.gif", WIDTH_SPRITE, HEIGHT_SPRITE)
             addTilesWithoutDuplicatesGlobal(digimonTiles, digimonIndices, tileDatabase, indiceDatabase)
             spriteDataBase[digimonName] = removeDuplicateIndices(digimonIndices)
             print("Done")
 
-        print("Finished reading images")
+        print("Finished reading digimon images digimons")
+
+    tilesFeed, feedIndices = parseImage(f"{resourceFolder}/feed.gif", WIDTH_TILE, HEIGHT_TILE)
+    addTilesWithoutDuplicatesGlobal(tilesFeed, feedIndices, tileDatabase, indiceDatabase)
+    print("Finished reading digimon images feed")
+
+    print("Done")
+    
 
     with createDirAndOpenFile(FILE_OUTPUT_HEADER) as outHeader:
         print("#ifndef SPRITES_H", file=outHeader)
@@ -253,11 +260,15 @@ def main():
         print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 2", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION_WALKING     3", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION             2\n", file=outHeader)
+
+        print(f"#define MAX_COUNT_EATING_ANIMATIONS      2", file=outHeader)
+        print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
         
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION];", file=outHeader)
+        print(f"extern const uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -302,6 +313,16 @@ def main():
             print("{", end="", file=outSource)
             print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], animationDatabase[i][ANIMATION_SICK_BEGIN], sep=",", end="", file=outSource)            
             print("},", end="\n", file=outSource)
+        print("};", file=outSource)
+
+        # TODO: Organize this better
+        print("\nconst uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS] = {", file=outSource)
+        indicesFeedToWrite = getPointerToTileFromIndices(feedIndices[0:4])
+        indicesFeedToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesFeedToWrite]
+        print("{", ",".join(indicesFeedToWrite), "},", file=outSource)
+        indicesFeedToWrite = getPointerToTileFromIndices(feedIndices[4:8])
+        indicesFeedToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesFeedToWrite]
+        print("{", ",".join(indicesFeedToWrite), "}", file=outSource)
         print("};", file=outSource)
 
 if __name__ == "__main__":

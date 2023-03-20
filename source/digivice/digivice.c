@@ -48,6 +48,8 @@ static uint32_t getDeltaTime() {
     return uiDeltaTime;
 }
 
+
+
 uint8_t DIGIVICE_update() {
     uint32_t uiDeltaTime = getDeltaTime();
 
@@ -60,6 +62,18 @@ uint8_t DIGIVICE_update() {
 
             uiCurrentIcon = (uiCurrentIcon + 1) & 7;
             gpstDigiviceHal->setIconStatus(uiCurrentIcon, 1);
+        }
+        if (DIGIVICE_isButtonPressed(BUTTON_B)) {
+            switch (uiCurrentIcon)
+            {
+            case 1:
+                DIGIVICE_changeStatePlayer(&stPlayer, EATING);
+                DIGI_feedDigimon(stPlayer.pstPet, 1);
+                break;
+
+            default:
+                break;
+            }
         }
         break;
     

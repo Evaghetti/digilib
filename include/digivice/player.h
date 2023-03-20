@@ -8,6 +8,7 @@ typedef enum player_state_e {
     HATCHING,
     WALKING,
     EVOLVING,
+    EATING,
 } player_state_e;
 
 typedef struct player_t {

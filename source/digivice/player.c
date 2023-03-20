@@ -12,6 +12,7 @@
 #define STEP_TIME_WALKING                   500
 #define STEP_TIME_HATCHING                  75
 #define STEP_TIME_EVOLVING                  75
+#define STEP_TIME_EATING                    100
 #define ONE_MINUTE                          60000
 
 #define FRAME_TO_HATCH_FROM_EGG             50
@@ -38,7 +39,7 @@ static const uint8_t uiWalkCycleIndices[] = {0, 1, 1, 0, 0, 1, 1, 1, 1, 2, 1,
                                              2, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0,
                                              0, 1, 1, 2, 1, 2, 1, 1, 0, 0};
 
-static uint8_t uiLineEvolutionCount = 0;
+static uint8_t uiEffectFrame = 0;
 
 int DIGIVICE_initPlayer(player_t* pstPlayer) {
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;
@@ -85,16 +86,28 @@ static void updateEvolving(player_t* pstPlayer) {
     }
     else if (pstPlayer->uiCurrentFrame >= FRAME_TO_START_COUNTING_LINES_EVOLUTION) {
         if (!pstPlayer->uiFlipped) {
-            uiLineEvolutionCount++;
-            if (uiLineEvolutionCount == 32) {
+            uiEffectFrame++;
+            if (uiEffectFrame == 32) {
                 pstPlayer->uiFlipped = 1;
                 pstPlayer->uiIndexBeforeEvolve =
                     pstPlayer->pstPet->uiIndexCurrentDigimon;
             }
         }
-        else if (uiLineEvolutionCount > 0) {
-            uiLineEvolutionCount--;
+        else if (uiEffectFrame > 0) {
+            uiEffectFrame--;
         }
+    }
+}
+
+static void updateEating(player_t* pstPlayer) {
+    pstPlayer->uiCurrentFrame++;
+
+    if (pstPlayer->uiCurrentFrame == 10) {
+        uiEffectFrame++;
+        pstPlayer->uiCurrentFrame = 0;
+    }
+    else if (pstPlayer->uiCurrentFrame == 5 && uiEffectFrame == 3) {
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
     }
 }
 
@@ -142,6 +155,9 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 break;
             case EVOLVING:
                 updateEvolving(pstPlayer);
+                break;
+            case EATING:
+                updateEating(pstPlayer);
                 break;
             default:
                 break;
@@ -197,7 +213,21 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
         DIGIVICE_drawSprite(
             guiDigimonAnimationDatabase[uiIndexDigimon][1][uiCurrentFrame],
             pstPlayer->uiPosition, 0, 0);
-        drawEvolutionLine(uiLineEvolutionCount);
+        drawEvolutionLine(uiEffectFrame);
+    } break;
+    case EATING: {
+        const uint16_t uiIndexDigimon =
+            pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+        const uint16_t* const puiSprite =
+            pstPlayer->uiCurrentFrame < 5
+                ? guiDigimonAnimationDatabase[uiIndexDigimon][3][0]
+                : guiDigimonAnimationDatabase[uiIndexDigimon][3][1];
+        const uint8_t uiPositionItem =
+            pstPlayer->uiCurrentFrame < 5 && uiEffectFrame == 0 ? 0 : 8;
+
+        DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+        DIGIVICE_drawTile(guiFeedingAnimations[0][uiEffectFrame], 0,
+                          uiPositionItem, 0);
     } break;
     default:
         break;
@@ -241,15 +271,30 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState
         switch (eNewState) {
         case EVOLVING:
             pstPlayer->uiCurrentStep = STEP_TIME_EVOLVING;
-            uiLineEvolutionCount = 0;
+            uiEffectFrame = 0;
             break;
-
+        case EATING:
+            pstPlayer->uiCurrentStep = STEP_TIME_EATING;
+            pstPlayer->uiCurrentFrame = 0;
+            uiEffectFrame = 0;
+            break;
         default:
             DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
         }
         break;
     case EVOLVING:
         switch (eNewState) {
+        case WALKING:
+            prepareForWalking(pstPlayer);
+            break;
+
+        default:
+            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+        }
+        break;
+    case EATING:
+        switch (eNewState)
+        {
         case WALKING:
             prepareForWalking(pstPlayer);
             break;
