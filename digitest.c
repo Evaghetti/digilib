@@ -70,7 +70,7 @@ void renderWindow() {
     }
 
     for (i = 0; i < COUNT_ICONS / 2; i++) {
-        SDL_Rect clip = {.x = 16 * i, .y = 8, .w = 16, .h = 16};
+        SDL_Rect clip = {.x = 16 * i, .y = 0, .w = 16, .h = 16};
         SDL_Rect transform = {
             .x = (i * ICON_WIDTH) + (ICON_WIDTH * (ICON_STRIDE * .5f)),
             .y = ICON_HEIGHT * (ICON_STRIDE * .5f),
@@ -88,7 +88,7 @@ void renderWindow() {
     }
 
     for (; i < COUNT_ICONS; i++) {
-        SDL_Rect clip = {.x = 16 * i, .y = 8, .w = 16, .h = 16};
+        SDL_Rect clip = {.x = 16 * i, .y = 0, .w = 16, .h = 16};
         SDL_Rect transform = {.x = ((i - COUNT_ICONS / 2) * ICON_WIDTH) +
                                    (ICON_WIDTH * (ICON_STRIDE * .5f)),
                               .y = ICON_HEIGHT + MATRIX_HEIGHT +
