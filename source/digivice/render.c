@@ -50,3 +50,16 @@ void DIGIVICE_drawSprite(const uint16_t* const puiSprite, uint8_t x, uint8_t y,
                       xRight, y + 8,
                       IS_TILE_INVERTED((*(puiSprite + 3))) ^ uiInverted);
 }
+
+void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
+                       uint8_t uiInverted) {
+    while (*pszText != '\0') {
+        const uint16_t uiIndex = ((*pszText) - FIRST_CHARACTER) << 3;
+        DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiInverted);
+
+        pszText++;
+        x += 4;
+        if (x >= LCD_SCREEN_WIDTH)
+            break;
+    }
+}

@@ -11,6 +11,7 @@ FILE_OUTPUT_SOURCE = f"{folderOut}/source/digivice/sprites.c"
 
 WIDTH_TILE  = 8
 HEIGHT_TILE = 8
+WIDTH_FONT  = int(WIDTH_TILE / 2)
 
 WIDTH_SPRITE  = WIDTH_TILE * 2
 HEIGHT_SPRITE = HEIGHT_TILE * 2
@@ -76,17 +77,19 @@ def getBinaryValuesTile(tile: Image.Image) -> List[int]:
         lines.append(currentLine)
     return lines
 
-def getTilesIndicesSprite(sprite: Image.Image) -> Tuple[List[str], List[str]]:
+def getTilesIndicesSprite(sprite: Image.Image, isFont: bool) -> Tuple[List[str], List[str]]:
     sprite = sprite.convert("RGBA")
 
     width, height = sprite.size
+
+    stepWidth = WIDTH_FONT if isFont else WIDTH_TILE
 
     indices = []
     values = []
 
     for y in range(0, height, HEIGHT_TILE):
-        for x in range(0, width, WIDTH_TILE):
-            tile = sprite.crop((x, y, x + WIDTH_TILE, y + HEIGHT_TILE))
+        for x in range(0, width, stepWidth):
+            tile = sprite.crop((x, y, x + stepWidth, y + HEIGHT_TILE))
             binaryValuesTile = getBinaryValuesTile(tile)
             reversedBinaryValuesTile = [reverseBits(i) for i in binaryValuesTile]
 
@@ -162,7 +165,7 @@ def parseImage(pathImage: str, widthSprite: int, heightSprite: int) -> Tuple[Lis
     for y in range(0, height, heightSprite):
         for x in range(0, width, widthSprite):
             sprite = image.crop((x, y, x + widthSprite, y + heightSprite))
-            tiles, indices = getTilesIndicesSprite(sprite)
+            tiles, indices = getTilesIndicesSprite(sprite, widthSprite < WIDTH_TILE)
             addTilesWithoutDuplicates(tiles, indices, tileSheetImage, indicesSpriteImage)
     if height > heightSprite:
         indicesSpriteImage = indicesSpriteImage[:-1]
@@ -242,6 +245,9 @@ def main():
     addTilesWithoutDuplicatesGlobal(tilesFeed, feedIndices, tileDatabase, indiceDatabase)
     print("Finished reading digimon images feed")
 
+    tilesFont, fontIndices = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE)
+    print("Finished preparing font")
+
     print("Done")
     
 
@@ -256,6 +262,9 @@ def main():
         print("#define IS_TILE_INVERTED(x) ((x & 0b1000000000000000) != 0)\n", file=outHeader)
 
         print(f"#define COUNT_TILES {getCountTile(tileDatabase)}", file=outHeader)
+        print(f"#define COUNT_FONT {getCountTile(tilesFont)}", file=outHeader)
+        print("#define FIRST_CHARACTER ' '", file=outHeader)
+
         print(f"#define MAX_COUNT_ANIMATIONS             5", file=outHeader)
         print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 2", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION_WALKING     3", file=outHeader)
@@ -264,6 +273,7 @@ def main():
         print(f"#define MAX_COUNT_EATING_ANIMATIONS      2", file=outHeader)
         print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
         
+        print(f"extern const uint8_t guiFontDatabase[COUNT_FONT];", file=outHeader)
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING];", file=outHeader)
@@ -277,6 +287,10 @@ def main():
 
         print("const uint8_t guiTileDatabase[COUNT_TILES] = {", file=outSource)
         print("\n".join(tileDatabase), file=outSource)
+        print("};\n", file=outSource)
+
+        print("const uint8_t guiFontDatabase[COUNT_FONT] = {", file=outSource)
+        print("\n".join(tilesFont), file=outSource)
         print("};\n", file=outSource)
 
         animationDatabase = []
