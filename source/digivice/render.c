@@ -4,7 +4,7 @@
 #include "sprites.h"
 
 void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
-                       const uint8_t uiInverted) {
+                       const uint8_t uiEffects) {
     uint8_t i, j;
 
     for (i = y; i < y + 8 && i < 16; i++) {
@@ -14,7 +14,7 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
         if (i < 0)
             continue;
 
-        if (uiInverted) {
+        if (uiEffects & EFFECT_REVERSE_TILE) {
             uiCurrentLineTile = (uiCurrentLineTile & 0xF0) >> 4 |
                                 (uiCurrentLineTile & 0x0F) << 4;
             uiCurrentLineTile = (uiCurrentLineTile & 0xCC) >> 2 |
@@ -22,6 +22,9 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
             uiCurrentLineTile = (uiCurrentLineTile & 0xAA) >> 1 |
                                 (uiCurrentLineTile & 0x55) << 1;
         }
+
+        if (uiEffects & EFFECT_REVERSE_COLOR)
+            uiCurrentLineTile ^= 0xff;
 
         for (j = x; j < x + 8 && j < 32; j++) {
             uint8_t uiIsSet = uiCurrentLineTile & 0b10000000;
@@ -35,27 +38,27 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
 }
 
 void DIGIVICE_drawSprite(const uint16_t* const puiSprite, uint8_t x, uint8_t y,
-                         uint8_t uiInverted) {
-    uint8_t xLeft = uiInverted ? x + 8 : x;
-    uint8_t xRight = uiInverted ? x : x + 8;
+                         uint8_t uiEffects) {
+    uint8_t xLeft = uiEffects &  EFFECT_REVERSE_TILE ? x + 8 : x;
+    uint8_t xRight = uiEffects & EFFECT_REVERSE_TILE ? x : x + 8;
 
     DIGIVICE_drawTile(&guiTileDatabase[GET_INDEX_TILE(*(puiSprite))], xLeft, y,
-                      IS_TILE_INVERTED((*(puiSprite))) ^ uiInverted);
+                      IS_TILE_INVERTED((*(puiSprite))) ^ uiEffects);
     DIGIVICE_drawTile(&guiTileDatabase[GET_INDEX_TILE(*(puiSprite + 1))],
                       xRight, y,
-                      IS_TILE_INVERTED((*(puiSprite + 1))) ^ uiInverted);
+                      IS_TILE_INVERTED((*(puiSprite + 1))) ^ uiEffects);
     DIGIVICE_drawTile(&guiTileDatabase[GET_INDEX_TILE(*(puiSprite + 2))], xLeft,
-                      y + 8, IS_TILE_INVERTED((*(puiSprite + 2))) ^ uiInverted);
+                      y + 8, IS_TILE_INVERTED((*(puiSprite + 2))) ^ uiEffects);
     DIGIVICE_drawTile(&guiTileDatabase[GET_INDEX_TILE(*(puiSprite + 3))],
                       xRight, y + 8,
-                      IS_TILE_INVERTED((*(puiSprite + 3))) ^ uiInverted);
+                      IS_TILE_INVERTED((*(puiSprite + 3))) ^ uiEffects);
 }
 
 void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
-                       uint8_t uiInverted) {
+                       uint8_t uiEffects) {
     while (*pszText != '\0') {
         const uint16_t uiIndex = ((*pszText) - FIRST_CHARACTER) << 3;
-        DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiInverted);
+        DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiEffects);
 
         pszText++;
         x += 4;
