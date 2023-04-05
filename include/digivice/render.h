@@ -11,8 +11,9 @@
 #define TILE_WIDTH  8
 #define TILE_HEIGHT 8
 
-#define EFFECT_REVERSE_TILE    (1 << 0)
-#define EFFECT_REVERSE_COLOR   (1 << 1)
+#define EFFECT_NONE          (0)
+#define EFFECT_REVERSE_TILE  (1 << 0)
+#define EFFECT_REVERSE_COLOR (1 << 1)
 
 void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
                        const uint8_t uiEffects);
@@ -23,4 +24,4 @@ void DIGIVICE_drawSprite(const uint16_t* const puiSprite, uint8_t x, uint8_t y,
 void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
                        uint8_t uiEffects);
 
-#endif // RENDER_H
+#endif  // RENDER_H
