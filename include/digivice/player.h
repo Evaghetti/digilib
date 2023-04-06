@@ -9,6 +9,7 @@ typedef enum player_state_e {
     WALKING,
     EVOLVING,
     EATING,
+    EATING_VITAMIN,
 } player_state_e;
 
 typedef struct player_t {
@@ -26,6 +27,7 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime);
 
 void DIGIVICE_renderPlayer(const player_t* pstPlayer);
 
-uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState);
+uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
+                                   player_state_e eNewState);
 
 #endif

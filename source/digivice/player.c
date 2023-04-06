@@ -1,31 +1,36 @@
 #include "player.h"
 
+#include "digivice.h"
 #include "enums.h"
 #include "enums_digivice.h"
-#include "digivice.h"
 
 #include "digiapi.h"
 #include "digihal.h"
 #include "render.h"
 #include "sprites.h"
 
-#define STEP_TIME_WALKING                   500
-#define STEP_TIME_HATCHING                  75
-#define STEP_TIME_EVOLVING                  75
-#define STEP_TIME_EATING                    100
-#define ONE_MINUTE                          60000
+#define STEP_TIME_WALKING  500
+#define STEP_TIME_HATCHING 75
+#define STEP_TIME_EVOLVING 75
+#define STEP_TIME_EATING   100
+#define ONE_MINUTE         60000
 
-#define FRAME_TO_HATCH_FROM_EGG             50
+#define FRAME_TO_HATCH_FROM_EGG            50
 #define FRAME_TO_CHANGE_FROM_HATCH_TO_WALK (FRAME_TO_HATCH_FROM_EGG + 15)
 
-#define FRAME_TO_START_SMILE_EVOLUTION          15
-#define FRAME_TO_START_COUNTING_LINES_EVOLUTION FRAME_TO_START_SMILE_EVOLUTION + 15
-#define FRAME_TO_STOP_EVOLUTION                 100
+#define FRAME_TO_START_SMILE_EVOLUTION 15
+#define FRAME_TO_START_COUNTING_LINES_EVOLUTION \
+    FRAME_TO_START_SMILE_EVOLUTION + 15
+#define FRAME_TO_STOP_EVOLUTION 100
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
-#define DEFAULT_ERROR_CHANGING_STATE(x) LOG("Swapping from state %d to %d is not permitted",x->eState, eNewState); return DIGI_RET_ERROR
-#define INSIDE_OF_DIGITAMA(x) \
-    (x->uiCurrentFrame < FRAME_TO_HATCH_FROM_EGG || x->uiPosition != LCD_CENTER_SPRITE)
+#define DEFAULT_ERROR_CHANGING_STATE(x)                             \
+    LOG("Swapping from state %d to %d is not permitted", x->eState, \
+        eNewState);                                                 \
+    return DIGI_RET_ERROR
+#define INSIDE_OF_DIGITAMA(x)                       \
+    (x->uiCurrentFrame < FRAME_TO_HATCH_FROM_EGG || \
+     x->uiPosition != LCD_CENTER_SPRITE)
 #define SHOULD_BE_SMILING(x) \
     (x->uiCurrentFrame >= FRAME_TO_START_SMILE_EVOLUTION)
 
@@ -53,7 +58,7 @@ int DIGIVICE_initPlayer(player_t* pstPlayer) {
 
 static void updateWaitingHatch(player_t* pstPlayer) {
     pstPlayer->uiCurrentFrame++;
-    if (pstPlayer->uiCurrentFrame >= 2) 
+    if (pstPlayer->uiCurrentFrame >= 2)
         pstPlayer->uiCurrentFrame = 0;
 }
 
@@ -61,7 +66,7 @@ static void updateWaitingHatching(player_t* pstPlayer) {
     pstPlayer->uiCurrentFrame++;
     if (INSIDE_OF_DIGITAMA(pstPlayer))
         pstPlayer->uiPosition += pstPlayer->uiFlipped == 0 ? -1 : 1;
-    else  if (pstPlayer->uiCurrentFrame >= FRAME_TO_CHANGE_FROM_HATCH_TO_WALK)
+    else if (pstPlayer->uiCurrentFrame >= FRAME_TO_CHANGE_FROM_HATCH_TO_WALK)
         DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
 
     if (pstPlayer->uiPosition <= 6)
@@ -83,8 +88,8 @@ static void updateEvolving(player_t* pstPlayer) {
 
     if (pstPlayer->uiCurrentFrame >= FRAME_TO_STOP_EVOLUTION) {
         DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
-    }
-    else if (pstPlayer->uiCurrentFrame >= FRAME_TO_START_COUNTING_LINES_EVOLUTION) {
+    } else if (pstPlayer->uiCurrentFrame >=
+               FRAME_TO_START_COUNTING_LINES_EVOLUTION) {
         if (!pstPlayer->uiFlipped) {
             uiEffectFrame++;
             if (uiEffectFrame == 32) {
@@ -92,8 +97,7 @@ static void updateEvolving(player_t* pstPlayer) {
                 pstPlayer->uiIndexBeforeEvolve =
                     pstPlayer->pstPet->uiIndexCurrentDigimon;
             }
-        }
-        else if (uiEffectFrame > 0) {
+        } else if (uiEffectFrame > 0) {
             uiEffectFrame--;
         }
     }
@@ -105,8 +109,7 @@ static void updateEating(player_t* pstPlayer) {
     if (pstPlayer->uiCurrentFrame == 10) {
         uiEffectFrame++;
         pstPlayer->uiCurrentFrame = 0;
-    }
-    else if (pstPlayer->uiCurrentFrame == 5 && uiEffectFrame == 3) {
+    } else if (pstPlayer->uiCurrentFrame == 5 && uiEffectFrame == 3) {
         DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
     }
 }
@@ -119,7 +122,7 @@ static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
             DIGIVICE_changeStatePlayer(pstPlayer, EVOLVING);
     }
 
-    return uiEvents ? DIGIVICE_CHANGED_STATE : DIGIVICE_RET_OK;
+    return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
 }
 
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
@@ -143,6 +146,8 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
 
     if (pstPlayer->uiDeltaTimeStep >= pstPlayer->uiCurrentStep) {
         pstPlayer->uiDeltaTimeStep = 0;
+        player_state_e eCurrentState = pstPlayer->eState;
+
         switch (pstPlayer->eState) {
             case WAITING_HATCH:
                 updateWaitingHatch(pstPlayer);
@@ -157,11 +162,15 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 updateEvolving(pstPlayer);
                 break;
             case EATING:
+            case EATING_VITAMIN:
                 updateEating(pstPlayer);
                 break;
             default:
                 break;
         }
+
+        if (eCurrentState != pstPlayer->eState)
+            uiRet |= DIGIVICE_CHANGED_STATE;
     }
     return uiRet;
 }
@@ -176,7 +185,8 @@ static void drawEvolutionLine(uint8_t uiCountLine) {
 
     if (uiCountLine >= LCD_SCREEN_HEIGHT) {
         uiCountLine = uiCountLine - LCD_SCREEN_HEIGHT;
-        for (i = LCD_SCREEN_HEIGHT - 1; i >= LCD_SCREEN_HEIGHT - uiCountLine; i--) {
+        for (i = LCD_SCREEN_HEIGHT - 1; i >= LCD_SCREEN_HEIGHT - uiCountLine;
+             i--) {
             for (j = (i & 1); j < LCD_SCREEN_WIDTH; j += 2) {
                 gpstDigiviceHal->setLCDStatus(j, i, 1);
             }
@@ -186,51 +196,53 @@ static void drawEvolutionLine(uint8_t uiCountLine) {
 
 void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
     switch (pstPlayer->eState) {
-    case WAITING_HATCH:
-    case WALKING:{
-        uint8_t uiIndexWalk =
-            pstPlayer->uiCurrentFrame == 0xFF
-                ? 0
-                : uiWalkCycleIndices[pstPlayer->uiCurrentFrame];
-        DIGIVICE_drawSprite(
-            guiDigimonWalkingAnimationDatabase
-                [pstPlayer->pstPet->uiIndexCurrentDigimon][uiIndexWalk],
-            pstPlayer->uiPosition, 0, pstPlayer->uiFlipped);
-    } break;
-    case HATCHING: {
-        const uint16_t* const puiSprite =
-            INSIDE_OF_DIGITAMA(pstPlayer)
-                ? guiDigimonWalkingAnimationDatabase
-                      [pstPlayer->uiIndexBeforeEvolve][0]
-                : guiDigimonWalkingAnimationDatabase
-                      [pstPlayer->uiIndexBeforeEvolve][2];
-        DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
-    } break;
-    case EVOLVING: {
-        uint8_t uiCurrentFrame = SHOULD_BE_SMILING(pstPlayer) ? 1 : 0;
-        uint8_t uiIndexDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
+        case WAITING_HATCH:
+        case WALKING: {
+            uint8_t uiIndexWalk =
+                pstPlayer->uiCurrentFrame == 0xFF
+                    ? 0
+                    : uiWalkCycleIndices[pstPlayer->uiCurrentFrame];
+            DIGIVICE_drawSprite(
+                guiDigimonWalkingAnimationDatabase
+                    [pstPlayer->pstPet->uiIndexCurrentDigimon][uiIndexWalk],
+                pstPlayer->uiPosition, 0, pstPlayer->uiFlipped);
+        } break;
+        case HATCHING: {
+            const uint16_t* const puiSprite =
+                INSIDE_OF_DIGITAMA(pstPlayer)
+                    ? guiDigimonWalkingAnimationDatabase
+                          [pstPlayer->uiIndexBeforeEvolve][0]
+                    : guiDigimonWalkingAnimationDatabase
+                          [pstPlayer->uiIndexBeforeEvolve][2];
+            DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+        } break;
+        case EVOLVING: {
+            uint8_t uiCurrentFrame = SHOULD_BE_SMILING(pstPlayer) ? 1 : 0;
+            uint8_t uiIndexDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
 
-        DIGIVICE_drawSprite(
-            guiDigimonAnimationDatabase[uiIndexDigimon][1][uiCurrentFrame],
-            pstPlayer->uiPosition, 0, 0);
-        drawEvolutionLine(uiEffectFrame);
-    } break;
-    case EATING: {
-        const uint16_t uiIndexDigimon =
-            pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
-        const uint16_t* const puiSprite =
-            pstPlayer->uiCurrentFrame < 5
-                ? guiDigimonAnimationDatabase[uiIndexDigimon][3][0]
-                : guiDigimonAnimationDatabase[uiIndexDigimon][3][1];
-        const uint8_t uiPositionItem =
-            pstPlayer->uiCurrentFrame < 5 && uiEffectFrame == 0 ? 0 : 8;
+            DIGIVICE_drawSprite(
+                guiDigimonAnimationDatabase[uiIndexDigimon][1][uiCurrentFrame],
+                pstPlayer->uiPosition, 0, 0);
+            drawEvolutionLine(uiEffectFrame);
+        } break;
+        case EATING:
+        case EATING_VITAMIN: {
+            const uint16_t uiIndexDigimon =
+                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+            const uint16_t* const puiSprite =
+                pstPlayer->uiCurrentFrame < 5
+                    ? guiDigimonAnimationDatabase[uiIndexDigimon][3][0]
+                    : guiDigimonAnimationDatabase[uiIndexDigimon][3][1];
+            const uint8_t uiPositionItem =
+                pstPlayer->uiCurrentFrame < 5 && uiEffectFrame == 0 ? 0 : 8;
+            const uint8_t uiIndexFeed = pstPlayer->eState == EATING ? 0 : 1;
 
-        DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
-        DIGIVICE_drawTile(guiFeedingAnimations[0][uiEffectFrame], 0,
-                          uiPositionItem, 0);
-    } break;
-    default:
-        break;
+            DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+            DIGIVICE_drawTile(guiFeedingAnimations[uiIndexFeed][uiEffectFrame],
+                              0, uiPositionItem, 0);
+        } break;
+        default:
+            break;
     }
 }
 
@@ -240,72 +252,79 @@ static void prepareForWalking(player_t* pstPlayer) {
     pstPlayer->uiCurrentFrame = 0xFF;
 }
 
-uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer, player_state_e eNewState) {    
+uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
+                                   player_state_e eNewState) {
     switch (pstPlayer->eState) {
-    case WAITING_HATCH:
-        switch (eNewState) {
-            case WAITING_HATCH:
-                pstPlayer->uiCurrentStep = STEP_TIME_WALKING;
-                break;
-            case HATCHING:
-                pstPlayer->uiCurrentStep = STEP_TIME_HATCHING;
-                pstPlayer->uiCurrentFrame = 0x00;
-                break;
-            case WALKING:
-                prepareForWalking(pstPlayer);
-                break;
-            default:
-                DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
-        }
-        break;
-    case HATCHING:
-        switch (eNewState) {
-        case WALKING:
-            prepareForWalking(pstPlayer);
+        case WAITING_HATCH:
+            switch (eNewState) {
+                case WAITING_HATCH:
+                    pstPlayer->uiCurrentStep = STEP_TIME_WALKING;
+                    break;
+                case HATCHING:
+                    pstPlayer->uiCurrentStep = STEP_TIME_HATCHING;
+                    pstPlayer->uiCurrentFrame = 0x00;
+                    break;
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
             break;
-        default:
-            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
-        }
-        break;
-    case WALKING:
-        switch (eNewState) {
+        case HATCHING:
+            switch (eNewState) {
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
+            break;
+        case WALKING:
+            switch (eNewState) {
+                case EVOLVING:
+                    pstPlayer->uiCurrentStep = STEP_TIME_EVOLVING;
+                    uiEffectFrame = 0;
+                    break;
+                case EATING:
+                case EATING_VITAMIN:
+                    if (eNewState == EATING)
+                        DIGI_feedDigimon(pstPlayer->pstPet, 1);
+                    else
+                        DIGI_stregthenDigimon(pstPlayer->pstPet, 1, 2);
+
+                    pstPlayer->uiCurrentStep = STEP_TIME_EATING;
+                    pstPlayer->uiCurrentFrame = 0;
+                    uiEffectFrame = 0;
+                    break;
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
+            break;
         case EVOLVING:
-            pstPlayer->uiCurrentStep = STEP_TIME_EVOLVING;
-            uiEffectFrame = 0;
+            switch (eNewState) {
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
+
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
             break;
         case EATING:
-            pstPlayer->uiCurrentStep = STEP_TIME_EATING;
-            pstPlayer->uiCurrentFrame = 0;
-            uiEffectFrame = 0;
-            break;
-        default:
-            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
-        }
-        break;
-    case EVOLVING:
-        switch (eNewState) {
-        case WALKING:
-            prepareForWalking(pstPlayer);
-            break;
+        case EATING_VITAMIN:
+            switch (eNewState) {
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
 
-        default:
-            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
-        }
-        break;
-    case EATING:
-        switch (eNewState)
-        {
-        case WALKING:
-            prepareForWalking(pstPlayer);
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
             break;
-
         default:
-            DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
-        }
-        break;
-    default:
-        LOG("Missing %d state", pstPlayer->eState);
-        return DIGI_RET_ERROR;
+            LOG("Missing %d state", pstPlayer->eState);
+            return DIGI_RET_ERROR;
     }
 
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;

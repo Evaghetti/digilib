@@ -12,6 +12,7 @@ void DIGIVICE_initMenu(menu_t* pstMenu, uint8_t uiCountItems,
     pstMenu->uiCurrentIndex = 0;
 
     pstMenu->pstItems = pstItems;
+    pstMenu->fInUse = 1;
 }
 
 void DIGIVICE_advanceMenu(menu_t* pstMenu, direction_menu_e eDirection) {
@@ -51,4 +52,8 @@ void DIGIVICE_drawMenu(const menu_t* pstMenu) {
                 break;
         }
     }
+}
+
+uint8_t DIGIVICE_isMenuInUse(const menu_t* pstMenu) {
+    return pstMenu->fInUse && pstMenu->uiCountItems;
 }
