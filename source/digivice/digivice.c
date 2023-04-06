@@ -78,7 +78,13 @@ static void handleButtonsPlayerState() {
                 }
             }
             break;
-
+        case EATING:
+        case EATING_VITAMIN:
+            if (DIGIVICE_isButtonPressed(BUTTON_B)) {
+                DIGIVICE_changeStatePlayer(&stPlayer, WALKING);
+                gstMenu.fInUse = 1;
+            }
+            break;
         default:
             break;
     }
