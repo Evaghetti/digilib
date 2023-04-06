@@ -4,12 +4,13 @@
 #include "digimon.h"
 
 typedef enum player_state_e {
+    WALKING,
     WAITING_HATCH,
     HATCHING,
-    WALKING,
     EVOLVING,
     EATING,
     EATING_VITAMIN,
+    NEED_SLEEP,
 } player_state_e;
 
 typedef struct player_t {

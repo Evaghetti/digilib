@@ -9,11 +9,12 @@
 #include "render.h"
 #include "sprites.h"
 
-#define STEP_TIME_WALKING  500
-#define STEP_TIME_HATCHING 75
-#define STEP_TIME_EVOLVING 75
-#define STEP_TIME_EATING   100
-#define ONE_MINUTE         60000
+#define STEP_TIME_WALKING    500
+#define STEP_TIME_HATCHING   75
+#define STEP_TIME_EVOLVING   75
+#define STEP_TIME_EATING     100
+#define STEP_TIME_NEED_SLEEP 1000
+#define ONE_MINUTE           60000
 
 #define FRAME_TO_HATCH_FROM_EGG            50
 #define FRAME_TO_CHANGE_FROM_HATCH_TO_WALK (FRAME_TO_HATCH_FROM_EGG + 15)
@@ -34,6 +35,8 @@
 #define SHOULD_BE_SMILING(x) \
     (x->uiCurrentFrame >= FRAME_TO_START_SMILE_EVOLUTION)
 
+#define X_POSITION_SNORE (LCD_CENTER_SPRITE + 16)
+
 static const int8_t uiWalkCycleMove[] = {
     -2, -2, 0, 2, 0,  -2, -2, 2, -2, -2, 2,  0, 0,  0,  2,  2,
     2,  2,  2, 0, -2, 0,  2,  0, 2,  2,  -2, 2, -2, -2, -2, -2};
@@ -49,9 +52,12 @@ static uint8_t uiEffectFrame = 0;
 int DIGIVICE_initPlayer(player_t* pstPlayer) {
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;
     pstPlayer->uiIndexBeforeEvolve = pstPlayer->pstPet->uiIndexCurrentDigimon;
-    if (pstPlayer->pstPet->pstCurrentDigimon->uiStage > DIGI_STAGE_EGG)
-        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
-    else
+    if (pstPlayer->pstPet->pstCurrentDigimon->uiStage > DIGI_STAGE_EGG) {
+        if (DIGI_shouldSleep(pstPlayer->pstPet) == DIGI_RET_OK)
+            DIGIVICE_changeStatePlayer(pstPlayer, NEED_SLEEP);
+        else
+            DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+    } else
         DIGIVICE_changeStatePlayer(pstPlayer, WAITING_HATCH);
     return DIGI_RET_OK;
 }
@@ -114,13 +120,27 @@ static void updateEating(player_t* pstPlayer) {
     }
 }
 
+void updateNeedSleep(player_t* pstPlayer) {
+    uiEffectFrame++;
+
+    if (uiEffectFrame == 2) {
+        pstPlayer->uiCurrentFrame = (pstPlayer->uiCurrentFrame + 1) & 1;
+        uiEffectFrame = 0;
+    }
+}
+
 static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
     if (uiEvents & DIGI_EVENT_MASK_EVOLVE) {
         if (pstPlayer->pstPet->pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
             DIGIVICE_changeStatePlayer(pstPlayer, HATCHING);
         else
             DIGIVICE_changeStatePlayer(pstPlayer, EVOLVING);
+
+        return DIGIVICE_EVENT_HAPPENED;
     }
+
+    if (uiEvents & DIGI_EVENT_MASK_SLEEPY)
+        DIGIVICE_changeStatePlayer(pstPlayer, NEED_SLEEP);
 
     return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
 }
@@ -145,8 +165,9 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
     }
 
     if (pstPlayer->uiDeltaTimeStep >= pstPlayer->uiCurrentStep) {
-        pstPlayer->uiDeltaTimeStep = 0;
         player_state_e eCurrentState = pstPlayer->eState;
+
+        pstPlayer->uiDeltaTimeStep = 0;
 
         switch (pstPlayer->eState) {
             case WAITING_HATCH:
@@ -164,6 +185,9 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
             case EATING:
             case EATING_VITAMIN:
                 updateEating(pstPlayer);
+                break;
+            case NEED_SLEEP:
+                updateNeedSleep(pstPlayer);
                 break;
             default:
                 break;
@@ -241,6 +265,17 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
             DIGIVICE_drawTile(guiFeedingAnimations[uiIndexFeed][uiEffectFrame],
                               0, uiPositionItem, 0);
         } break;
+        case NEED_SLEEP: {
+            const uint16_t uiIndexDigimon =
+                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+            const uint16_t* const puiSprite =
+                guiDigimonAnimationDatabase[uiIndexDigimon][0]
+                                           [pstPlayer->uiCurrentFrame];
+
+            DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+            DIGIVICE_drawTile(guiSnoreAnimation[uiEffectFrame],
+                              X_POSITION_SNORE, 0, 0);
+        } break;
         default:
             break;
     }
@@ -254,6 +289,7 @@ static void prepareForWalking(player_t* pstPlayer) {
 
 uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                                    player_state_e eNewState) {
+    gpstHal->log("Changing from state %d to %d", pstPlayer->eState, eNewState);
     switch (pstPlayer->eState) {
         case WAITING_HATCH:
             switch (eNewState) {
@@ -294,6 +330,11 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                         DIGI_stregthenDigimon(pstPlayer->pstPet, 1, 2);
 
                     pstPlayer->uiCurrentStep = STEP_TIME_EATING;
+                    pstPlayer->uiCurrentFrame = 0;
+                    uiEffectFrame = 0;
+                    break;
+                case NEED_SLEEP:
+                    pstPlayer->uiCurrentStep = STEP_TIME_NEED_SLEEP;
                     pstPlayer->uiCurrentFrame = 0;
                     uiEffectFrame = 0;
                     break;

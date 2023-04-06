@@ -281,6 +281,7 @@ def main():
         print(f"extern const uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS];", file=outHeader)
+        print(f"extern const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -339,6 +340,12 @@ def main():
         indicesFeedToWrite = getPointerToTileFromIndices(feedIndices[4:8])
         indicesFeedToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesFeedToWrite]
         print("{", ",".join(indicesFeedToWrite), "}", file=outSource)
+        print("};", file=outSource)
+
+        indicesSnoreToWrite = getPointerToTileFromIndices(feedIndices[11:13])
+        indicesSnoreToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesSnoreToWrite]
+        print("const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
+        print(",".join(indicesSnoreToWrite), file=outSource)
         print("};", file=outSource)
 
 if __name__ == "__main__":
