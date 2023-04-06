@@ -141,6 +141,8 @@ static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
 
     if (uiEvents & DIGI_EVENT_MASK_SLEEPY)
         DIGIVICE_changeStatePlayer(pstPlayer, NEED_SLEEP);
+    else if (uiEvents & DIGI_EVENT_MASK_WOKE_UP)
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
 
     return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
 }
@@ -187,6 +189,7 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 updateEating(pstPlayer);
                 break;
             case NEED_SLEEP:
+            case SLEEPING:
                 updateNeedSleep(pstPlayer);
                 break;
             default:
@@ -276,6 +279,19 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
             DIGIVICE_drawTile(guiSnoreAnimation[uiEffectFrame],
                               X_POSITION_SNORE, 0, 0);
         } break;
+        case SLEEPING: {
+            uint8_t y, x;
+
+            for (y = 0; y < LCD_SCREEN_HEIGHT; y++) {
+                for (x = 0; x < LCD_SCREEN_WIDTH; x++)
+                    gpstDigiviceHal->setLCDStatus(x, y, 1);
+            }
+
+            if (pstPlayer->pstPet->uiStats & MASK_SLEEPING)
+                DIGIVICE_drawTile(guiSnoreAnimation[uiEffectFrame],
+                                  pstPlayer->uiPosition + 4, 0,
+                                  EFFECT_REVERSE_COLOR);
+        } break;
         default:
             break;
     }
@@ -337,7 +353,11 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                     pstPlayer->uiCurrentStep = STEP_TIME_NEED_SLEEP;
                     pstPlayer->uiCurrentFrame = 0;
                     uiEffectFrame = 0;
-                    break;
+                case SLEEPING:
+                    pstPlayer->uiPosition = LCD_CENTER_SPRITE;
+                    pstPlayer->uiFlipped = 0;
+                    pstPlayer->eState = eNewState;
+                    return DIGIVICE_RET_OK;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
             }
@@ -363,11 +383,33 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
             }
             break;
+        case NEED_SLEEP:
+            switch (eNewState) {
+                case SLEEPING:
+                    DIGI_putSleep(pstPlayer->pstPet, 1);
+                    break;
+
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
+            break;
+        case SLEEPING:
+            switch (eNewState) {
+                case WALKING:
+                    DIGI_putSleep(pstPlayer->pstPet, 0);
+                    prepareForWalking(pstPlayer);
+                    break;
+
+                default:
+                    break;
+            }
+            break;
         default:
             LOG("Missing %d state", pstPlayer->eState);
             return DIGI_RET_ERROR;
     }
 
+    DIGI_setCalled(pstPlayer->pstPet);
     pstPlayer->uiPosition = LCD_CENTER_SPRITE;
     pstPlayer->uiFlipped = 0;
     pstPlayer->eState = eNewState;

@@ -11,6 +11,7 @@ typedef enum player_state_e {
     EATING,
     EATING_VITAMIN,
     NEED_SLEEP,
+    SLEEPING,
 } player_state_e;
 
 typedef struct player_t {

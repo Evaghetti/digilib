@@ -21,6 +21,10 @@ static const menu_item_t gstMenuItemsFeed[] = {
     {.eType = MENU_ITEM_TEXT, .pDataItem = "Feed"},
     {.eType = MENU_ITEM_TEXT, .pDataItem = "Vitamin"}};
 
+static const menu_item_t gstMenuItemsLights[] = {
+    {.eType = MENU_ITEM_TEXT, .pDataItem = "ON"},
+    {.eType = MENU_ITEM_TEXT, .pDataItem = "OFF"}};
+
 uint8_t DIGIVICE_init(const digihal_t* pstHal,
                       const digivice_hal_t* pstDigiviceHal,
                       size_t uiFrequency) {
@@ -57,6 +61,8 @@ static uint32_t getDeltaTime() {
 static void handleButtonsPlayerState() {
     switch (stPlayer.eState) {
         case WALKING:
+        case NEED_SLEEP:
+        case SLEEPING:
             if (DIGIVICE_isButtonPressed(BUTTON_A)) {
                 if (uiCurrentIcon >= 0)
                     gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
@@ -72,7 +78,12 @@ static void handleButtonsPlayerState() {
                                               sizeof(gstMenuItemsFeed[0]),
                                           gstMenuItemsFeed);
                         break;
-
+                    case 5:
+                        DIGIVICE_initMenu(&gstMenu,
+                                          sizeof(gstMenuItemsLights) /
+                                              sizeof(gstMenuItemsLights[0]),
+                                          gstMenuItemsLights);
+                        break;
                     default:
                         break;
                 }
@@ -99,7 +110,11 @@ static void handleButtonsMenu() {
                 DIGIVICE_changeStatePlayer(&stPlayer,
                                            EATING + gstMenu.uiCurrentIndex);
                 break;
-
+            case 5:
+                DIGIVICE_changeStatePlayer(
+                    &stPlayer,
+                    gstMenu.uiCurrentIndex == 0 ? WALKING : SLEEPING);
+                break;
             default:
                 break;
         }
