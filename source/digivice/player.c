@@ -158,8 +158,13 @@ static void updateCleaning(player_t* pstPlayer) {
     uiCameraOffset++;
 
     if (uiCameraOffset >= LCD_SCREEN_WIDTH) {
-        DIGI_cleanPoop(pstPlayer->pstPet);
-        DIGIVICE_changeStatePlayer(pstPlayer, HAPPY);
+        if (pstPlayer->pstPet->uiPoopCount) {
+            DIGI_cleanPoop(pstPlayer->pstPet);
+            DIGIVICE_changeStatePlayer(pstPlayer, HAPPY);
+            return;
+        }
+
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
     }
 }
 
@@ -469,6 +474,9 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             switch (eNewState) {
                 case HAPPY:
                     pstPlayer->uiCurrentStep = STEP_TIME_HAPPY;
+                    break;
+                case WALKING:
+                    prepareForWalking(pstPlayer);
                     break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
