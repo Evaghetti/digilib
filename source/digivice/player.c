@@ -25,15 +25,18 @@
 #define FRAME_TO_STOP_EVOLUTION 100
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
+
 #define DEFAULT_ERROR_CHANGING_STATE(x)                             \
     LOG("Swapping from state %d to %d is not permitted", x->eState, \
         eNewState);                                                 \
     return DIGI_RET_ERROR
+
 #define INSIDE_OF_DIGITAMA(x)                       \
     (x->uiCurrentFrame < FRAME_TO_HATCH_FROM_EGG || \
      x->uiPosition != LCD_CENTER_SPRITE)
 #define SHOULD_BE_SMILING(x) \
     (x->uiCurrentFrame >= FRAME_TO_START_SMILE_EVOLUTION)
+#define CAN_SHOW_POOP(x) (x == WALKING || x == EATING || x == EATING_VITAMIN)
 
 #define X_POSITION_SNORE (LCD_CENTER_SPRITE + 16)
 
@@ -221,7 +224,29 @@ static void drawEvolutionLine(uint8_t uiCountLine) {
     }
 }
 
+void renderPoops(uint8_t uiCurrentFrame, uint8_t uiPoopCount) {
+    int8_t i, j;
+
+    if (uiPoopCount > 8)
+        uiPoopCount = 8;
+
+    for (j = LCD_SCREEN_WIDTH - 8;; j -= 8) {
+        for (i = 8; i >= 0; i -= 8) {
+            if (uiPoopCount == 0)
+                return;
+
+            DIGIVICE_drawTile(guiPoopAnimation[uiCurrentFrame], j, i, 0);
+            uiPoopCount--;
+        }
+    }
+}
+
 void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
+    const uint8_t uiCanShowPoop = CAN_SHOW_POOP(pstPlayer->eState);
+    const uint8_t uiOffsetPoop = 8 << (pstPlayer->pstPet->uiPoopCount >> 1);
+    const uint8_t uiRealPosPlayer =
+        pstPlayer->uiPosition - (uiCanShowPoop ? uiOffsetPoop : 0);
+
     switch (pstPlayer->eState) {
         case WAITING_HATCH:
         case WALKING: {
@@ -232,7 +257,7 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
             DIGIVICE_drawSprite(
                 guiDigimonWalkingAnimationDatabase
                     [pstPlayer->pstPet->uiIndexCurrentDigimon][uiIndexWalk],
-                pstPlayer->uiPosition, 0, pstPlayer->uiFlipped);
+                uiRealPosPlayer, 0, pstPlayer->uiFlipped);
         } break;
         case HATCHING: {
             const uint16_t* const puiSprite =
@@ -264,9 +289,9 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                 pstPlayer->uiCurrentFrame < 5 && uiEffectFrame == 0 ? 0 : 8;
             const uint8_t uiIndexFeed = pstPlayer->eState == EATING ? 0 : 1;
 
-            DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+            DIGIVICE_drawSprite(puiSprite, uiRealPosPlayer, 0, 0);
             DIGIVICE_drawTile(guiFeedingAnimations[uiIndexFeed][uiEffectFrame],
-                              0, uiPositionItem, 0);
+                              uiRealPosPlayer - 8, uiPositionItem, 0);
         } break;
         case NEED_SLEEP: {
             const uint16_t uiIndexDigimon =
@@ -275,7 +300,7 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                 guiDigimonAnimationDatabase[uiIndexDigimon][0]
                                            [pstPlayer->uiCurrentFrame];
 
-            DIGIVICE_drawSprite(puiSprite, pstPlayer->uiPosition, 0, 0);
+            DIGIVICE_drawSprite(puiSprite, uiRealPosPlayer, 0, 0);
             DIGIVICE_drawTile(guiSnoreAnimation[uiEffectFrame],
                               X_POSITION_SNORE, 0, 0);
         } break;
@@ -294,6 +319,11 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
         } break;
         default:
             break;
+    }
+
+    if (uiCanShowPoop) {
+        renderPoops(pstPlayer->uiCurrentFrame & 1,
+                    pstPlayer->pstPet->uiPoopCount);
     }
 }
 
@@ -334,6 +364,9 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             break;
         case WALKING:
             switch (eNewState) {
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
                 case EVOLVING:
                     pstPlayer->uiCurrentStep = STEP_TIME_EVOLVING;
                     uiEffectFrame = 0;

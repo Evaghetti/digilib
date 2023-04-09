@@ -26,10 +26,11 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
         if (uiEffects & EFFECT_REVERSE_COLOR)
             uiCurrentLineTile ^= 0xff;
 
-        for (j = x; j < x + 8 && j < 32; j++) {
+        uint8_t uiCount = 8;
+        for (j = x; uiCount; j++, uiCount--) {
             uint8_t uiIsSet = uiCurrentLineTile & 0b10000000;
             uiCurrentLineTile <<= 1;
-            if (j < 0)
+            if (j >= LCD_SCREEN_WIDTH)
                 continue;
 
             gpstDigiviceHal->setLCDStatus(j, i, uiIsSet);
@@ -39,7 +40,7 @@ void DIGIVICE_drawTile(const uint8_t* puiTile, uint8_t x, uint8_t y,
 
 void DIGIVICE_drawSprite(const uint16_t* const puiSprite, uint8_t x, uint8_t y,
                          uint8_t uiEffects) {
-    uint8_t xLeft = uiEffects &  EFFECT_REVERSE_TILE ? x + 8 : x;
+    uint8_t xLeft = uiEffects & EFFECT_REVERSE_TILE ? x + 8 : x;
     uint8_t xRight = uiEffects & EFFECT_REVERSE_TILE ? x : x + 8;
 
     DIGIVICE_drawTile(&guiTileDatabase[GET_INDEX_TILE(*(puiSprite))], xLeft, y,

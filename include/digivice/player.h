@@ -4,9 +4,9 @@
 #include "digimon.h"
 
 typedef enum player_state_e {
-    WALKING,
     WAITING_HATCH,
     HATCHING,
+    WALKING,
     EVOLVING,
     EATING,
     EATING_VITAMIN,
