@@ -15,6 +15,7 @@
 #define STEP_TIME_CLEANING   20
 #define STEP_TIME_EATING     100
 #define STEP_TIME_HAPPY      100
+#define STEP_TIME_NEGATING   500
 #define STEP_TIME_NEED_SLEEP 1000
 #define ONE_MINUTE           60000
 
@@ -168,6 +169,13 @@ static void updateCleaning(player_t* pstPlayer) {
     }
 }
 
+static void updateNegating(player_t* pstPlayer) {
+    pstPlayer->uiCurrentFrame++;
+
+    if (pstPlayer->uiCurrentFrame > 6)
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+}
+
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
     uint8_t uiRet = DIGI_RET_OK;
 
@@ -216,6 +224,9 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 break;
             case CLEANING:
                 updateCleaning(pstPlayer);
+                break;
+            case NEGATING:
+                updateNegating(pstPlayer);
                 break;
             default:
                 break;
@@ -362,6 +373,14 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                                   EFFECT_NONE);
             }
         } break;
+        case NEGATING: {
+            const uint16_t uiIndexDigimon =
+                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+
+            DIGIVICE_drawSprite(
+                guiDigimonSingleFrameAnimationDatabase[uiIndexDigimon][0],
+                uiRealPosPlayer, 0, pstPlayer->uiCurrentFrame & 1);
+        } break;
         default:
             break;
     }
@@ -380,6 +399,8 @@ static void prepareForWalking(player_t* pstPlayer) {
 
 uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                                    player_state_e eNewState) {
+    uint8_t uiRetLib;
+
     gpstHal->log("Changing from state %d to %d", pstPlayer->eState, eNewState);
     switch (pstPlayer->eState) {
         case WAITING_HATCH:
@@ -409,9 +430,15 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                     break;
                 case EATING:
                 case EATING_VITAMIN:
-                    if (eNewState == EATING)
-                        DIGI_feedDigimon(pstPlayer->pstPet, 1);
-                    else
+                    if (eNewState == EATING) {
+                        uiRetLib = DIGI_feedDigimon(pstPlayer->pstPet, 1);
+
+                        if (uiRetLib == DIGI_RET_OVERFEED) {
+                            pstPlayer->eState = EATING;
+                            return DIGIVICE_changeStatePlayer(pstPlayer,
+                                                              NEGATING);
+                        }
+                    } else
                         DIGI_stregthenDigimon(pstPlayer->pstPet, 1, 2);
 
                     pstPlayer->uiCurrentStep = STEP_TIME_EATING;
@@ -437,14 +464,26 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             break;
         case HATCHING:
         case EVOLVING:
-        case EATING:
         case EATING_VITAMIN:
         case HAPPY:
+        case NEGATING:
             switch (eNewState) {
                 case WALKING:
                     prepareForWalking(pstPlayer);
                     break;
 
+                default:
+                    DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
+            }
+            break;
+        case EATING:
+            switch (eNewState) {
+                case WALKING:
+                    prepareForWalking(pstPlayer);
+                    break;
+                case NEGATING:
+                    pstPlayer->uiCurrentStep = STEP_TIME_NEGATING;
+                    break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
             }

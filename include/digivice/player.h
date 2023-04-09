@@ -14,6 +14,7 @@ typedef enum player_state_e {
     SLEEPING,
     CLEANING,
     HAPPY,
+    NEGATING,
 } player_state_e;
 
 typedef struct player_t {
