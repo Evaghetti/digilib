@@ -78,6 +78,9 @@ static void handleButtonsPlayerState() {
                                               sizeof(gstMenuItemsFeed[0]),
                                           gstMenuItemsFeed);
                         break;
+                    case 4:
+                        DIGIVICE_changeStatePlayer(&stPlayer, CLEANING);
+                        break;
                     case 5:
                         DIGIVICE_initMenu(&gstMenu,
                                           sizeof(gstMenuItemsLights) /

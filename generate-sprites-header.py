@@ -273,7 +273,9 @@ def main():
         print(f"#define MAX_COUNT_EATING_ANIMATIONS      2", file=outHeader)
         print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
 
-        print(f"#define SELECTOR_TILE      &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[-4:-3])[0][0]}]\n", file=outHeader)
+        print(f"#define SELECTOR_TILE       &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[-4:-3])[0][0]}]\n", file=outHeader)
+        print(f"#define CLEANING_TILE       &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[16:17])[0][0]}]\n", file=outHeader)
+        print(f"#define HAPPY_SUN_TILE      &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[8:9])[0][0]}]\n", file=outHeader)
         
         print(f"extern const uint8_t guiFontDatabase[COUNT_FONT];", file=outHeader)
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
