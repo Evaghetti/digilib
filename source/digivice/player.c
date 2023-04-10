@@ -483,6 +483,7 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                     break;
                 case NEGATING:
                     pstPlayer->uiCurrentStep = STEP_TIME_NEGATING;
+                    pstPlayer->uiCurrentFrame = 0;
                     break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
