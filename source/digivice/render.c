@@ -64,6 +64,6 @@ void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
         pszText++;
         x += 4;
         if (x >= LCD_SCREEN_WIDTH)
-            break;
+            continue;
     }
 }
