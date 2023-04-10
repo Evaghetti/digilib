@@ -53,7 +53,3 @@ void DIGIVICE_drawMenu(const menu_t* pstMenu) {
         }
     }
 }
-
-uint8_t DIGIVICE_isMenuInUse(const menu_t* pstMenu) {
-    return pstMenu->fInUse && pstMenu->uiCountItems;
-}

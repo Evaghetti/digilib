@@ -4,9 +4,12 @@
 #include "enums.h"
 #include "enums_digivice.h"
 
+#include "info.h"
 #include "menu.h"
 #include "player.h"
 #include "render.h"
+
+typedef enum game_state_e { PLAYER_STATE, MENU_STATE, INFO_STATE } game_state_e;
 
 static player_t stPlayer;
 static menu_t gstMenu;
@@ -16,6 +19,8 @@ static uint8_t uiPreviousControllerState;
 static int8_t uiCurrentIcon = -1;
 
 static size_t guiFrequency;
+
+static game_state_e eCurrentState;
 
 static const menu_item_t gstMenuItemsFeed[] = {
     {.eType = MENU_ITEM_TEXT, .pDataItem = "Feed"},
@@ -72,11 +77,16 @@ static void handleButtonsPlayerState() {
             }
             if (DIGIVICE_isButtonPressed(BUTTON_B)) {
                 switch (uiCurrentIcon) {
+                    case 0:
+                        DIGIVICE_initInfoDisplay(stPlayer.pstPet);
+                        eCurrentState = INFO_STATE;
+                        break;
                     case 1:
                         DIGIVICE_initMenu(&gstMenu,
                                           sizeof(gstMenuItemsFeed) /
                                               sizeof(gstMenuItemsFeed[0]),
                                           gstMenuItemsFeed);
+                        eCurrentState = MENU_STATE;
                         break;
                     case 4:
                         DIGIVICE_changeStatePlayer(&stPlayer, CLEANING);
@@ -86,6 +96,7 @@ static void handleButtonsPlayerState() {
                                           sizeof(gstMenuItemsLights) /
                                               sizeof(gstMenuItemsLights[0]),
                                           gstMenuItemsLights);
+                        eCurrentState = MENU_STATE;
                         break;
                     default:
                         break;
@@ -112,6 +123,7 @@ static void handleButtonsMenu() {
             case 1:
                 DIGIVICE_changeStatePlayer(&stPlayer,
                                            EATING + gstMenu.uiCurrentIndex);
+                eCurrentState = MENU_STATE;
                 break;
             case 5:
                 DIGIVICE_changeStatePlayer(
@@ -123,19 +135,40 @@ static void handleButtonsMenu() {
         }
 
         gstMenu.fInUse = 0;
+        eCurrentState = PLAYER_STATE;
     } else if (DIGIVICE_isButtonPressed(BUTTON_C)) {
         gstMenu.uiCountItems = 0;
         gstMenu.fInUse = 0;
+        eCurrentState = PLAYER_STATE;
+    }
+}
+
+void handleInfoState() {
+    if (DIGIVICE_isButtonPressed(BUTTON_A) ||
+        DIGIVICE_isButtonPressed(BUTTON_B)) {
+        DIGIVICE_advanceInfoDisplay(1);
+    } else if (DIGIVICE_isButtonPressed(BUTTON_C)) {
+        eCurrentState = PLAYER_STATE;
     }
 }
 
 uint8_t DIGIVICE_update() {
     uint32_t uiDeltaTime = getDeltaTime();
+    uint8_t uiRet;
 
-    if (DIGIVICE_isMenuInUse(&gstMenu))
-        handleButtonsMenu();
-    else
-        handleButtonsPlayerState();
+    switch (eCurrentState) {
+        case PLAYER_STATE:
+            handleButtonsPlayerState();
+            break;
+        case MENU_STATE:
+            handleButtonsMenu();
+            break;
+        case INFO_STATE:
+            handleInfoState();
+            break;
+        default:
+            break;
+    }
 
     uint8_t uiCalling = (stPlayer.pstPet->uiStats & MASK_CALLED) >> 2;
     if (stPlayer.eState > HATCHING)
@@ -143,18 +176,27 @@ uint8_t DIGIVICE_update() {
 
     uiPreviousControllerState = uiCurrentControllerState;
 
-    uint8_t uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
-    if (uiRet & DIGIVICE_EVENT_HAPPENED) {
-        gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
-        uiCurrentIcon = -1;
-    }
-    if (uiRet & DIGIVICE_CHANGED_STATE)
-        gstMenu.fInUse = 1;
+    switch (eCurrentState) {
+        case PLAYER_STATE:
+            uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
+            if (uiRet & DIGIVICE_EVENT_HAPPENED) {
+                gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
+                uiCurrentIcon = -1;
+            }
+            if (uiRet & DIGIVICE_CHANGED_STATE)
+                gstMenu.fInUse = 1;
 
-    if (DIGIVICE_isMenuInUse(&gstMenu))
-        DIGIVICE_drawMenu(&gstMenu);
-    else
-        DIGIVICE_renderPlayer(&stPlayer);
+            DIGIVICE_renderPlayer(&stPlayer);
+            break;
+        case MENU_STATE:
+            DIGIVICE_drawMenu(&gstMenu);
+            break;
+        case INFO_STATE:
+            DIGIVICE_updateInfoDisplay(uiDeltaTime);
+            DIGIVICE_renderInfoDisplay();
+            break;
+    }
+
     gpstDigiviceHal->render();
     return DIGI_RET_OK;
 }

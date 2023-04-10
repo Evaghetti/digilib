@@ -26,5 +26,5 @@ void DIGIVICE_initMenu(menu_t* pstMenu, uint8_t uiCountItem,
                        const menu_item_t* pstItems);
 void DIGIVICE_advanceMenu(menu_t* pstMenu, direction_menu_e eDirection);
 void DIGIVICE_drawMenu(const menu_t* pstMenu);
-uint8_t DIGIVICE_isMenuInUse(const menu_t* pstMenu);
+
 #endif
