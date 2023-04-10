@@ -9,4 +9,6 @@ void DIGIVICE_updateInfoDisplay(uint32_t uiDeltaTime);
 
 void DIGIVICE_renderInfoDisplay();
 
+void DIGIVICE_advanceInfoDisplay(int8_t iDirection);
+
 #endif
