@@ -67,3 +67,36 @@ void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
             continue;
     }
 }
+
+void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
+                         uint8_t uiEffects) {
+    uint8_t uiShift = 0;
+    uint8_t uiBcdResult = 0;
+
+    if (uiNumber == 0) {
+        DIGIVICE_drawText("0", x, y, uiEffects);
+        return;
+    }
+
+    while (uiNumber > 0) {
+        uiBcdResult |= (uiNumber % 10) << (uiShift++ << 2);
+        uiNumber /= 10;
+    }
+
+    uiBcdResult = ((uiBcdResult & 0x0F) << 4 | (uiBcdResult & 0xF0) >> 4);
+    if (uiBcdResult & 0b11110000)
+        x -= 4;
+
+    while (uiBcdResult) {
+        uint8_t uiCurrentNumber = uiBcdResult & 0b00001111;
+        if (uiCurrentNumber) {
+            const uint16_t uiIndex = (('0' + uiCurrentNumber) - FIRST_CHARACTER)
+                                     << 3;
+
+            DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiEffects);
+            x += 4;
+        }
+
+        uiBcdResult >>= 4;
+    }
+}

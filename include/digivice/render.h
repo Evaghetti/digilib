@@ -23,5 +23,7 @@ void DIGIVICE_drawSprite(const uint16_t* const puiSprite, uint8_t x, uint8_t y,
 
 void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
                        uint8_t uiEffects);
+void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
+                         uint8_t uiEffects);
 
 #endif  // RENDER_H

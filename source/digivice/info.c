@@ -13,6 +13,7 @@
 
 typedef enum info_state_e {
     NAME,
+    STATS,
     HUNGER,
     STRENGTH,
     COUNT_INFO_STATES
@@ -22,7 +23,8 @@ static info_state_e eCurrentState;
 static const char* pszDigimonName;
 static uint16_t uiIndexdigimon;
 static int16_t iDeltaTimeDisplay;
-static uint8_t uiPositionText, uiSizeName, uiHunger, uiStrength;
+static uint8_t uiPositionText, uiSizeName;
+static uint8_t uiHunger, uiStrength, uiAge, uiWeight;
 
 void DIGIVICE_initInfoDisplay(const playing_digimon_t* pstPlayerData) {
     eCurrentState = NAME;
@@ -31,6 +33,8 @@ void DIGIVICE_initInfoDisplay(const playing_digimon_t* pstPlayerData) {
     uiIndexdigimon = pstPlayerData->uiIndexCurrentDigimon;
     uiHunger = GET_HUNGER_VALUE(pstPlayerData->uiHungerStrength);
     uiStrength = GET_STRENGTH_VALUE(pstPlayerData->uiHungerStrength);
+    uiAge = pstPlayerData->uiAge;
+    uiWeight = pstPlayerData->uiWeight;
 
     iDeltaTimeDisplay = INITIAL_TIME;
     uiPositionText = INITIAL_POSITION_TEXT;
@@ -81,11 +85,19 @@ void DIGIVICE_renderInfoDisplay() {
                 guiDigimonWalkingAnimationDatabase[uiIndexdigimon][0], 0, 0,
                 EFFECT_REVERSE_TILE);
             break;
+        case STATS:
+            DIGIVICE_drawTile(AGE_INFO_TILE, 0, 0, EFFECT_NONE);
+            DIGIVICE_drawTile(SCALE_INFO_TILE, 0, 8, EFFECT_NONE);
+            DIGIVICE_drawNumber(uiAge, LCD_SCREEN_WIDTH - 12, 0, EFFECT_NONE);
+            DIGIVICE_drawNumber(uiWeight, LCD_SCREEN_WIDTH - 9, 8, EFFECT_NONE);
+            DIGIVICE_drawText("yr", LCD_SCREEN_WIDTH - 8, 0, EFFECT_NONE);
+            DIGIVICE_drawText("G", LCD_SCREEN_WIDTH - 4, 8, EFFECT_NONE);
+            break;
         case HUNGER:
-            displayHearts(TITLE_HUNGER, uiHunger - 3);
+            displayHearts(TITLE_HUNGER, uiHunger);
             break;
         case STRENGTH:
-            displayHearts(TITLE_STRENGTH, uiHunger - 1);
+            displayHearts(TITLE_STRENGTH, uiStrength);
             break;
         default:
             break;
