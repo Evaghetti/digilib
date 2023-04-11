@@ -17,6 +17,7 @@
 #define STEP_TIME_HAPPY      100
 #define STEP_TIME_NEGATING   500
 #define STEP_TIME_NEED_SLEEP 1000
+#define STEP_TIME_SICK       500
 #define ONE_MINUTE           60000
 
 #define FRAME_TO_HATCH_FROM_EGG            50
@@ -41,7 +42,7 @@
     (x->uiCurrentFrame >= FRAME_TO_START_SMILE_EVOLUTION)
 #define STATE_CAN_SHOW_POOP(x)                                              \
     (x == WALKING || x == EATING || x == EATING_VITAMIN || x == CLEANING || \
-     x == HAPPY)
+     x == HAPPY || x == SICK)
 
 #define X_POSITION_SNORE (LCD_CENTER_SPRITE + 16)
 
@@ -67,6 +68,8 @@ int DIGIVICE_initPlayer(player_t* pstPlayer) {
             DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
     } else
         DIGIVICE_changeStatePlayer(pstPlayer, WAITING_HATCH);
+
+    pstPlayer->pstPet->uiWeight = 98;
     return DIGI_RET_OK;
 }
 
@@ -137,24 +140,6 @@ void updateNeedSleep(player_t* pstPlayer) {
     }
 }
 
-static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
-    if (uiEvents & DIGI_EVENT_MASK_EVOLVE) {
-        if (pstPlayer->pstPet->pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
-            DIGIVICE_changeStatePlayer(pstPlayer, HATCHING);
-        else
-            DIGIVICE_changeStatePlayer(pstPlayer, EVOLVING);
-
-        return DIGIVICE_EVENT_HAPPENED;
-    }
-
-    if (uiEvents & DIGI_EVENT_MASK_SLEEPY)
-        DIGIVICE_changeStatePlayer(pstPlayer, NEED_SLEEP);
-    else if (uiEvents & DIGI_EVENT_MASK_WOKE_UP)
-        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
-
-    return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
-}
-
 static void updateCleaning(player_t* pstPlayer) {
     uiCameraOffset++;
 
@@ -174,6 +159,31 @@ static void updateNegating(player_t* pstPlayer) {
 
     if (pstPlayer->uiCurrentFrame > 6)
         DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+}
+
+void updateSick(player_t* pstPlayer) {
+    pstPlayer->uiCurrentFrame = (pstPlayer->uiCurrentFrame + 1) & 1;
+}
+
+static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
+    if (uiEvents & DIGI_EVENT_MASK_EVOLVE) {
+        if (pstPlayer->pstPet->pstCurrentDigimon->uiStage == DIGI_STAGE_BABY_1)
+            DIGIVICE_changeStatePlayer(pstPlayer, HATCHING);
+        else
+            DIGIVICE_changeStatePlayer(pstPlayer, EVOLVING);
+
+        return DIGIVICE_EVENT_HAPPENED;
+    }
+
+    if (uiEvents & DIGI_EVENT_MASK_SLEEPY)
+        DIGIVICE_changeStatePlayer(pstPlayer, NEED_SLEEP);
+    else if (uiEvents & DIGI_EVENT_MASK_WOKE_UP)
+        DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
+
+    if (uiEvents & DIGI_EVENT_MASK_SICK)
+        DIGIVICE_changeStatePlayer(pstPlayer, SICK);
+
+    return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
 }
 
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
@@ -227,6 +237,9 @@ int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
                 break;
             case NEGATING:
                 updateNegating(pstPlayer);
+                break;
+            case SICK:
+                updateSick(pstPlayer);
                 break;
             default:
                 break;
@@ -282,6 +295,8 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
     const uint8_t uiRealPosPlayer = pstPlayer->uiPosition -
                                     (uiCanShowPoop ? uiOffsetPoop : 0) -
                                     uiCameraOffset;
+    const uint16_t uiIndexDigimon =
+        pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
 
     switch (pstPlayer->eState) {
         case CLEANING: {
@@ -289,6 +304,19 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
 
             DIGIVICE_drawTile(CLEANING_TILE, uiCleanWavePos, 0, EFFECT_NONE);
             DIGIVICE_drawTile(CLEANING_TILE, uiCleanWavePos, 8, EFFECT_NONE);
+        }
+        case SICK: {
+            if (pstPlayer->pstPet->uiStats & MASK_SICK) {
+                const uint8_t uiCurrentFrame = pstPlayer->uiCurrentFrame & 1;
+
+                DIGIVICE_drawSprite(
+                    guiDigimonAnimationDatabase[uiIndexDigimon][5]
+                                               [uiCurrentFrame],
+                    uiRealPosPlayer, 0, EFFECT_NONE);
+                DIGIVICE_drawTile(guiSkullAnimation[uiCurrentFrame],
+                                  uiRealPosPlayer + 16, 0, EFFECT_NONE);
+                break;
+            }
         }
         case WAITING_HATCH:
         case WALKING: {
@@ -312,17 +340,15 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
         } break;
         case EVOLVING: {
             uint8_t uiCurrentFrame = SHOULD_BE_SMILING(pstPlayer) ? 1 : 0;
-            uint8_t uiIndexDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
+            uint8_t uiIndexOldDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
 
-            DIGIVICE_drawSprite(
-                guiDigimonAnimationDatabase[uiIndexDigimon][1][uiCurrentFrame],
-                pstPlayer->uiPosition, 0, 0);
+            DIGIVICE_drawSprite(guiDigimonAnimationDatabase[uiIndexOldDigimon]
+                                                           [1][uiCurrentFrame],
+                                pstPlayer->uiPosition, 0, 0);
             drawEvolutionLine(uiEffectFrame);
         } break;
         case EATING:
         case EATING_VITAMIN: {
-            const uint16_t uiIndexDigimon =
-                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
             const uint16_t* const puiSprite =
                 pstPlayer->uiCurrentFrame < 5
                     ? guiDigimonAnimationDatabase[uiIndexDigimon][3][0]
@@ -336,8 +362,6 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                               uiRealPosPlayer - 8, uiPositionItem, 0);
         } break;
         case NEED_SLEEP: {
-            const uint16_t uiIndexDigimon =
-                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
             const uint16_t* const puiSprite =
                 guiDigimonAnimationDatabase[uiIndexDigimon][0]
                                            [pstPlayer->uiCurrentFrame];
@@ -360,8 +384,6 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
                                   EFFECT_REVERSE_COLOR);
         } break;
         case HAPPY: {
-            const uint16_t uiIndexDigimon =
-                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
             const uint16_t* const puiSprite =
                 pstPlayer->uiCurrentFrame < 5
                     ? guiDigimonAnimationDatabase[uiIndexDigimon][1][0]
@@ -374,9 +396,6 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
             }
         } break;
         case NEGATING: {
-            const uint16_t uiIndexDigimon =
-                pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
-
             DIGIVICE_drawSprite(
                 guiDigimonSingleFrameAnimationDatabase[uiIndexDigimon][0],
                 uiRealPosPlayer, 0, pstPlayer->uiCurrentFrame & 1);
@@ -395,6 +414,11 @@ static void prepareForWalking(player_t* pstPlayer) {
     pstPlayer->uiIndexBeforeEvolve = pstPlayer->pstPet->uiIndexCurrentDigimon;
     pstPlayer->uiCurrentStep = STEP_TIME_WALKING;
     pstPlayer->uiCurrentFrame = 0xFF;
+}
+
+static void prepareSick(player_t* pstPlayer) {
+    pstPlayer->uiCurrentStep = STEP_TIME_SICK;
+    pstPlayer->uiCurrentFrame = 0;
 }
 
 uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
@@ -458,13 +482,15 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
                     pstPlayer->eState = eNewState;
                     pstPlayer->uiCurrentStep = STEP_TIME_CLEANING;
                     return DIGI_RET_OK;
+                case SICK:
+                    prepareSick(pstPlayer);
+                    break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
             }
             break;
         case HATCHING:
         case EVOLVING:
-        case EATING_VITAMIN:
         case HAPPY:
         case NEGATING:
             switch (eNewState) {
@@ -477,13 +503,20 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             }
             break;
         case EATING:
+        case EATING_VITAMIN:
             switch (eNewState) {
                 case WALKING:
+                    if (pstPlayer->pstPet->uiStats & MASK_SICK)
+                        return DIGIVICE_changeStatePlayer(pstPlayer, SICK);
+
                     prepareForWalking(pstPlayer);
                     break;
                 case NEGATING:
                     pstPlayer->uiCurrentStep = STEP_TIME_NEGATING;
                     pstPlayer->uiCurrentFrame = 0;
+                    break;
+                case SICK:
+                    prepareSick(pstPlayer);
                     break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
@@ -513,15 +546,30 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
         case CLEANING:
             switch (eNewState) {
                 case HAPPY:
+                    if (pstPlayer->pstPet->uiStats & MASK_SICK)
+                        return DIGIVICE_changeStatePlayer(pstPlayer, SICK);
                     pstPlayer->uiCurrentStep = STEP_TIME_HAPPY;
                     break;
                 case WALKING:
                     prepareForWalking(pstPlayer);
                     break;
+                case SICK:
+                    prepareSick(pstPlayer);
+                    break;
                 default:
                     DEFAULT_ERROR_CHANGING_STATE(pstPlayer);
             }
             break;
+        case SICK:
+            switch (eNewState) {
+                case CLEANING:
+                    pstPlayer->eState = eNewState;
+                    pstPlayer->uiCurrentStep = STEP_TIME_CLEANING;
+                    return DIGI_RET_OK;
+
+                default:
+                    break;
+            }
         default:
             LOG("Missing %d state", pstPlayer->eState);
             return DIGI_RET_ERROR;

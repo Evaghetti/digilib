@@ -42,7 +42,7 @@ ANIMATION_REFUSAL_BEGIN = 5
 ANIMATION_REFUSAL_END   = 6
 
 ANIMATION_SICK_BEGIN   = 14
-ANIMATION_SICK_END     = 15
+ANIMATION_SICK_END     = 16
 
 MASK_INVERTED     = 0b1000000000000000
 MASK_INDEX_SPRITE = 0b0111111111111111
@@ -265,8 +265,8 @@ def main():
         print(f"#define COUNT_FONT {getCountTile(tilesFont)}", file=outHeader)
         print("#define FIRST_CHARACTER ' '", file=outHeader)
 
-        print(f"#define MAX_COUNT_ANIMATIONS             5", file=outHeader)
-        print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 2", file=outHeader)
+        print(f"#define MAX_COUNT_ANIMATIONS             6", file=outHeader)
+        print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 1", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION_WALKING     3", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION             2\n", file=outHeader)
 
@@ -289,6 +289,7 @@ def main():
         print(f"extern const uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS];", file=outHeader)
         print(f"extern const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
+        print(f"extern const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -320,6 +321,7 @@ def main():
             writeAnimation(animationDatabase[i], ANIMATION_ANGRY_BEGIN, ANIMATION_ANGRY_END, outSource)
             writeAnimation(animationDatabase[i], ANIMATION_SHOOTING_BEGIN, ANIMATION_SHOOTING_END, outSource)
             writeAnimation(animationDatabase[i], ANIMATION_EATING_BEGIN, ANIMATION_EATING_END, outSource)
+            writeAnimation(animationDatabase[i], ANIMATION_SICK_BEGIN, ANIMATION_SICK_END, outSource)
             
             print("}", end=",\n", file=outSource)
         print("};", file=outSource)
@@ -335,7 +337,7 @@ def main():
                 continue
 
             print("{", end="", file=outSource)
-            print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], animationDatabase[i][ANIMATION_SICK_BEGIN], sep=",", end="", file=outSource)            
+            print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], sep=",", end="", file=outSource)            
             print("},", end="\n", file=outSource)
         print("};", file=outSource)
 
@@ -359,6 +361,12 @@ def main():
         indicesPoopToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesPoopToWrite]
         print("const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
         print(",".join(indicesPoopToWrite), file=outSource)
+        print("};", file=outSource)
+
+        indicesSkullToWrite = getPointerToTileFromIndices(feedIndices[13:15])
+        indicesSkullToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesSkullToWrite]
+        print("const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
+        print(",".join(indicesSkullToWrite), file=outSource)
         print("};", file=outSource)
 
 if __name__ == "__main__":

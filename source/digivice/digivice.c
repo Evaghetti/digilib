@@ -68,6 +68,7 @@ static void handleButtonsPlayerState() {
         case WALKING:
         case NEED_SLEEP:
         case SLEEPING:
+        case SICK:
             if (DIGIVICE_isButtonPressed(BUTTON_A)) {
                 if (uiCurrentIcon >= 0)
                     gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
