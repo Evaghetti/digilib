@@ -290,6 +290,7 @@ def main():
         print(f"extern const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
+        print(f"extern const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -367,6 +368,12 @@ def main():
         indicesSkullToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesSkullToWrite]
         print("const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
         print(",".join(indicesSkullToWrite), file=outSource)
+        print("};", file=outSource)
+
+        indicesStormToWrite = getPointerToTileFromIndices(feedIndices[23:25])
+        indicesStormToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesStormToWrite]
+        print("const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
+        print(",".join(indicesStormToWrite), file=outSource)
         print("};", file=outSource)
 
 if __name__ == "__main__":

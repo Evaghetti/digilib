@@ -99,6 +99,9 @@ static void handleButtonsPlayerState() {
                                           gstMenuItemsLights);
                         eCurrentState = MENU_STATE;
                         break;
+                    case 6:
+                        DIGIVICE_changeStatePlayer(&stPlayer, HEALING);
+                        break;
                     default:
                         break;
                 }

@@ -16,6 +16,8 @@ typedef enum player_state_e {
     HAPPY,
     NEGATING,
     SICK,
+    ANGRY,
+    HEALING,
 } player_state_e;
 
 typedef struct player_t {
