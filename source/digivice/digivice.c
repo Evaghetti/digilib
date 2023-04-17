@@ -180,6 +180,9 @@ uint8_t DIGIVICE_update() {
         case INFO_STATE:
             handleInfoState();
             break;
+        case TRAINING_STATE:
+            DIGIVICE_handleInputTraining();
+            break;
         default:
             break;
     }
