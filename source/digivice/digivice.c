@@ -8,8 +8,14 @@
 #include "menu.h"
 #include "player.h"
 #include "render.h"
+#include "training.h"
 
-typedef enum game_state_e { PLAYER_STATE, MENU_STATE, INFO_STATE } game_state_e;
+typedef enum game_state_e {
+    PLAYER_STATE,
+    MENU_STATE,
+    INFO_STATE,
+    TRAINING_STATE,
+} game_state_e;
 
 static player_t stPlayer;
 static menu_t gstMenu;
@@ -88,6 +94,10 @@ static void handleButtonsPlayerState() {
                                               sizeof(gstMenuItemsFeed[0]),
                                           gstMenuItemsFeed);
                         eCurrentState = MENU_STATE;
+                        break;
+                    case 2:
+                        DIGIVICE_initTraining(stPlayer.pstPet);
+                        eCurrentState = TRAINING_STATE;
                         break;
                     case 4:
                         DIGIVICE_changeStatePlayer(&stPlayer, CLEANING);
@@ -198,6 +208,10 @@ uint8_t DIGIVICE_update() {
         case INFO_STATE:
             DIGIVICE_updateInfoDisplay(uiDeltaTime);
             DIGIVICE_renderInfoDisplay();
+            break;
+        case TRAINING_STATE:
+            DIGIVICE_updateTraining(uiDeltaTime);
+            DIGIVICE_renderTraining();
             break;
     }
 

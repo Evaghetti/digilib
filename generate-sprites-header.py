@@ -44,6 +44,8 @@ ANIMATION_REFUSAL_END   = 6
 ANIMATION_SICK_BEGIN   = 14
 ANIMATION_SICK_END     = 16
 
+TILE_INDEX = 16
+
 MASK_INVERTED     = 0b1000000000000000
 MASK_INDEX_SPRITE = 0b0111111111111111
 
@@ -280,12 +282,14 @@ def main():
         print(f"#define FILLED_HEART_TILE &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[20:21])[0][0]}]\n", file=outHeader)
         print(f"#define AGE_INFO_TILE     &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[18:19])[0][0]}]\n", file=outHeader)
         print(f"#define SCALE_INFO_TILE   &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[19:20])[0][0]}]\n", file=outHeader)
+        print(f"#define SHIELD_TILE       &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[17:18])[0][0]}]\n", file=outHeader)
         
         print(f"extern const uint8_t guiFontDatabase[COUNT_FONT];", file=outHeader)
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING];", file=outHeader)
         print(f"extern const uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION];", file=outHeader)
+        print(f"extern const uint8_t *const guiDigimonProjectileSprites[MAX_COUNT_DIGIMON];", file=outHeader)
         print(f"extern const uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS];", file=outHeader)
         print(f"extern const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
@@ -325,6 +329,15 @@ def main():
             writeAnimation(animationDatabase[i], ANIMATION_SICK_BEGIN, ANIMATION_SICK_END, outSource)
             
             print("}", end=",\n", file=outSource)
+        print("};", file=outSource)
+
+        print("\nconst uint8_t *const guiDigimonProjectileSprites[MAX_COUNT_DIGIMON] = {", file=outSource)
+        for i, digimonName in enumerate(spriteDataBase.keys()):
+            if len(spriteDataBase[digimonName]) <= 3:
+                continue
+            
+            index = getTransformedIndex(spriteDataBase[digimonName][16][0])
+            print(f"&guiTileDatabase[{index}],\n", file=outSource)
         print("};", file=outSource)
 
         print("\nconst uint16_t *const guiDigimonWalkingAnimationDatabase[MAX_COUNT_DIGIMON][MAX_FRAMES_ANIMATION_WALKING] = {", file=outSource)
