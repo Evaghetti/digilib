@@ -489,6 +489,8 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             if (pstPlayer->pstPet->uiStats & MASK_SICK)
                 return DIGIVICE_changeStatePlayer(pstPlayer, SICK);
             pstPlayer->uiCurrentStep = STEP_TIME_HAPPY;
+            pstPlayer->uiCurrentFrame = 0;
+            uiEffectFrame = 0;
             break;
         case ANGRY:
             pstPlayer->uiCurrentStep = STEP_TIME_ANGRY;

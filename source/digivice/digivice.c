@@ -96,7 +96,7 @@ static void handleButtonsPlayerState() {
                         eCurrentState = MENU_STATE;
                         break;
                     case 2:
-                        DIGIVICE_initTraining(stPlayer.pstPet);
+                        DIGIVICE_initTraining(&stPlayer);
                         eCurrentState = TRAINING_STATE;
                         break;
                     case 4:

@@ -1,6 +1,7 @@
 #include "training.h"
 
 #include "digivice.h"
+#include "enums_digivice.h"
 #include "render.h"
 #include "sprites.h"
 
@@ -19,9 +20,10 @@ typedef enum training_state_e {
     SCROLLING,
     WAITING,
     SHOTTING,
+    SPRITE_ANIMATION
 } training_state_e;
 
-static playing_digimon_t* pstCurrentDigimon;
+static player_t* pstPlayer;
 static training_state_e eCurrentState;
 static uint8_t uiCameraOffset, uiCurrentStep, uiTimeWait;
 static uint8_t uiFrame, uiXPosProjectile, uiYPosProjectile;
@@ -42,8 +44,8 @@ static void setStateScrolling() {
     eCurrentState = SCROLLING;
 }
 
-void DIGIVICE_initTraining(playing_digimon_t* pstPlayingDigimon) {
-    pstCurrentDigimon = pstPlayingDigimon;
+void DIGIVICE_initTraining(player_t* pstPlayerRef) {
+    pstPlayer = pstPlayerRef;
 
     uiCurrentOption = 0;
 
@@ -77,7 +79,9 @@ static inline void updateProjectile() {
                     uiCurrentPattern = 0;
             }
 
-            setStateScrolling();
+            eCurrentState = SPRITE_ANIMATION;
+            DIGIVICE_changeStatePlayer(pstPlayer,
+                                       uiXPosProjectile >= 16 ? ANGRY : HAPPY);
             return;
         }
 
@@ -91,6 +95,13 @@ static inline void updateProjectile() {
     }
 }
 
+static inline void updateAnimation(uint16_t uiDeltaTime) {
+    uint8_t uiRet = DIGIVICE_updatePlayer(pstPlayer, uiDeltaTime);
+
+    if (uiRet & DIGIVICE_CHANGED_STATE)
+        setStateScrolling();
+}
+
 void DIGIVICE_updateTraining(uint16_t uiDeltaTime) {
     uiCurrentStep += uiDeltaTime;
 
@@ -100,6 +111,9 @@ void DIGIVICE_updateTraining(uint16_t uiDeltaTime) {
             break;
         case SHOTTING:
             updateProjectile();
+            break;
+        case SPRITE_ANIMATION:
+            updateAnimation(uiDeltaTime);
             break;
         default:
             break;
@@ -124,12 +138,17 @@ void DIGIVICE_handleInputTraining() {
 }
 
 void DIGIVICE_renderTraining() {
+    if (eCurrentState == SPRITE_ANIMATION) {
+        DIGIVICE_renderPlayer(pstPlayer);
+        return;
+    }
+
+    const uint16_t uiIndexDigimon =
+        pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
     const uint16_t* const puiSprite =
-        guiDigimonAnimationDatabase[pstCurrentDigimon->uiIndexCurrentDigimon -
-                                    1][3][uiFrame];
+        guiDigimonAnimationDatabase[uiIndexDigimon][3][uiFrame];
     const uint8_t* puiProjectileTile =
-        guiDigimonProjectileSprites[pstCurrentDigimon->uiIndexCurrentDigimon -
-                                    1];
+        guiDigimonProjectileSprites[uiIndexDigimon];
 
     DIGIVICE_drawSprite(puiSprite, POSITION_MIRROR - uiCameraOffset, 0,
                         EFFECT_REVERSE_TILE);

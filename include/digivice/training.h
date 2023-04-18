@@ -1,9 +1,9 @@
 #ifndef TRAINING_H
 #define TRAINING_H
 
-#include "digimon.h"
+#include "player.h"
 
-void DIGIVICE_initTraining(playing_digimon_t* pstPlayingDigimon);
+void DIGIVICE_initTraining(player_t* pstPlayer);
 
 void DIGIVICE_updateTraining(uint16_t uiDeltaTime);
 
