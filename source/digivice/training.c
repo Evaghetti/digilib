@@ -13,6 +13,7 @@
 #define STEP_SCROLL     25
 #define STEP_WAIT       25
 #define STEP_PROJECTILE 232
+#define STEP_SCORE      232
 
 #define POSITION_NOT_SET 0xff
 
@@ -20,14 +21,16 @@ typedef enum training_state_e {
     SCROLLING,
     WAITING,
     SHOTTING,
-    SPRITE_ANIMATION
+    SPRITE_ANIMATION,
+    SHOW_SCORE,
 } training_state_e;
 
 static player_t* pstPlayer;
 static training_state_e eCurrentState;
 static uint8_t uiCameraOffset, uiCurrentStep, uiTimeWait;
 static uint8_t uiFrame, uiXPosProjectile, uiYPosProjectile;
-static uint8_t uiCurrentOption, uiCurrentPattern = 0;
+static uint8_t uiCurrentOption, uiCountCorrect, uiCurrentPattern = 0;
+static uint8_t uiCurrentLimitStep;
 
 static const uint8_t uiPatterns[10][5] = {
     {0, 0, 0, 1, 1}, {1, 0, 1, 0, 0}, {0, 1, 0, 0, 1}, {1, 0, 0, 1, 0},
@@ -42,81 +45,113 @@ static void setStateScrolling() {
     uiFrame = uiTimeWait = uiCurrentStep = 0;
 
     eCurrentState = SCROLLING;
+    uiCurrentLimitStep = STEP_SCROLL;
 }
 
 void DIGIVICE_initTraining(player_t* pstPlayerRef) {
     pstPlayer = pstPlayerRef;
 
     uiCurrentOption = 0;
+    uiCountCorrect = 0;
 
     setStateScrolling();
 }
 
 static inline void updateCamera() {
-    if (uiCurrentStep >= STEP_SCROLL) {
-        uiCurrentStep = 0;
-
-        if (uiTimeWait < STEP_WAIT)
-            uiTimeWait++;
-        else if (uiCameraOffset)
-            uiCameraOffset--;
-        else
-            eCurrentState = WAITING;
+    if (uiTimeWait < STEP_WAIT)
+        uiTimeWait++;
+    else if (uiCameraOffset)
+        uiCameraOffset--;
+    else {
+        eCurrentState = WAITING;
+        uiCurrentStep = STEP_WAIT;
     }
 }
 
 static inline void updateProjectile() {
-    if (uiCurrentStep >= STEP_PROJECTILE) {
-        uiCurrentStep = 0;
 
-        if (uiTimeWait == 2) {
-            uiCurrentOption++;
-            if (uiCurrentOption >= 5) {
-                uiCurrentOption = 0;
+    if (uiTimeWait == 2) {
+        uiCurrentOption++;
+        if (uiCurrentOption >= 5) {
+            uiCurrentOption = 0;
 
-                uiCurrentPattern++;
-                if (uiCurrentPattern >= 10)
-                    uiCurrentPattern = 0;
-            }
-
-            eCurrentState = SPRITE_ANIMATION;
-            DIGIVICE_changeStatePlayer(pstPlayer,
-                                       uiXPosProjectile >= 16 ? ANGRY : HAPPY);
-            return;
+            uiCurrentPattern++;
+            if (uiCurrentPattern >= 10)
+                uiCurrentPattern = 0;
         }
 
-        if ((uiYPosProjectile >> 3) !=
-                uiPatterns[uiCurrentPattern][uiCurrentOption] &&
-            uiXPosProjectile >= 16) {
-            uiXPosProjectile -= 8;
-        }
-
-        uiTimeWait++;
+        eCurrentState = SPRITE_ANIMATION;
+        uiCurrentLimitStep = 0;
+        DIGIVICE_changeStatePlayer(pstPlayer,
+                                   uiXPosProjectile >= 16 ? ANGRY : HAPPY);
+        return;
     }
+
+    if ((uiYPosProjectile >> 3) !=
+            uiPatterns[uiCurrentPattern][uiCurrentOption] &&
+        uiXPosProjectile >= 16) {
+        uiXPosProjectile -= 8;
+        uiCountCorrect++;
+    }
+
+    uiTimeWait++;
 }
 
 static inline void updateAnimation(uint16_t uiDeltaTime) {
     uint8_t uiRet = DIGIVICE_updatePlayer(pstPlayer, uiDeltaTime);
 
-    if (uiRet & DIGIVICE_CHANGED_STATE)
-        setStateScrolling();
+    if (uiRet & DIGIVICE_CHANGED_STATE) {
+        // If the current option didn't reset, needs to scroll
+        // Using uiTimeWait to check if we are coming back from a score
+        // if we are, uiTimeWait will be set to 0.
+        if (uiCurrentOption || !uiTimeWait) {
+            setStateScrolling();
+            return;
+        }
+
+        // Otherwise it's time to display the score.
+        eCurrentState = SHOW_SCORE;
+        uiCurrentLimitStep = STEP_SCORE;
+        uiTimeWait = 0;
+    }
+}
+
+static void updateScore() {
+    if (uiTimeWait >= 5) {
+        eCurrentState = SPRITE_ANIMATION;
+        uiCurrentLimitStep = 0;
+        uiTimeWait = 0;
+        DIGIVICE_changeStatePlayer(pstPlayer,
+                                   uiCountCorrect >= 3 ? HAPPY : ANGRY);
+
+        uiCountCorrect = 0;
+        return;
+    }
+    uiTimeWait++;
 }
 
 void DIGIVICE_updateTraining(uint16_t uiDeltaTime) {
     uiCurrentStep += uiDeltaTime;
 
-    switch (eCurrentState) {
-        case SCROLLING:
-            updateCamera();
-            break;
-        case SHOTTING:
-            updateProjectile();
-            break;
-        case SPRITE_ANIMATION:
-            updateAnimation(uiDeltaTime);
-            break;
-        default:
-            break;
+    if (uiCurrentStep >= uiCurrentLimitStep) {
+        uiCurrentStep = 0;
+
+        switch (eCurrentState) {
+            case SCROLLING:
+                updateCamera();
+                break;
+            case SHOTTING:
+                updateProjectile();
+                break;
+            case SPRITE_ANIMATION:
+                updateAnimation(uiDeltaTime);
+                break;
+            case SHOW_SCORE:
+                updateScore();
+                break;
+            default:
+                break;
+        }
     }
 }
 
@@ -129,6 +164,8 @@ void DIGIVICE_handleInputTraining() {
 
         if (uiYPosProjectile != POSITION_NOT_SET) {
             eCurrentState = SHOTTING;
+            uiCurrentLimitStep = STEP_PROJECTILE;
+
             uiXPosProjectile = POSITION_PLAYER - 8;
             uiCurrentStep = 0;
             uiFrame = 1;
@@ -140,6 +177,15 @@ void DIGIVICE_handleInputTraining() {
 void DIGIVICE_renderTraining() {
     if (eCurrentState == SPRITE_ANIMATION) {
         DIGIVICE_renderPlayer(pstPlayer);
+        return;
+    }
+
+    if (eCurrentState == SHOW_SCORE) {
+        DIGIVICE_drawTile(AGE_INFO_TILE, 2, 1, EFFECT_NONE);
+        DIGIVICE_drawNumber(uiCountCorrect, 4, 7, EFFECT_NONE);
+        DIGIVICE_drawText("VS", 12, 7, EFFECT_NONE);
+        DIGIVICE_drawNumber(5 - uiCountCorrect, 24, 7, EFFECT_NONE);
+        DIGIVICE_drawTile(SHIELD_TILE, 22, 0, EFFECT_NONE);
         return;
     }
 
