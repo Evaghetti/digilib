@@ -83,9 +83,9 @@ void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
         uiNumber /= 10;
     }
 
-    uiBcdResult = ((uiBcdResult & 0x0F) << 4 | (uiBcdResult & 0xF0) >> 4);
     if (uiBcdResult & 0b11110000)
         x -= 4;
+    uiBcdResult = ((uiBcdResult & 0x0F) << 4 | (uiBcdResult & 0xF0) >> 4);
 
     while (uiBcdResult) {
         uint8_t uiCurrentNumber = uiBcdResult & 0b00001111;
