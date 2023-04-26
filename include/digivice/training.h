@@ -7,7 +7,7 @@ void DIGIVICE_initTraining(player_t* pstPlayer);
 
 void DIGIVICE_updateTraining(uint16_t uiDeltaTime);
 
-void DIGIVICE_handleInputTraining();
+uint8_t DIGIVICE_handleInputTraining();
 
 void DIGIVICE_renderTraining();
 

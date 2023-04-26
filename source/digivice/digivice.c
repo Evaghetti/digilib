@@ -181,7 +181,8 @@ uint8_t DIGIVICE_update() {
             handleInfoState();
             break;
         case TRAINING_STATE:
-            DIGIVICE_handleInputTraining();
+            if (DIGIVICE_handleInputTraining() == DIGIVICE_CHANGED_STATE)
+                eCurrentState = PLAYER_STATE;
             break;
         default:
             break;

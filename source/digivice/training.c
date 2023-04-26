@@ -97,22 +97,26 @@ static inline void updateProjectile() {
     uiTimeWait++;
 }
 
+static void changeStateAnimation() {
+    // If the current option didn't reset, needs to scroll
+    // Using uiTimeWait to check if we are coming back from a score
+    // if we are, uiTimeWait will be set to 0.
+    if (uiCurrentOption || !uiTimeWait) {
+        setStateScrolling();
+        return;
+    }
+
+    // Otherwise it's time to display the score.
+    eCurrentState = SHOW_SCORE;
+    uiCurrentLimitStep = STEP_SCORE;
+    uiTimeWait = 0;
+}
+
 static inline void updateAnimation(uint16_t uiDeltaTime) {
     uint8_t uiRet = DIGIVICE_updatePlayer(pstPlayer, uiDeltaTime);
 
     if (uiRet & DIGIVICE_CHANGED_STATE) {
-        // If the current option didn't reset, needs to scroll
-        // Using uiTimeWait to check if we are coming back from a score
-        // if we are, uiTimeWait will be set to 0.
-        if (uiCurrentOption || !uiTimeWait) {
-            setStateScrolling();
-            return;
-        }
-
-        // Otherwise it's time to display the score.
-        eCurrentState = SHOW_SCORE;
-        uiCurrentLimitStep = STEP_SCORE;
-        uiTimeWait = 0;
+        changeStateAnimation();
     }
 }
 
@@ -155,7 +159,7 @@ void DIGIVICE_updateTraining(uint16_t uiDeltaTime) {
     }
 }
 
-void DIGIVICE_handleInputTraining() {
+uint8_t DIGIVICE_handleInputTraining() {
     if (eCurrentState == WAITING) {
         if (DIGIVICE_isButtonPressed(BUTTON_A))
             uiYPosProjectile = 0;
@@ -172,6 +176,22 @@ void DIGIVICE_handleInputTraining() {
             uiTimeWait = 0;
         }
     }
+
+    if (eCurrentState == SPRITE_ANIMATION) {
+        if (DIGIVICE_isButtonPressed(BUTTON_A) ||
+            DIGIVICE_isButtonPressed(BUTTON_B))
+            changeStateAnimation();
+    }
+
+    if (DIGIVICE_isButtonPressed(BUTTON_C)) {
+        if (uiCurrentOption) {
+            uiCurrentPattern++;
+            uiCurrentOption = 0;
+        }
+        return DIGIVICE_CHANGED_STATE;
+    }
+
+    return DIGIVICE_RET_OK;
 }
 
 void DIGIVICE_renderTraining() {
