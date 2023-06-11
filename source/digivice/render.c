@@ -100,3 +100,15 @@ void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
         uiBcdResult >>= 4;
     }
 }
+
+void DIGIVICE_drawPopup(const uint8_t* const* puiPopup) {
+    uint8_t i = 0;
+
+    while (i < LCD_SCREEN_WIDTH) {
+        DIGIVICE_drawTile(*puiPopup, i, 0, EFFECT_NONE);
+        DIGIVICE_drawTile(*(puiPopup + 4), i, TILE_HEIGHT, EFFECT_NONE);
+
+        i += TILE_WIDTH;
+        puiPopup++;
+    }
+}

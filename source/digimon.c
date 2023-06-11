@@ -262,12 +262,16 @@ uint8_t DIGI_shouldSleep(const playing_digimon_t* pstPlayingDigimon) {
     const digimon_t* pstCurrentDigimon = pstPlayingDigimon->pstCurrentDigimon;
     const uint16_t uiCurrentTime = guiCurrentTime;
 
-    if (!(pstPlayingDigimon->uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP))
+    if (!(pstPlayingDigimon->uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP)) {
+        LOG("Doesn't need to sleep because of timeout from disturbance");
         return DIGI_RET_ERROR;
-    else if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1)
+    } else if (pstCurrentDigimon->uiStage <= DIGI_STAGE_BABY_1) {
+        LOG("Doesn't need to sleep because of age");
         return DIGI_RET_ERROR;
-    else if ((pstPlayingDigimon->uiStats & MASK_SLEEPING) != 0)
+    } else if ((pstPlayingDigimon->uiStats & MASK_SLEEPING) != 0) {
+        LOG("Doesn't need to sleep because it is already sleeping");
         return DIGI_RET_ERROR;
+    }
 
     if (uiCurrentTime > pstCurrentDigimon->uiTimeSleep)
         return DIGI_RET_OK;

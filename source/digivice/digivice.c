@@ -4,6 +4,7 @@
 #include "enums.h"
 #include "enums_digivice.h"
 
+#include "battle.h"
 #include "info.h"
 #include "menu.h"
 #include "player.h"
@@ -15,6 +16,7 @@ typedef enum game_state_e {
     MENU_STATE,
     INFO_STATE,
     TRAINING_STATE,
+    LOOKING_BATTLE_STATE,
 } game_state_e;
 
 static player_t stPlayer;
@@ -98,6 +100,14 @@ static void handleButtonsPlayerState() {
                     case 2:
                         DIGIVICE_initTraining(&stPlayer);
                         eCurrentState = TRAINING_STATE;
+                        break;
+                    case 3:
+                        if (DIGIVICE_canBattle(&stPlayer) != DIGIVICE_RET_OK) {
+                            DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
+                            break;
+                        }
+
+                        eCurrentState = LOOKING_BATTLE_STATE;
                         break;
                     case 4:
                         DIGIVICE_changeStatePlayer(&stPlayer, CLEANING);
@@ -184,7 +194,19 @@ uint8_t DIGIVICE_update() {
             if (DIGIVICE_handleInputTraining() == DIGIVICE_CHANGED_STATE)
                 eCurrentState = PLAYER_STATE;
             break;
+        case LOOKING_BATTLE_STATE:
+            switch (DIGIVICE_tryBattle(&stPlayer)) {
+                case DIGIVICE_CANCEL_BATTLE:
+                    DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
+                    eCurrentState = PLAYER_STATE;
+                    break;
+                default:
+                    eCurrentState = PLAYER_STATE;  // TODO: Battle animation
+                    break;
+            }
+            break;
         default:
+            LOG("Handle not implemented for state %d", eCurrentState);
             break;
     }
 
@@ -216,6 +238,12 @@ uint8_t DIGIVICE_update() {
         case TRAINING_STATE:
             DIGIVICE_updateTraining(uiDeltaTime);
             DIGIVICE_renderTraining();
+            break;
+        case LOOKING_BATTLE_STATE:
+            DIGIVICE_renderBattleBanner();
+            break;
+        default:
+            LOG("No update and render implemented for state %d", eCurrentState);
             break;
     }
 

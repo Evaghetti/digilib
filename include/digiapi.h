@@ -18,6 +18,6 @@ digimon_t** DIGI_possibleDigitama(uint8_t* puiCount);
 
 uint8_t DIGI_readGame(playing_digimon_t* pstPlayingDigimon);
 
-void DIGI_saveGame(const playing_digimon_t* pstPlayingDigimon);
+void DIGI_saveGame(playing_digimon_t* pstPlayingDigimon);
 
 #endif  // API_H

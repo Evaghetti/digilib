@@ -16,6 +16,9 @@ WIDTH_FONT  = int(WIDTH_TILE / 2)
 WIDTH_SPRITE  = WIDTH_TILE * 2
 HEIGHT_SPRITE = HEIGHT_TILE * 2
 
+WIDTH_POPUP  = WIDTH_TILE * 4
+HEIGHT_POPUP = HEIGHT_SPRITE
+
 # Multiple frame animations
 
 ANIMATION_WALK_BEGIN = 0
@@ -157,7 +160,7 @@ def addTilesWithoutDuplicatesGlobal(inTiles: List[str], inIndiceDatabase: List[L
     for i in inIndiceDatabase:
         addTilesWithoutDuplicates(inTiles, i, outTiles, outIndices)
 
-def parseImage(pathImage: str, widthSprite: int, heightSprite: int) -> Tuple[List[str], List[str]]:
+def parseImage(pathImage: str, widthSprite: int, heightSprite: int, shouldRemoveIndices: bool) -> Tuple[List[str], List[str]]:
     image: Image.Image = Image.open(pathImage)
     
     width, height = image.size
@@ -169,7 +172,7 @@ def parseImage(pathImage: str, widthSprite: int, heightSprite: int) -> Tuple[Lis
             sprite = image.crop((x, y, x + widthSprite, y + heightSprite))
             tiles, indices = getTilesIndicesSprite(sprite, widthSprite < WIDTH_TILE)
             addTilesWithoutDuplicates(tiles, indices, tileSheetImage, indicesSpriteImage)
-    if height > heightSprite:
+    if shouldRemoveIndices:
         indicesSpriteImage = indicesSpriteImage[:-1]
         indicesSpriteImage[-1] = [indicesSpriteImage[-1][0]]
     return tileSheetImage, indicesSpriteImage
@@ -233,21 +236,27 @@ def main():
         next(file) # first line is just a comment
 
         for line in file:
-            digimonName = line.split(";")[0].lower()
+            digimonData = line.split(";")
+            digimonName = digimonData[0].lower()
+            digimonStage = digimonData[6].lower()
             
             print(digimonName)
-            digimonTiles, digimonIndices = parseImage(f"{resourceFolder}/{digimonName}.gif", WIDTH_SPRITE, HEIGHT_SPRITE)
+            digimonTiles, digimonIndices = parseImage(f"{resourceFolder}/{digimonName}.gif", WIDTH_SPRITE, HEIGHT_SPRITE, digimonStage != "egg")
             addTilesWithoutDuplicatesGlobal(digimonTiles, digimonIndices, tileDatabase, indiceDatabase)
             spriteDataBase[digimonName] = removeDuplicateIndices(digimonIndices)
             print("Done")
 
         print("Finished reading digimon images digimons")
 
-    tilesFeed, feedIndices = parseImage(f"{resourceFolder}/feed.gif", WIDTH_TILE, HEIGHT_TILE)
+    tilesFeed, feedIndices = parseImage(f"{resourceFolder}/feed.gif", WIDTH_TILE, HEIGHT_TILE, False)
     addTilesWithoutDuplicatesGlobal(tilesFeed, feedIndices, tileDatabase, indiceDatabase)
     print("Finished reading digimon images feed")
 
-    tilesFont, fontIndices = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE)
+    tilesPopup, popupIndices = parseImage(f"{resourceFolder}/popups.gif", WIDTH_POPUP, HEIGHT_POPUP, False)
+    addTilesWithoutDuplicatesGlobal(tilesPopup, popupIndices, tileDatabase, indiceDatabase)
+    print("Finished reading popups")
+
+    tilesFont, fontIndices = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE, False)
     print("Finished preparing font")
 
     print("Done")
@@ -265,14 +274,15 @@ def main():
 
         print(f"#define COUNT_TILES {getCountTile(tileDatabase)}", file=outHeader)
         print(f"#define COUNT_FONT {getCountTile(tilesFont)}", file=outHeader)
-        print("#define FIRST_CHARACTER ' '", file=outHeader)
+        print(f"#define FIRST_CHARACTER ' '", file=outHeader)
 
         print(f"#define MAX_COUNT_ANIMATIONS             6", file=outHeader)
         print(f"#define MAX_COUNT_SINGLE_FRAME_ANIMATION 1", file=outHeader)
         print(f"#define MAX_FRAMES_ANIMATION_WALKING     3", file=outHeader)
-        print(f"#define MAX_FRAMES_ANIMATION             2\n", file=outHeader)
+        print(f"#define MAX_FRAMES_ANIMATION             2", file=outHeader)
+        print(f"#define MAX_TILE_POPUPS                  8\n", file=outHeader)
 
-        print(f"#define MAX_COUNT_EATING_ANIMATIONS      2", file=outHeader)
+        print(f"#define MAX_COUNT_EATING_ANIMATIONS       2", file=outHeader)
         print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
 
         print(f"#define SELECTOR_TILE     &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[-4:-3])[0][0]}]\n", file=outHeader)
@@ -294,7 +304,10 @@ def main():
         print(f"extern const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
-        print(f"extern const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
+        print(f"extern const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION];\n", file=outHeader)
+
+        print(f"extern const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS];", file=outHeader)
+        print(f"extern const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -388,6 +401,22 @@ def main():
         print("const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
         print(",".join(indicesStormToWrite), file=outSource)
         print("};", file=outSource)
+
+        indicesDamagePopup = [
+            [f"&guiTileDatabase[{i[0]}]" for i in getPointerToTileFromIndices([[i] for i in popupIndices[0]])],
+            [f"&guiTileDatabase[{i[0]}]" for i in getPointerToTileFromIndices([[i] for i in popupIndices[1]])]
+        ]
+        print("const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS] = {", file=outSource)
+        print("{", ",".join(indicesDamagePopup[0]), "},", file=outSource)
+        print("{", ",".join(indicesDamagePopup[1]), "}", file=outSource)
+        print("};", file=outSource)
+
+        indicesBattlePopup = getPointerToTileFromIndices([[i] for i in popupIndices[2]])
+        indicesBattlePopup = [f"&guiTileDatabase[{i[0]}]" for i in indicesBattlePopup]
+        print("const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS] = {", file=outSource)
+        print(",".join(indicesBattlePopup), file=outSource)
+        print("};", file=outSource)
+
 
 if __name__ == "__main__":
     exit(main())

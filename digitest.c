@@ -1,23 +1,23 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <time.h>
 
-#include "digivice.h"
-#include "digivice_hal.h"
 #include "digihal.h"
 #include "digitype.h"
+#include "digivice.h"
+#include "digivice_hal.h"
 
 #define WINDOW_WIDTH  640
 #define WINDOW_HEIGHT 480
 
-#define ICON_WIDTH (WINDOW_WIDTH / (COUNT_ICONS / 2))
+#define ICON_WIDTH  (WINDOW_WIDTH / (COUNT_ICONS / 2))
 #define ICON_HEIGHT (WINDOW_HEIGHT * 0.25f)
 #define ICON_STRIDE 0.5f
 
-#define MATRIX_WIDTH (WINDOW_WIDTH)
+#define MATRIX_WIDTH  (WINDOW_WIDTH)
 #define MATRIX_HEIGHT (WINDOW_HEIGHT - ICON_HEIGHT * 2)
 
 #define DOT_WIDTH  (MATRIX_WIDTH / 32)
@@ -59,7 +59,7 @@ void renderWindow() {
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 32; j++) {
             SDL_Rect rect = {.x = DOT_WIDTH * j,
-                             .y = ICON_HEIGHT + DOT_HEIGHT * i ,
+                             .y = ICON_HEIGHT + DOT_HEIGHT * i,
                              .w = DOT_WIDTH * DOT_STRIDE,
                              .h = DOT_HEIGHT * DOT_STRIDE};
             uint8_t pixelStatus = screen[i][j] ? 255 : 20;
@@ -99,8 +99,7 @@ void renderWindow() {
         if (iconsStates[i]) {
             SDL_SetTextureColorMod(iconsTexture, 0, 0, 0);
             SDL_SetTextureAlphaMod(iconsTexture, 255);
-        }
-        else {
+        } else {
             SDL_SetTextureColorMod(iconsTexture, 50, 50, 50);
             SDL_SetTextureAlphaMod(iconsTexture, 50);
         }
@@ -169,15 +168,16 @@ int main() {
     };
 
     digihal_t stHal = {
-        .malloc = SDL_malloc, 
-        .free = SDL_free, 
-        .log = logLine, 
-        // .readData = readGame,
-        // .saveData = saveGame,
+        .malloc = SDL_malloc,
+        .free = SDL_free,
+        .log = logLine,
+        .readData = readGame,
+        .saveData = saveGame,
         .randomNumber = getRandomNumber,
     };
 
-    if (DIGIVICE_init(&stHal, &stDigiviceHal, SDL_GetPerformanceFrequency()) != 0) {
+    if (DIGIVICE_init(&stHal, &stDigiviceHal, SDL_GetPerformanceFrequency()) !=
+        0) {
         return 1;
     }
 
@@ -233,24 +233,25 @@ int main() {
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
                     switch (e.key.keysym.scancode) {
-                    case SDL_SCANCODE_Z:
-                        DIGIVICE_setButtonState(BUTTON_A, e.type == SDL_KEYDOWN);
-                        break;
-                    case SDL_SCANCODE_X:
-                        DIGIVICE_setButtonState(BUTTON_B,
-                                                e.type == SDL_KEYDOWN);
-                        break;
-                    case SDL_SCANCODE_C:
-                        DIGIVICE_setButtonState(BUTTON_C,
-                                                e.type == SDL_KEYDOWN);
-                        break;
-                    case SDL_SCANCODE_R:
-                        DIGIVICE_setButtonState(BUTTON_R,
-                                                e.type == SDL_KEYDOWN);
-                        break;
+                        case SDL_SCANCODE_Z:
+                            DIGIVICE_setButtonState(BUTTON_A,
+                                                    e.type == SDL_KEYDOWN);
+                            break;
+                        case SDL_SCANCODE_X:
+                            DIGIVICE_setButtonState(BUTTON_B,
+                                                    e.type == SDL_KEYDOWN);
+                            break;
+                        case SDL_SCANCODE_C:
+                            DIGIVICE_setButtonState(BUTTON_C,
+                                                    e.type == SDL_KEYDOWN);
+                            break;
+                        case SDL_SCANCODE_R:
+                            DIGIVICE_setButtonState(BUTTON_R,
+                                                    e.type == SDL_KEYDOWN);
+                            break;
 
-                    default:
-                        break;
+                        default:
+                            break;
                     }
                     break;
             }

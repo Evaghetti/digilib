@@ -11,9 +11,10 @@
 #define FPS  30
 #define FREQ 1000000
 
-uint32_t guiCurrentTime;
+uint32_t guiCurrentTime = 960;
 
-int DIGI_init(const digihal_t* pstConfig, playing_digimon_t** pstPlayingDigimon) {
+int DIGI_init(const digihal_t* pstConfig,
+              playing_digimon_t** pstPlayingDigimon) {
     if (DIGI_setHal(pstConfig) != DIGI_RET_OK) {
         LOG("Incorrect hal provided");
         return DIGI_RET_ERROR;
@@ -30,6 +31,15 @@ int DIGI_init(const digihal_t* pstConfig, playing_digimon_t** pstPlayingDigimon)
         return DIGI_RET_CHOOSE_DIGITAMA;
     }
 
+    LOG("Init %s - E: %d - HS: %04x CM: %d SD: %d TC: %d OF: %d",
+        (*pstPlayingDigimon)->pstCurrentDigimon->szName,
+        (*pstPlayingDigimon)->uiTimeToEvolve,
+        (*pstPlayingDigimon)->uiHungerStrength,
+        (*pstPlayingDigimon)->uiCareMistakesCount,
+        (*pstPlayingDigimon)->uiSleepDisturbanceCount,
+        (*pstPlayingDigimon)->uiTrainingCount,
+        (*pstPlayingDigimon)->uiOverfeedingCount);
+    (*pstPlayingDigimon)->uiPoopCount = 1;
     return DIGI_RET_OK;
 }
 
@@ -200,13 +210,16 @@ uint8_t DIGI_readGame(playing_digimon_t* pstPlayingDigimon) {
     return iRet == sizeof(playing_digimon_t) ? DIGI_RET_OK : DIGI_RET_ERROR;
 }
 
-void DIGI_saveGame(const playing_digimon_t* pstPlayingDigimon) {
+void DIGI_saveGame(playing_digimon_t* pstPlayingDigimon) {
     if (gpstHal->saveData == NULL)
         return;
     // TODO: TLV
+    digimon_t* pstTemp = pstPlayingDigimon->pstCurrentDigimon;
+    pstPlayingDigimon->pstCurrentDigimon = NULL;
     size_t iRet =
         gpstHal->saveData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));
+    pstPlayingDigimon->pstCurrentDigimon = pstTemp;
     if (iRet != sizeof(playing_digimon_t)) {
-        LOG("Error saving game");
+        LOG("Error saving game -> %d");
     }
 }

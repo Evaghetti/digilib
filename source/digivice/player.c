@@ -64,8 +64,6 @@ int DIGIVICE_initPlayer(player_t* pstPlayer) {
             DIGIVICE_changeStatePlayer(pstPlayer, WALKING);
     } else
         DIGIVICE_changeStatePlayer(pstPlayer, WAITING_HATCH);
-
-    pstPlayer->pstPet->uiWeight = 98;
     return DIGI_RET_OK;
 }
 
