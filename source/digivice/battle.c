@@ -19,13 +19,18 @@ uint8_t DIGIVICE_tryBattle(player_t* pstPlayer) {
         return DIGIVICE_CANCEL_BATTLE;
     }
 
-    LOG("Going to start battle routines");
+    LOG("Going to start battle routines -> %d",
+        DIGIVICE_isButtonPressed(BUTTON_B));
     uiRet = (DIGIVICE_isButtonPressed(BUTTON_B)
-                 ? DIGIBATTLE_initiate(pstPlayer->pstPet, NULL, NULL)
-                 : DIGIBATTLE_continue(pstPlayer->pstPet, NULL, NULL));
-    if (uiRet == DIGIBATTLE_RET_ERROR) {
-        LOG("Error during battle -> %d", uiRet);
-        return uiRet;
+                 ? DIGIBATTLE_initiate(pstPlayer->pstPet)
+                 : DIGIBATTLE_continue(pstPlayer->pstPet));
+    switch (uiRet) {
+        case DIGIBATTLE_RET_POLL:
+            LOG("No data polled");
+            return uiRet;
+        case DIGIBATTLE_RET_ERROR:
+            LOG("Error during battle -> %d", uiRet);
+            return uiRet;
     }
 
     LOG("Finished battle, result -> %d", uiRet);

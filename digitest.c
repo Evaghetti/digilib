@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "digibattle_classic.h"
 #include "digihal.h"
 #include "digitype.h"
 #include "digivice.h"
@@ -63,6 +64,7 @@ void renderWindow() {
                              .w = DOT_WIDTH * DOT_STRIDE,
                              .h = DOT_HEIGHT * DOT_STRIDE};
             uint8_t pixelStatus = screen[i][j] ? 255 : 20;
+            pixelStatus *= 2;
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, pixelStatus);
             SDL_RenderFillRect(renderer, &rect);
@@ -159,6 +161,22 @@ uint8_t getRandomNumber() {
     return rand() % 16;
 }
 
+uint16_t sendCallback(uint16_t packet) {
+    logLine("Sending data %04x", packet);
+    return 0;
+}
+
+uint16_t recvCallback() {
+    static const uint16_t possiblePackets[] = {0xff00, 0x00ff};
+    static size_t i = 0;
+
+    const uint16_t currentPacket = possiblePackets[i];
+    i = (i + 1) % (sizeof(possiblePackets) / sizeof(possiblePackets[0]));
+
+    logLine("Receiving data %04x", currentPacket);
+    return currentPacket;
+}
+
 int main() {
     digivice_hal_t stDigiviceHal = {
         .render = renderWindow,
@@ -174,6 +192,8 @@ int main() {
         .readData = readGame,
         .saveData = saveGame,
         .randomNumber = getRandomNumber,
+        .send = sendCallback,
+        .recv = recvCallback,
     };
 
     if (DIGIVICE_init(&stHal, &stDigiviceHal, SDL_GetPerformanceFrequency()) !=

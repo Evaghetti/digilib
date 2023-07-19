@@ -197,13 +197,13 @@ def getTransformedIndex(index: int) -> int:
 def getCountTile(tileDataBase: List[str]) -> int:
     return sum([tile.count(',') for tile in tileDataBase])
 
-def getPointerToTileFromIndices(spriteDataBase: List[List[int] | int]) -> List[str]:
+def getPointerToTileFromIndices(spriteDataBase: List[List]) -> List[str]:
     return [list(map(lambda tile: f"{getTransformedIndex(tile)}", sprite)) if type(sprite) is list else sprite for sprite in spriteDataBase ]
 
 def getDigimonNameAsVariable(digimonName: str) -> str:
     return digimonName.title().replace(" ", "")
 
-def getVariablesAndDeclarations(digimonSprites: List[List[int] | int], digimonName: str):
+def getVariablesAndDeclarations(digimonSprites: List[List], digimonName: str):
     variables, declarations = [], []
     count = 0
 

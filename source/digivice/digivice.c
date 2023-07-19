@@ -200,6 +200,8 @@ uint8_t DIGIVICE_update() {
                     DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
                     eCurrentState = PLAYER_STATE;
                     break;
+                case DIGIVICE_POLL_BATTLE:
+                    break;
                 default:
                     eCurrentState = PLAYER_STATE;  // TODO: Battle animation
                     break;

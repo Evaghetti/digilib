@@ -6,5 +6,6 @@
 #define DIGIVICE_EVENT_HAPPENED (1 << 0)
 #define DIGIVICE_CHANGED_STATE  (1 << 1)
 #define DIGIVICE_CANCEL_BATTLE  (1 << 2)
+#define DIGIVICE_POLL_BATTLE    (1 << 3)
 
 #endif  // ENUMS_DIGIVICE_H

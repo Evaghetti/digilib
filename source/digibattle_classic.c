@@ -96,34 +96,32 @@ void DIGIBATTLE_changeStats(playing_digimon_t* pstPlayingDigimon,
     pstPlayingDigimon->uiWeight -= AMOUNT_WEIGHT_REDUCE;
 }
 
-uint8_t DIGI_battle(playing_digimon_t* pstPlayingDigimon, uint8_t uiInitiate,
-                    CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool) {
+uint8_t DIGI_battle(playing_digimon_t* pstPlayingDigimon, uint8_t uiInitiate) {
     if (DIGIBATTLE_canBattle(pstPlayingDigimon) != DIGIBATTLE_RET_OK)
         return DIGIBATTLE_RET_OK;
 
     // First, see if the other side already has started communcating.
     // Then if it didn't, and this side should initiate, do so
-    uint8_t uiResult = DIGIBATTLE_continue(pstPlayingDigimon, pfcSend, pfcPool);
+    uint8_t uiResult = DIGIBATTLE_continue(pstPlayingDigimon);
     if (uiResult == DIGIBATTLE_RET_ERROR && uiInitiate) {
-        uiResult = DIGIBATTLE_initiate(pstPlayingDigimon, pfcSend, pfcPool);
+        uiResult = DIGIBATTLE_initiate(pstPlayingDigimon);
     }
 
     DIGIBATTLE_changeStats(pstPlayingDigimon, uiResult);
     return uiResult;
 }
 
-uint8_t DIGIBATTLE_initiate(playing_digimon_t* pstPlayingDigimon,
-                            CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool) {
+uint8_t DIGIBATTLE_initiate(playing_digimon_t* pstPlayingDigimon) {
     LOG("Initiating battle");
 
     uint16_t uiPacket = DIGIBATTLE_createFirstPacket(pstPlayingDigimon);
     LOG("Challenger: First packet sent -> 0x%04x", uiPacket);
-    if (pfcSend(uiPacket)) {
+    if (gpstHal->send(uiPacket)) {
         LOG("Challenger: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    uiPacket = pfcPool();
+    uiPacket = gpstHal->recv();
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenger: Received packet %x isn't valid", uiPacket);
         return DIGIBATTLE_RET_ERROR;
@@ -139,12 +137,12 @@ uint8_t DIGIBATTLE_initiate(playing_digimon_t* pstPlayingDigimon,
 
     uiPacket = DIGIBATTLE_createSecondPacket(pstPlayingDigimon, uiResult);
     LOG("Challenger: Sending packet %04x", uiPacket);
-    if (pfcSend(uiPacket)) {
+    if (gpstHal->send(uiPacket)) {
         LOG("Challenger: Error trying to send last data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
-    uiPacket = pfcPool();
+    uiPacket = gpstHal->recv();
     LOG("Challenger: Received last package %04x", uiPacket);
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenger: Second received packet %x isn't valid", uiPacket);
@@ -154,32 +152,31 @@ uint8_t DIGIBATTLE_initiate(playing_digimon_t* pstPlayingDigimon,
     return uiResult;
 }
 
-uint8_t DIGIBATTLE_continue(playing_digimon_t* pstPlayingDigimon,
-                            CALLBACK_SEND pfcSend, CALLBACK_POLL pfcPool) {
+uint8_t DIGIBATTLE_continue(playing_digimon_t* pstPlayingDigimon) {
     LOG("Challenged: Reading data to continue");
-    uint16_t uiPacket = pfcPool();
+    uint16_t uiPacket = gpstHal->recv();
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Received packet %x isn't valid", uiPacket);
-        return DIGIBATTLE_RET_ERROR;
+        return uiPacket;
     }
 
     LOG("Challenged: Got data -> 0x%04x, Sending first packet", uiPacket);
-    if (pfcSend(DIGIBATTLE_createFirstPacket(pstPlayingDigimon))) {
+    if (gpstHal->send(DIGIBATTLE_createFirstPacket(pstPlayingDigimon))) {
         LOG("Challenged: Error trying to send data 0x%04x", uiPacket);
         return DIGIBATTLE_RET_ERROR;
     }
 
     LOG("Challenged: waiting for second package");
-    uiPacket = pfcPool();
+    uiPacket = gpstHal->recv();
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Second received packet %x isn't valid", uiPacket);
-        return DIGIBATTLE_RET_ERROR;
+        return uiPacket;
     }
     LOG("Challenged: Second packet %04x, but will be ignored", uiPacket);
     // Get inverted result (if the other one won, we lose and vice versa)
     uint8_t uiResult = ~uiPacket & 0b11;
     // Doesn't matter what the other side does with this
     LOG("Challenged: Result -> %d", uiResult);
-    pfcSend(DIGIBATTLE_createSecondPacket(pstPlayingDigimon, uiResult));
+    gpstHal->send(DIGIBATTLE_createSecondPacket(pstPlayingDigimon, uiResult));
     return uiResult;
 }
