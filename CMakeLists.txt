@@ -83,4 +83,19 @@ if (${BUILD_DIGIVICE})
         PRIVATE ${PROJECT_BINARY_DIR}/include/digivice
         PRIVATE ${SDL2_INCLUDE_DIR}
     )
+
+    include(ExternalProject)
+    ExternalProject_Add(
+        mqtt
+        GIT_REPOSITORY https://github.com/LiamBindle/MQTT-C.git
+        EXCLUDE_FROM_ALL TRUE
+        BUILD_COMMAND $(MAKE) all
+        STEP_TARGETS build
+    )
+    set(mqtt_BINARY_DIR "${CMAKE_BINARY_DIR}/mqtt-prefix/src/mqtt-build")
+    set(mqtt_SOURCE_DIR "${CMAKE_BINARY_DIR}/mqtt-prefix/src/mqtt/include")
+
+    add_dependencies(digitest mqtt-build)
+    target_link_libraries(digitest ${mqtt_BINARY_DIR}/libmqttc.a)
+    target_include_directories(digitest PUBLIC ${mqtt_SOURCE_DIR})
 endif()
