@@ -23,6 +23,7 @@ typedef enum game_state_e {
 
 static player_t stPlayer;
 static menu_t gstMenu;
+static battle_animation_t stBattleAnimation;
 
 static uint8_t uiCurrentControllerState;
 static uint8_t uiPreviousControllerState;
@@ -197,7 +198,7 @@ uint8_t DIGIVICE_update() {
                 eCurrentState = PLAYER_STATE;
             break;
         case LOOKING_BATTLE_STATE: {
-            uint8_t uiRet = DIGIVICE_tryBattle(&stPlayer);
+            uint8_t uiRet = DIGIVICE_tryBattle(&stPlayer, &stBattleAnimation);
             switch (uiRet) {
                 case DIGIVICE_CANCEL_BATTLE:
                     DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
@@ -256,9 +257,10 @@ uint8_t DIGIVICE_update() {
             DIGIVICE_renderBattleBanner();
             break;
         case BATTLE_STATE:
-            if (DIGIVICE_updateBattle(&stPlayer, uiDeltaTime))
+            if (DIGIVICE_updateBattle(&stBattleAnimation, &stPlayer,
+                                      uiDeltaTime))
                 eCurrentState = PLAYER_STATE;
-            DIGIVICE_renderBattle(&stPlayer);
+            DIGIVICE_renderBattle(&stBattleAnimation, &stPlayer);
             break;
         default:
             LOG("No update and render implemented for state %d", eCurrentState);
