@@ -1,6 +1,7 @@
 #include "digivice.h"
 
 #include "digiapi.h"
+#include "digibattle_classic.h"
 #include "enums.h"
 #include "enums_digivice.h"
 
@@ -17,6 +18,7 @@ typedef enum game_state_e {
     INFO_STATE,
     TRAINING_STATE,
     LOOKING_BATTLE_STATE,
+    BATTLE_STATE,
 } game_state_e;
 
 static player_t stPlayer;
@@ -194,19 +196,24 @@ uint8_t DIGIVICE_update() {
             if (DIGIVICE_handleInputTraining() == DIGIVICE_CHANGED_STATE)
                 eCurrentState = PLAYER_STATE;
             break;
-        case LOOKING_BATTLE_STATE:
-            switch (DIGIVICE_tryBattle(&stPlayer)) {
+        case LOOKING_BATTLE_STATE: {
+            uint8_t uiRet = DIGIVICE_tryBattle(&stPlayer);
+            switch (uiRet) {
                 case DIGIVICE_CANCEL_BATTLE:
                     DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
                     eCurrentState = PLAYER_STATE;
                     break;
                 case DIGIVICE_POLL_BATTLE:
                     break;
+                case DIGIBATTLE_RET_WIN:
+                case DIGIBATTLE_RET_LOSE:
+                    eCurrentState = BATTLE_STATE;
+                    break;
                 default:
                     eCurrentState = PLAYER_STATE;  // TODO: Battle animation
                     break;
             }
-            break;
+        } break;
         default:
             LOG("Handle not implemented for state %d", eCurrentState);
             break;
@@ -243,6 +250,11 @@ uint8_t DIGIVICE_update() {
             break;
         case LOOKING_BATTLE_STATE:
             DIGIVICE_renderBattleBanner();
+            break;
+        case BATTLE_STATE:
+            if (DIGIVICE_updateBattle(&stPlayer, uiDeltaTime))
+                eCurrentState = PLAYER_STATE;
+            DIGIVICE_renderBattle(&stPlayer);
             break;
         default:
             LOG("No update and render implemented for state %d", eCurrentState);
