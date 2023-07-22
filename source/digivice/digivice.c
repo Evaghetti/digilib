@@ -214,6 +214,10 @@ uint8_t DIGIVICE_update() {
                     break;
             }
         } break;
+        case BATTLE_STATE:
+            if (DIGIVICE_isButtonPressed(BUTTON_B))
+                eCurrentState = PLAYER_STATE;
+            break;
         default:
             LOG("Handle not implemented for state %d", eCurrentState);
             break;

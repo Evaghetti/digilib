@@ -503,6 +503,9 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             } else {
                 return DIGIVICE_changeStatePlayer(pstPlayer, NEGATING);
             }
+        case LOSE_BATTLE:
+        case WIN_BATTLE:
+            break;
         default:
             LOG("Missing %d state", pstPlayer->eState);
             return DIGI_RET_ERROR;
