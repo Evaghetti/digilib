@@ -170,13 +170,17 @@ uint8_t DIGIBATTLE_continue(playing_digimon_t* pstPlayingDigimon) {
     uiPacket = gpstHal->recv();
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Second received packet %x isn't valid", uiPacket);
-        return uiPacket;
+        return DIGIBATTLE_RET_ERROR;
     }
     LOG("Challenged: Second packet %04x, but will be ignored", uiPacket);
     // Get inverted result (if the other one won, we lose and vice versa)
     uint8_t uiResult = ~uiPacket & 0b11;
     // Doesn't matter what the other side does with this
     LOG("Challenged: Result -> %d", uiResult);
-    gpstHal->send(DIGIBATTLE_createSecondPacket(pstPlayingDigimon, uiResult));
+    if (gpstHal->send(
+            DIGIBATTLE_createSecondPacket(pstPlayingDigimon, uiResult))) {
+        LOG("Challenged error sending second packet -> %d", uiPacket);
+        return DIGIBATTLE_RET_ERROR;
+    }
     return uiResult;
 }
