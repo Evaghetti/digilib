@@ -133,6 +133,8 @@ if __name__ == "__main__":
                 for j in range(len(digimons)):
                     if digimons[j].name == nameTarget:
                         break
+                else:
+                    raise RuntimeError(f"Not found {nameTarget}") 
 
                 evolutionsRequirements.append(
                     EvolutionRequirement(j, evolutionData[i: i + END_REQUIREMENT]))
