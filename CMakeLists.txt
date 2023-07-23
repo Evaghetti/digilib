@@ -73,7 +73,7 @@ if (${BUILD_DIGIVICE})
         COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
         DEPENDS import-digimon.csv
     )
-    add_executable(digitest digitest.c source/digivice/digivice.c source/digivice/animation.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c source/digivice/player.c source/digivice/menu.c source/digivice/info.c source/digivice/training.c source/digivice/battle.c)
+    add_executable(digitest digitest.c source/digivice/digivice.c source/digivice/animation.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c source/digivice/player.c source/digivice/menu.c source/digivice/info.c source/digivice/training.c source/digivice/battle.c source/wificom.c)
     target_link_libraries(digitest digilib SDL2::Main SDL2::Image)
     target_include_directories(
         digitest 
@@ -96,6 +96,17 @@ if (${BUILD_DIGIVICE})
     set(mqtt_SOURCE_DIR "${CMAKE_BINARY_DIR}/mqtt-prefix/src/mqtt/include")
 
     add_dependencies(digitest mqtt-build)
+    
+    include(FetchContent)
+    FetchContent_Declare (
+        json_h
+        GIT_REPOSITORY git@github.com:sheredom/json.h.git
+        GIT_TAG        06aa5782d650e7b46c6444c2d0a048c0a1b3a072
+    )
+    FetchContent_MakeAvailable(json_h)
+
+    add_dependencies(digitest mqtt-build)
     target_link_libraries(digitest ${mqtt_BINARY_DIR}/libmqttc.a)
     target_include_directories(digitest PUBLIC ${mqtt_SOURCE_DIR})
+    target_include_directories(digitest PUBLIC ${json_h_SOURCE_DIR})
 endif()
