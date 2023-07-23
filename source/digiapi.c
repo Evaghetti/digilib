@@ -39,7 +39,6 @@ int DIGI_init(const digihal_t* pstConfig,
         (*pstPlayingDigimon)->uiSleepDisturbanceCount,
         (*pstPlayingDigimon)->uiTrainingCount,
         (*pstPlayingDigimon)->uiOverfeedingCount);
-    (*pstPlayingDigimon)->uiPoopCount = 1;
     return DIGI_RET_OK;
 }
 
