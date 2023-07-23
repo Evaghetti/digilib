@@ -470,6 +470,7 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             pstPlayer->uiPosition = LCD_CENTER_SPRITE;
             pstPlayer->uiFlipped = 0;
             pstPlayer->eState = eNewState;
+            uiEffectFrame = 0;
             return DIGIVICE_RET_OK;
         case CLEANING:
             pstPlayer->eState = eNewState;

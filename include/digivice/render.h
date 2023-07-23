@@ -27,6 +27,6 @@ void DIGIVICE_drawText(const char* pszText, uint8_t x, uint8_t y,
 void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
                          uint8_t uiEffects);
 
-void DIGIVICE_drawPopup(const uint8_t* const* puiPopup);
+void DIGIVICE_drawPopup(const uint16_t* puiPopup);
 
 #endif  // RENDER_H

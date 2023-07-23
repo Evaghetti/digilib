@@ -1,5 +1,6 @@
 #include "render.h"
 
+#include "digitype.h"
 #include "digivice_hal.h"
 #include "sprites.h"
 
@@ -101,12 +102,19 @@ void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
     }
 }
 
-void DIGIVICE_drawPopup(const uint8_t* const* puiPopup) {
+void DIGIVICE_drawPopup(const uint16_t* puiPopup) {
     uint8_t i = 0;
 
     while (i < LCD_SCREEN_WIDTH) {
-        DIGIVICE_drawTile(*puiPopup, i, 0, EFFECT_NONE);
-        DIGIVICE_drawTile(*(puiPopup + 4), i, TILE_HEIGHT, EFFECT_NONE);
+        const uint16_t uiIndexUpper = GET_INDEX_TILE(*puiPopup);
+        const uint16_t uiIndexLower = GET_INDEX_TILE(*(puiPopup + 4));
+
+        DIGIVICE_drawTile(
+            guiTileDatabase + uiIndexUpper, i, 0,
+            IS_TILE_INVERTED(uiIndexUpper) ? EFFECT_REVERSE_TILE : EFFECT_NONE);
+        DIGIVICE_drawTile(
+            guiTileDatabase + uiIndexLower, i, 8,
+            IS_TILE_INVERTED(uiIndexLower) ? EFFECT_REVERSE_TILE : EFFECT_NONE);
 
         i += TILE_WIDTH;
         puiPopup++;

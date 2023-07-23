@@ -76,7 +76,7 @@ def getBinaryValuesTile(tile: Image.Image) -> List[int]:
     for y in range(height):
         currentLine = 0b00000000
         for x in range(width):
-            r, g, b, a = tile.getpixel((x, y))
+            a = tile.getpixel((x, y))[3]
             currentLine |= (1 if a != 0 else 0) << (WIDTH_TILE - 1 - x)
         
         lines.append(currentLine)
@@ -283,7 +283,7 @@ def main():
     addTilesWithoutDuplicatesGlobal(tilesPopup, popupIndices, tileDatabase, indiceDatabase)
     print("Finished reading popups")
 
-    tilesFont, fontIndices = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE, False)
+    tilesFont = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE, False)[0]
     print("Finished preparing font")
 
     print("Done")
@@ -312,7 +312,7 @@ def main():
         print(f"#define MAX_COUNT_EATING_ANIMATIONS       2", file=outHeader)
         print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
 
-        print(f"#define SELECTOR_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[-4][0])}]\n", file=outHeader)
+        print(f"#define SELECTOR_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[-5][0])}]\n", file=outHeader)
         print(f"#define CLEANING_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[16][0])}]\n", file=outHeader)
         print(f"#define HAPPY_SUN_TILE    &guiTileDatabase[{getTransformedIndex(feedIndices[ 8][0])}]\n", file=outHeader)
         print(f"#define EMPTY_HEART_TILE  &guiTileDatabase[{getTransformedIndex(feedIndices[21][0])}]\n", file=outHeader)
@@ -333,8 +333,8 @@ def main():
         print(f"extern const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION];\n", file=outHeader)
 
-        print(f"extern const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS];", file=outHeader)
-        print(f"extern const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS];", file=outHeader)
+        print(f"extern const uint16_t guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS];", file=outHeader)
+        print(f"extern const uint16_t guiBattlePopupSprite[MAX_TILE_POPUPS];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -408,14 +408,17 @@ def main():
         print(createAnimationArray("skull", feedIndices[13:15]), file=outSource) 
         print(createAnimationArray("storm", feedIndices[23:25]), file=outSource) 
 
-        indicesDamagePopup = [getPointer([popupIndices[0]]),getPointer([popupIndices[1]])] 
-        print("const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS] = {", file=outSource)
+        indicesDamagePopup = [
+            [f"{getTransformedIndex(i)}" for i in popupIndices[0]], 
+            [f"{getTransformedIndex(i)}" for i in popupIndices[1]]
+        ] 
+        print("const uint16_t guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS] = {", file=outSource)
         print("{", ",".join(indicesDamagePopup[0]), "},", file=outSource)
         print("{", ",".join(indicesDamagePopup[1]), "}", file=outSource)
         print("};", file=outSource)
 
-        indicesBattlePopup = getPointer([popupIndices[2]]) 
-        print("const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS] = {", file=outSource)
+        indicesBattlePopup = [f"{getTransformedIndex(i)}" for i in popupIndices[2]] 
+        print("const uint16_t guiBattlePopupSprite[MAX_TILE_POPUPS] = {", file=outSource)
         print(",".join(indicesBattlePopup), file=outSource)
         print("};", file=outSource)
 
