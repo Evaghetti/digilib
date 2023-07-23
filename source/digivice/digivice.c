@@ -201,7 +201,7 @@ uint8_t DIGIVICE_update() {
             uint8_t uiRet = DIGIVICE_tryBattle(&stPlayer, &stBattleAnimation);
             switch (uiRet) {
                 case DIGIVICE_CANCEL_BATTLE:
-                    DIGIVICE_changeStatePlayer(&stPlayer, NEGATING);
+                    stBattleAnimation.fShownError = 0;
                     eCurrentState = PLAYER_STATE;
                     break;
                 case DIGIVICE_POLL_BATTLE:
@@ -254,7 +254,7 @@ uint8_t DIGIVICE_update() {
             DIGIVICE_renderTraining();
             break;
         case LOOKING_BATTLE_STATE:
-            DIGIVICE_renderBattleBanner();
+            DIGIVICE_renderBattleBanner(&stBattleAnimation);
             break;
         case BATTLE_STATE:
             if (DIGIVICE_updateBattle(&stBattleAnimation, &stPlayer,
