@@ -320,6 +320,8 @@ def main():
         print(f"#define AGE_INFO_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[18][0])}]\n", file=outHeader)
         print(f"#define SCALE_INFO_TILE   &guiTileDatabase[{getTransformedIndex(feedIndices[19][0])}]\n", file=outHeader)
         print(f"#define SHIELD_TILE       &guiTileDatabase[{getTransformedIndex(feedIndices[17][0])}]\n", file=outHeader)
+        print(f"#define TIC_ON_TILE      &guiTileDatabase[{getTransformedIndex(feedIndices[-2][0])}]\n", file=outHeader)
+        print(f"#define TIC_OFF_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[-1][0])}]\n", file=outHeader)
         
         print(f"extern const uint8_t guiFontDatabase[COUNT_FONT];", file=outHeader)
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)

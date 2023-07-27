@@ -1,5 +1,6 @@
 #include "digivice.h"
 
+#include "clock.h"
 #include "digiapi.h"
 #include "digibattle_classic.h"
 #include "enums.h"
@@ -19,6 +20,7 @@ typedef enum game_state_e {
     TRAINING_STATE,
     LOOKING_BATTLE_STATE,
     BATTLE_STATE,
+    CLOCK_STATE,
 } game_state_e;
 
 static player_t stPlayer;
@@ -126,6 +128,7 @@ static void handleButtonsPlayerState() {
                         DIGIVICE_changeStatePlayer(&stPlayer, HEALING);
                         break;
                     default:
+                        eCurrentState = CLOCK_STATE;
                         break;
                 }
             }
@@ -230,6 +233,7 @@ uint8_t DIGIVICE_update() {
 
     uiPreviousControllerState = uiCurrentControllerState;
 
+    DIGIVICE_updateClock(uiDeltaTime, 0);
     switch (eCurrentState) {
         case PLAYER_STATE:
             uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
@@ -261,6 +265,9 @@ uint8_t DIGIVICE_update() {
                                       uiDeltaTime))
                 eCurrentState = PLAYER_STATE;
             DIGIVICE_renderBattle(&stBattleAnimation, &stPlayer);
+            break;
+        case CLOCK_STATE:
+            DIGIVICE_renderClock();
             break;
         default:
             LOG("No update and render implemented for state %d", eCurrentState);
