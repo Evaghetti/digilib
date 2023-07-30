@@ -8,6 +8,16 @@
 static uint16_t uiPassedTime = 0;
 static uint8_t uiHour = 0, uiMinute = 0, uiSeconds = 0;
 static uint8_t uiTicks[TICK_AMOUNT] = {0}, *puiCurrentTick = uiTicks;
+static uint8_t uiLastMinute = 0;
+
+uint8_t DIGIVICE_minutesPassed() {
+    if (uiLastMinute == uiMinute)
+        return 0;
+
+    uint8_t uiPassedTime = uiMinute - uiLastMinute;
+    uiLastMinute = uiMinute;
+    return uiPassedTime;
+}
 
 void DIGIVICE_updateClock(uint16_t uiDeltaTime, uint8_t fIsConfiguring) {
     uiPassedTime += uiDeltaTime;

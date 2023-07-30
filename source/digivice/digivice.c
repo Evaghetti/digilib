@@ -234,6 +234,10 @@ uint8_t DIGIVICE_update() {
     uiPreviousControllerState = uiCurrentControllerState;
 
     DIGIVICE_updateClock(uiDeltaTime, 0);
+    uint8_t uiPassedClockTime = DIGIVICE_minutesPassed();
+    if (uiPassedClockTime >= 1)
+        DIGIVICE_updatePlayerLib(&stPlayer, uiPassedClockTime);
+
     switch (eCurrentState) {
         case PLAYER_STATE:
             uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
