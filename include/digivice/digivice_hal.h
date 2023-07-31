@@ -12,4 +12,4 @@ typedef struct digivice_hal_t {
 
 extern const digivice_hal_t* gpstDigiviceHal;
 
-#endif // DIGIVICE_HAL_H
+#endif  // DIGIVICE_HAL_H

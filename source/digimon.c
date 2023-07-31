@@ -10,8 +10,6 @@
 
 #define NOT_COUNTING_FOR_CARE_MISTAKE 0
 
-extern uint32_t guiCurrentTime;
-
 static uint8_t checkIfValidParameter(const uint16_t uiRange,
                                      const uint8_t uiCheckValue) {
     uint8_t uiMinValue = GET_MIN_VALUE(uiRange),
@@ -260,7 +258,7 @@ uint8_t DIGI_putSleep(playing_digimon_t* pstPlayingDigimon,
 
 uint8_t DIGI_shouldSleep(const playing_digimon_t* pstPlayingDigimon) {
     const digimon_t* pstCurrentDigimon = pstPlayingDigimon->pstCurrentDigimon;
-    const uint16_t uiCurrentTime = guiCurrentTime;
+    const uint16_t uiCurrentTime = gpstHal->getTime();
 
     if (!(pstPlayingDigimon->uiTimedFlags & DIGI_TIMEDFLG_CAN_DISTURB_SLEEP)) {
         LOG("Doesn't need to sleep because of timeout from disturbance");
@@ -273,20 +271,19 @@ uint8_t DIGI_shouldSleep(const playing_digimon_t* pstPlayingDigimon) {
         return DIGI_RET_ERROR;
     }
 
-    if (uiCurrentTime > pstCurrentDigimon->uiTimeSleep)
+    if (uiCurrentTime >= pstCurrentDigimon->uiTimeSleep)
         return DIGI_RET_OK;
-    if (uiCurrentTime > pstCurrentDigimon->uiTimeWakeUp)
+    if (uiCurrentTime >= pstCurrentDigimon->uiTimeWakeUp)
         return DIGI_RET_ERROR;
     return DIGI_RET_OK;
 }
 
 uint8_t DIGI_shouldWakeUp(const playing_digimon_t* pstPlayingDigimon) {
     const digimon_t* pstCurrentDigimon = pstPlayingDigimon->pstCurrentDigimon;
-    const uint16_t uiCurrentTime = guiCurrentTime;
+    const uint16_t uiCurrentTime = gpstHal->getTime();
 
     if (uiCurrentTime >= pstCurrentDigimon->uiTimeWakeUp &&
-        uiCurrentTime < pstCurrentDigimon->uiTimeSleep &&
-        (pstPlayingDigimon->uiStats & MASK_SLEEPING) != 0)
+        uiCurrentTime < pstCurrentDigimon->uiTimeSleep)
         return DIGI_RET_OK;
     return DIGI_RET_ERROR;
 }

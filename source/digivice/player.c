@@ -465,6 +465,7 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             break;
         case SLEEPING:
             DIGI_putSleep(pstPlayer->pstPet, 1);
+            DIGIVICE_updatePlayerLib(pstPlayer, 0);
             pstPlayer->uiPosition = LCD_CENTER_SPRITE;
             pstPlayer->uiFlipped = 0;
             pstPlayer->eState = eNewState;

@@ -8,11 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FPS  30
-#define FREQ 1000000
-
-uint32_t guiCurrentTime = 960;
-
 int DIGI_init(const digihal_t* pstConfig,
               playing_digimon_t** pstPlayingDigimon) {
     if (DIGI_setHal(pstConfig) != DIGI_RET_OK) {
@@ -84,7 +79,7 @@ uint8_t DIGI_selectDigitama(playing_digimon_t* pstPlayingDigimon,
 
 uint8_t DIGI_updateEventsDeltaTime(playing_digimon_t* pstPlayingDigimon,
                                    uint16_t uiDeltaTime, uint8_t* puiEvents) {
-    uint16_t uiCurrentTime = guiCurrentTime;
+    uint16_t uiCurrentTime = gpstHal->getTime();
     uint16_t uiIsDying = (pstPlayingDigimon->uiStats & MASK_DYING_STAGE);
     *puiEvents = 0;
 
@@ -117,7 +112,6 @@ uint8_t DIGI_updateEventsDeltaTime(playing_digimon_t* pstPlayingDigimon,
         if (DIGI_shouldBeKilledOff(pstPlayingDigimon) == DIGI_RET_OK) {
             pstPlayingDigimon->uiIndexCurrentDigimon = MAX_COUNT_DIGIMON;
 
-            guiCurrentTime += uiDeltaTime;
             DIGI_saveGame(pstPlayingDigimon);
             return DIGI_RET_DIED;
         }
@@ -175,7 +169,6 @@ uint8_t DIGI_updateEventsDeltaTime(playing_digimon_t* pstPlayingDigimon,
             *puiEvents &= ~DIGI_EVENT_MASK_CALL;
     }
 
-    guiCurrentTime += uiDeltaTime;
     if (uiCurrentTime + uiDeltaTime >= 1440 && pstPlayingDigimon->uiAge < 99)
         pstPlayingDigimon->uiAge++;
     DIGI_saveGame(pstPlayingDigimon);

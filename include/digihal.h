@@ -28,6 +28,8 @@ typedef struct digihal_t {
 
     uint16_t (*send)(uint16_t);
     uint16_t (*recv)();
+
+    uint16_t (*getTime)();
 } digihal_t;
 
 extern const digihal_t* gpstHal;

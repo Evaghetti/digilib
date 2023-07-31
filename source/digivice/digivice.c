@@ -20,7 +20,8 @@ typedef enum game_state_e {
     TRAINING_STATE,
     LOOKING_BATTLE_STATE,
     BATTLE_STATE,
-    CLOCK_STATE,
+    CLOCK_RUNNING_STATE,
+    CLOCK_SETTING_STATE,
 } game_state_e;
 
 static player_t stPlayer;
@@ -46,6 +47,11 @@ static const menu_item_t gstMenuItemsLights[] = {
 uint8_t DIGIVICE_init(const digihal_t* pstHal,
                       const digivice_hal_t* pstDigiviceHal,
                       size_t uiFrequency) {
+
+    if (pstHal->getTime == NULL) {
+        ((digihal_t*)pstHal)->getTime = DIGIVICE_getTime;
+    }
+
     uint8_t uiRet = DIGI_init(pstHal, &stPlayer.pstPet);
     if (uiRet == DIGI_RET_CHOOSE_DIGITAMA)
         uiRet = DIGI_selectDigitama(stPlayer.pstPet, 0);
@@ -78,6 +84,10 @@ static uint32_t getDeltaTime() {
 
 static void handleButtonsPlayerState() {
     switch (stPlayer.eState) {
+        case WAITING_HATCH:
+            if (DIGIVICE_isButtonPressed(BUTTON_B))
+                eCurrentState = CLOCK_RUNNING_STATE;
+            break;
         case WALKING:
         case NEED_SLEEP:
         case SLEEPING:
@@ -128,7 +138,7 @@ static void handleButtonsPlayerState() {
                         DIGIVICE_changeStatePlayer(&stPlayer, HEALING);
                         break;
                     default:
-                        eCurrentState = CLOCK_STATE;
+                        eCurrentState = CLOCK_RUNNING_STATE;
                         break;
                 }
             }
@@ -141,6 +151,8 @@ static void handleButtonsPlayerState() {
             }
             break;
         default:
+            LOG("Undefined player state for input handle -> %d",
+                stPlayer.eState);
             break;
     }
 }
@@ -222,6 +234,30 @@ uint8_t DIGIVICE_update() {
             if (DIGIVICE_isButtonPressed(BUTTON_B))
                 eCurrentState = PLAYER_STATE;
             break;
+        case CLOCK_RUNNING_STATE:
+            if (DIGIVICE_isButtonPressed(BUTTON_B)) {
+                if (!DIGIVICE_isButtonPressed(BUTTON_A)) {
+                    eCurrentState = PLAYER_STATE;
+                    break;
+                }
+
+                DIGIVICE_toggleSetTime();
+                eCurrentState = CLOCK_SETTING_STATE;
+            }
+            break;
+        case CLOCK_SETTING_STATE:
+            if (DIGIVICE_isButtonPressed(BUTTON_A)) {
+                DIGIVICE_passTime(HOUR);
+            }
+            if (DIGIVICE_isButtonPressed(BUTTON_B)) {
+                DIGIVICE_passTime(MINUTES);
+            }
+            if (DIGIVICE_isButtonPressed(BUTTON_C)) {
+                DIGIVICE_toggleSetTime();
+                DIGIVICE_updatePlayerLib(&stPlayer, 0);
+                eCurrentState = CLOCK_RUNNING_STATE;
+            }
+            break;
         default:
             LOG("Handle not implemented for state %d", eCurrentState);
             break;
@@ -233,7 +269,7 @@ uint8_t DIGIVICE_update() {
 
     uiPreviousControllerState = uiCurrentControllerState;
 
-    DIGIVICE_updateClock(uiDeltaTime, 0);
+    DIGIVICE_updateClock(uiDeltaTime);
     uint8_t uiPassedClockTime = DIGIVICE_minutesPassed();
     if (uiPassedClockTime >= 1)
         DIGIVICE_updatePlayerLib(&stPlayer, uiPassedClockTime);
@@ -270,7 +306,8 @@ uint8_t DIGIVICE_update() {
                 eCurrentState = PLAYER_STATE;
             DIGIVICE_renderBattle(&stBattleAnimation, &stPlayer);
             break;
-        case CLOCK_STATE:
+        case CLOCK_RUNNING_STATE:
+        case CLOCK_SETTING_STATE:
             DIGIVICE_renderClock();
             break;
         default:
