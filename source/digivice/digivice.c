@@ -13,6 +13,8 @@
 #include "render.h"
 #include "training.h"
 
+#define MAXIMUM_TIME_IDLE 15000
+
 typedef enum game_state_e {
     PLAYER_STATE,
     MENU_STATE,
@@ -28,9 +30,10 @@ static player_t stPlayer;
 static menu_t gstMenu;
 static battle_animation_t stBattleAnimation;
 
+static uint16_t uiTimePassedSinceLastInput = 0;
 static uint8_t uiCurrentControllerState;
 static uint8_t uiPreviousControllerState;
-static int8_t uiCurrentIcon = -1;
+static int8_t iCurrentIcon = -1;
 
 static size_t guiFrequency;
 
@@ -93,14 +96,14 @@ static void handleButtonsPlayerState() {
         case SLEEPING:
         case SICK:
             if (DIGIVICE_isButtonPressed(BUTTON_A)) {
-                if (uiCurrentIcon >= 0)
-                    gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
+                if (iCurrentIcon >= 0)
+                    gpstDigiviceHal->setIconStatus(iCurrentIcon, 0);
 
-                uiCurrentIcon = (uiCurrentIcon + 1) & 7;
-                gpstDigiviceHal->setIconStatus(uiCurrentIcon, 1);
+                iCurrentIcon = (iCurrentIcon + 1) & 7;
+                gpstDigiviceHal->setIconStatus(iCurrentIcon, 1);
             }
             if (DIGIVICE_isButtonPressed(BUTTON_B)) {
-                switch (uiCurrentIcon) {
+                switch (iCurrentIcon) {
                     case 0:
                         DIGIVICE_initInfoDisplay(stPlayer.pstPet);
                         eCurrentState = INFO_STATE;
@@ -142,6 +145,10 @@ static void handleButtonsPlayerState() {
                         break;
                 }
             }
+            if (DIGIVICE_isButtonPressed(BUTTON_C)) {
+                gpstDigiviceHal->setIconStatus(iCurrentIcon, 0);
+                iCurrentIcon = -1;
+            }
             break;
         case EATING:
         case EATING_VITAMIN:
@@ -161,7 +168,7 @@ static void handleButtonsMenu() {
     if (DIGIVICE_isButtonPressed(BUTTON_A)) {
         DIGIVICE_advanceMenu(&gstMenu, MENU_DIRECTION_FORWARD);
     } else if (DIGIVICE_isButtonPressed(BUTTON_B)) {
-        switch (uiCurrentIcon) {
+        switch (iCurrentIcon) {
             case 1:
                 DIGIVICE_changeStatePlayer(&stPlayer,
                                            EATING + gstMenu.uiCurrentIndex);
@@ -269,6 +276,21 @@ uint8_t DIGIVICE_update() {
 
     uiPreviousControllerState = uiCurrentControllerState;
 
+    uiTimePassedSinceLastInput += uiDeltaTime;
+    if (uiTimePassedSinceLastInput >= MAXIMUM_TIME_IDLE) {
+        switch (eCurrentState) {
+            case CLOCK_RUNNING_STATE:
+                eCurrentState = PLAYER_STATE;
+                break;
+            case PLAYER_STATE:
+                gpstDigiviceHal->setIconStatus(iCurrentIcon, 0);
+                iCurrentIcon = -1;
+                break;
+            default:
+                break;
+        }
+    }
+
     DIGIVICE_updateClock(uiDeltaTime);
     uint8_t uiPassedClockTime = DIGIVICE_minutesPassed();
     if (uiPassedClockTime >= 1)
@@ -278,8 +300,8 @@ uint8_t DIGIVICE_update() {
         case PLAYER_STATE:
             uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);
             if (uiRet & DIGIVICE_EVENT_HAPPENED) {
-                gpstDigiviceHal->setIconStatus(uiCurrentIcon, 0);
-                uiCurrentIcon = -1;
+                gpstDigiviceHal->setIconStatus(iCurrentIcon, 0);
+                iCurrentIcon = -1;
             }
             if (uiRet & DIGIVICE_CHANGED_STATE)
                 gstMenu.fInUse = 1;
@@ -323,6 +345,9 @@ void DIGIVICE_setButtonState(digivice_buttons_e eButton, uint8_t uiState) {
     uiCurrentControllerState &= ~(1 << eButton);
     uiState <<= eButton;
     uiCurrentControllerState |= uiState;
+
+    if (uiState)
+        uiTimePassedSinceLastInput = 0;
 }
 
 uint8_t DIGIVICE_isButtonPressed(digivice_buttons_e eButton) {
