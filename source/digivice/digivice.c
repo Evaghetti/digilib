@@ -1,8 +1,10 @@
 #include "digivice.h"
+#include <stdint.h>
 
 #include "clock.h"
 #include "digiapi.h"
 #include "digibattle_classic.h"
+#include "digivice_hal.h"
 #include "enums.h"
 #include "enums_digivice.h"
 
@@ -72,6 +74,11 @@ uint8_t DIGIVICE_init(const digihal_t* pstHal,
 
     gpstDigiviceHal = pstDigiviceHal;
     guiFrequency = uiFrequency;
+
+    uint16_t uiCurrentTime;
+    if (DIGIVICE_readData(&uiCurrentTime, sizeof(uiCurrentTime)) ==
+        DIGIVICE_RET_OK)
+        DIGIVICE_setTime(uiCurrentTime);
     return uiRet;
 }
 
@@ -201,6 +208,16 @@ void handleInfoState() {
     }
 }
 
+static inline void updateClock(uint16_t uiDeltaTime) {
+    DIGIVICE_updateClock(uiDeltaTime);
+    uint8_t uiPassedClockTime = DIGIVICE_minutesPassed();
+    if (uiPassedClockTime >= 1)
+        DIGIVICE_updatePlayerLib(&stPlayer, uiPassedClockTime);
+
+    uint16_t uiCurrentTime = DIGIVICE_getTime();
+    DIGIVICE_saveData(&uiCurrentTime, sizeof(uiCurrentTime));
+}
+
 uint8_t DIGIVICE_update() {
     uint32_t uiDeltaTime = getDeltaTime();
     uint8_t uiRet;
@@ -291,11 +308,7 @@ uint8_t DIGIVICE_update() {
         }
     }
 
-    DIGIVICE_updateClock(uiDeltaTime);
-    uint8_t uiPassedClockTime = DIGIVICE_minutesPassed();
-    if (uiPassedClockTime >= 1)
-        DIGIVICE_updatePlayerLib(&stPlayer, uiPassedClockTime);
-
+    updateClock(uiDeltaTime);
     switch (eCurrentState) {
         case PLAYER_STATE:
             uiRet = DIGIVICE_updatePlayer(&stPlayer, uiDeltaTime);

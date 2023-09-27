@@ -7,6 +7,8 @@ typedef enum pass_time_selector_t { MINUTES, HOUR } pass_time_selector_t;
 
 uint16_t DIGIVICE_getTime();
 
+void DIGIVICE_setTime(uint16_t uiComputedTime);
+
 uint8_t DIGIVICE_minutesPassed();
 
 void DIGIVICE_toggleSetTime();

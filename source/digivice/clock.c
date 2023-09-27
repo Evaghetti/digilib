@@ -13,6 +13,11 @@ uint16_t DIGIVICE_getTime() {
     return uiHour * 60 + uiMinute;
 }
 
+void DIGIVICE_setTime(uint16_t uiComputedTime) {
+    uiMinute = uiComputedTime % 60;
+    uiHour = uiComputedTime / 60;
+}
+
 uint8_t DIGIVICE_minutesPassed() {
     if (uiLastMinute == uiMinute)
         return 0;
