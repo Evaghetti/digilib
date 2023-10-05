@@ -1,6 +1,6 @@
 from sys import argv, exit
 from PIL import Image
-from typing import Tuple, List
+from typing import Dict, Tuple, List, Union
 from os import makedirs
 
 dataBase = argv[1]
@@ -76,13 +76,13 @@ def getBinaryValuesTile(tile: Image.Image) -> List[int]:
     for y in range(height):
         currentLine = 0b00000000
         for x in range(width):
-            r, g, b, a = tile.getpixel((x, y))
+            a = tile.getpixel((x, y))[3]
             currentLine |= (1 if a != 0 else 0) << (WIDTH_TILE - 1 - x)
         
         lines.append(currentLine)
     return lines
 
-def getTilesIndicesSprite(sprite: Image.Image, isFont: bool) -> Tuple[List[str], List[str]]:
+def getTilesIndicesSprite(sprite: Image.Image, isFont: bool) -> Tuple[List[str], List[int]]:
     sprite = sprite.convert("RGBA")
 
     width, height = sprite.size
@@ -160,7 +160,7 @@ def addTilesWithoutDuplicatesGlobal(inTiles: List[str], inIndiceDatabase: List[L
     for i in inIndiceDatabase:
         addTilesWithoutDuplicates(inTiles, i, outTiles, outIndices)
 
-def parseImage(pathImage: str, widthSprite: int, heightSprite: int, shouldRemoveIndices: bool) -> Tuple[List[str], List[str]]:
+def parseImage(pathImage: str, widthSprite: int, heightSprite: int, shouldRemoveIndices: bool) -> Tuple[List[str], List[List[int]]]:
     image: Image.Image = Image.open(pathImage)
     
     width, height = image.size
@@ -177,19 +177,21 @@ def parseImage(pathImage: str, widthSprite: int, heightSprite: int, shouldRemove
         indicesSpriteImage[-1] = [indicesSpriteImage[-1][0]]
     return tileSheetImage, indicesSpriteImage
 
-def removeDuplicateIndices(indices: List[List[int]]) -> List[List[int]]:
-    for i, index in enumerate(indices):
-        if type(index) is int:
+def removeDuplicateIndices(indices: List[List[int]]) -> List[Union[List[int], int]]:
+    result: List[Union[List[int], int]] = [i for i in indices]
+
+    for i, index in enumerate(result):
+        if isinstance(index, int):
             continue
         
         position = i
         while True:
             try:
-                position = indices.index(index, position + 1)
-                indices[position] = i
+                position = result.index(index, position + 1)
+                result[position] = i
             except ValueError:
                 break
-    return indices
+    return result
 
 def getTransformedIndex(index: int) -> int:
     return ((index & MASK_INDEX_SPRITE) * 8) | (index & MASK_INVERTED)
@@ -197,23 +199,33 @@ def getTransformedIndex(index: int) -> int:
 def getCountTile(tileDataBase: List[str]) -> int:
     return sum([tile.count(',') for tile in tileDataBase])
 
-def getPointerToTileFromIndices(spriteDataBase: List[List]) -> List[str]:
-    return [list(map(lambda tile: f"{getTransformedIndex(tile)}", sprite)) if type(sprite) is list else sprite for sprite in spriteDataBase ]
+def getPointerToTileFromIndices(spriteDataBase: List[Union[List[int], int]]) -> List[Union[List[int], int]]:
+    result: List[Union[List[int], int]] = []
+    for sprite in spriteDataBase:
+        if isinstance(sprite, int):
+            # Currently a repeated sprite, so sprite will be an offset to the actual variable
+            result.append(sprite)
+        else:
+            tiles = []
+            for tile in sprite:
+                tiles.append(getTransformedIndex(tile))
+            result.append(tiles)
+    return result
 
 def getDigimonNameAsVariable(digimonName: str) -> str:
     return digimonName.title().replace(" ", "")
 
-def getVariablesAndDeclarations(digimonSprites: List[List], digimonName: str):
+def getVariablesAndDeclarations(digimonSprites: Dict[str, List[Union[List[int], int]]], digimonName: str):
     variables, declarations = [], []
     count = 0
 
     digimonAnimation = getPointerToTileFromIndices(digimonSprites[digimonName])
     for animation in digimonAnimation:
-        if type(animation) is int:
+        if isinstance(animation, int):
             variables.append(variables[animation])
             continue
 
-        currentVariableContent = ','.join(animation)
+        currentVariableContent = ','.join(str(i) for i in animation)
     
         variableName = f"guiSpriteTileIndex{getDigimonNameAsVariable(digimonName)}{count}"
         declaration = f"const uint16_t {variableName}[] = {{{currentVariableContent}}};"
@@ -228,6 +240,21 @@ def writeAnimation(animationDataBase, begin: int, end: int, out):
     print("{", end="", file=out) # Animation
     print(",".join(animationDataBase[begin:end]), end="", file=out)
     print("},", file=out)
+
+def getPointer(indices: List[List[int]]) -> List[str]:
+    result = []
+    for i in indices:
+        result += [f"&guiTileDatabase[{getTransformedIndex(j)}]" for j in i]
+    return result
+
+def createAnimationArray(name: str, indices: List[List[int]]) -> str:
+    indicesToWrite = getPointer(indices) 
+
+    output = f"const uint8_t *const gui{name.capitalize()}Animation[MAX_FRAMES_ANIMATION] = " + "{"
+    output += ",".join(indicesToWrite)
+    output += "};"
+
+    return output
 
 def main():
     spriteDataBase = {}
@@ -256,7 +283,7 @@ def main():
     addTilesWithoutDuplicatesGlobal(tilesPopup, popupIndices, tileDatabase, indiceDatabase)
     print("Finished reading popups")
 
-    tilesFont, fontIndices = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE, False)
+    tilesFont = parseImage(f"{resourceFolder}/font.png", WIDTH_FONT, HEIGHT_TILE, False)[0]
     print("Finished preparing font")
 
     print("Done")
@@ -285,14 +312,16 @@ def main():
         print(f"#define MAX_COUNT_EATING_ANIMATIONS       2", file=outHeader)
         print(f"#define MAX_FRAMES_EATING_ANIMATIONS      4\n", file=outHeader)
 
-        print(f"#define SELECTOR_TILE     &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[-4:-3])[0][0]}]\n", file=outHeader)
-        print(f"#define CLEANING_TILE     &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[16:17])[0][0]}]\n", file=outHeader)
-        print(f"#define HAPPY_SUN_TILE    &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[8:9])[0][0]}]\n", file=outHeader)
-        print(f"#define EMPTY_HEART_TILE  &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[21:22])[0][0]}]\n", file=outHeader)
-        print(f"#define FILLED_HEART_TILE &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[20:21])[0][0]}]\n", file=outHeader)
-        print(f"#define AGE_INFO_TILE     &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[18:19])[0][0]}]\n", file=outHeader)
-        print(f"#define SCALE_INFO_TILE   &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[19:20])[0][0]}]\n", file=outHeader)
-        print(f"#define SHIELD_TILE       &guiTileDatabase[{getPointerToTileFromIndices(feedIndices[17:18])[0][0]}]\n", file=outHeader)
+        print(f"#define SELECTOR_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[-5][0])}]\n", file=outHeader)
+        print(f"#define CLEANING_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[16][0])}]\n", file=outHeader)
+        print(f"#define HAPPY_SUN_TILE    &guiTileDatabase[{getTransformedIndex(feedIndices[ 8][0])}]\n", file=outHeader)
+        print(f"#define EMPTY_HEART_TILE  &guiTileDatabase[{getTransformedIndex(feedIndices[21][0])}]\n", file=outHeader)
+        print(f"#define FILLED_HEART_TILE &guiTileDatabase[{getTransformedIndex(feedIndices[20][0])}]\n", file=outHeader)
+        print(f"#define AGE_INFO_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[18][0])}]\n", file=outHeader)
+        print(f"#define SCALE_INFO_TILE   &guiTileDatabase[{getTransformedIndex(feedIndices[19][0])}]\n", file=outHeader)
+        print(f"#define SHIELD_TILE       &guiTileDatabase[{getTransformedIndex(feedIndices[17][0])}]\n", file=outHeader)
+        print(f"#define TIC_ON_TILE      &guiTileDatabase[{getTransformedIndex(feedIndices[-2][0])}]\n", file=outHeader)
+        print(f"#define TIC_OFF_TILE     &guiTileDatabase[{getTransformedIndex(feedIndices[-1][0])}]\n", file=outHeader)
         
         print(f"extern const uint8_t guiFontDatabase[COUNT_FONT];", file=outHeader)
         print(f"extern const uint8_t guiTileDatabase[COUNT_TILES];", file=outHeader)
@@ -306,8 +335,8 @@ def main():
         print(f"extern const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION];", file=outHeader)
         print(f"extern const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION];\n", file=outHeader)
 
-        print(f"extern const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS];", file=outHeader)
-        print(f"extern const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS];", file=outHeader)
+        print(f"extern const uint16_t guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS];", file=outHeader)
+        print(f"extern const uint16_t guiBattlePopupSprite[MAX_TILE_POPUPS];", file=outHeader)
 
         print("\n#endif // SPRITES_H", file=outHeader)
 
@@ -370,53 +399,30 @@ def main():
 
         # TODO: Organize this better
         print("\nconst uint8_t *const guiFeedingAnimations[MAX_COUNT_EATING_ANIMATIONS][MAX_FRAMES_EATING_ANIMATIONS] = {", file=outSource)
-        indicesFeedToWrite = getPointerToTileFromIndices(feedIndices[0:4])
-        indicesFeedToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesFeedToWrite]
+        indicesFeedToWrite = getPointer(feedIndices[0:4])
         print("{", ",".join(indicesFeedToWrite), "},", file=outSource)
-        indicesFeedToWrite = getPointerToTileFromIndices(feedIndices[4:8])
-        indicesFeedToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesFeedToWrite]
+        indicesFeedToWrite = getPointer(feedIndices[4:8])
         print("{", ",".join(indicesFeedToWrite), "}", file=outSource)
         print("};", file=outSource)
 
-        indicesSnoreToWrite = getPointerToTileFromIndices(feedIndices[11:13])
-        indicesSnoreToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesSnoreToWrite]
-        print("const uint8_t *const guiSnoreAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
-        print(",".join(indicesSnoreToWrite), file=outSource)
-        print("};", file=outSource)
-
-        indicesPoopToWrite = getPointerToTileFromIndices(feedIndices[9:11])
-        indicesPoopToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesPoopToWrite]
-        print("const uint8_t *const guiPoopAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
-        print(",".join(indicesPoopToWrite), file=outSource)
-        print("};", file=outSource)
-
-        indicesSkullToWrite = getPointerToTileFromIndices(feedIndices[13:15])
-        indicesSkullToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesSkullToWrite]
-        print("const uint8_t *const guiSkullAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
-        print(",".join(indicesSkullToWrite), file=outSource)
-        print("};", file=outSource)
-
-        indicesStormToWrite = getPointerToTileFromIndices(feedIndices[23:25])
-        indicesStormToWrite = [f"&guiTileDatabase[{i[0]}]" for i in indicesStormToWrite]
-        print("const uint8_t *const guiStormAnimation[MAX_FRAMES_ANIMATION] = {", file=outSource)
-        print(",".join(indicesStormToWrite), file=outSource)
-        print("};", file=outSource)
+        print(createAnimationArray("snore", feedIndices[11:13]), file=outSource) 
+        print(createAnimationArray("poop", feedIndices[9:11]), file=outSource) 
+        print(createAnimationArray("skull", feedIndices[13:15]), file=outSource) 
+        print(createAnimationArray("storm", feedIndices[23:25]), file=outSource) 
 
         indicesDamagePopup = [
-            [f"&guiTileDatabase[{i[0]}]" for i in getPointerToTileFromIndices([[i] for i in popupIndices[0]])],
-            [f"&guiTileDatabase[{i[0]}]" for i in getPointerToTileFromIndices([[i] for i in popupIndices[1]])]
-        ]
-        print("const uint8_t *const guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS] = {", file=outSource)
+            [f"{getTransformedIndex(i)}" for i in popupIndices[0]], 
+            [f"{getTransformedIndex(i)}" for i in popupIndices[1]]
+        ] 
+        print("const uint16_t guiDamagePopuoAnimation[MAX_FRAMES_ANIMATION][MAX_TILE_POPUPS] = {", file=outSource)
         print("{", ",".join(indicesDamagePopup[0]), "},", file=outSource)
         print("{", ",".join(indicesDamagePopup[1]), "}", file=outSource)
         print("};", file=outSource)
 
-        indicesBattlePopup = getPointerToTileFromIndices([[i] for i in popupIndices[2]])
-        indicesBattlePopup = [f"&guiTileDatabase[{i[0]}]" for i in indicesBattlePopup]
-        print("const uint8_t *const guiBattlePopupSprite[MAX_TILE_POPUPS] = {", file=outSource)
+        indicesBattlePopup = [f"{getTransformedIndex(i)}" for i in popupIndices[2]] 
+        print("const uint16_t guiBattlePopupSprite[MAX_TILE_POPUPS] = {", file=outSource)
         print(",".join(indicesBattlePopup), file=outSource)
         print("};", file=outSource)
-
 
 if __name__ == "__main__":
     exit(main())

@@ -17,6 +17,7 @@ typedef struct battle_animation_t {
     uint8_t uiProjectilePos, uiCurrentProjectile, uiOffset;
     int8_t iProjectileDirection;
     battle_animation_state_e eCurrentState;
+    uint8_t fShownError;
 } battle_animation_t;
 
 void DIGIVICE_initBattle();
@@ -29,7 +30,7 @@ uint8_t DIGIVICE_tryBattle(player_t* pstPlayer,
 uint8_t DIGIVICE_updateBattle(battle_animation_t* pstBattleAnimation,
                               player_t* pstPlayer, uint32_t uideltaTime);
 
-void DIGIVICE_renderBattleBanner();
+void DIGIVICE_renderBattleBanner(const battle_animation_t* pstBattleAnimation);
 
 void DIGIVICE_renderBattle(const battle_animation_t* pstBattleAnimation,
                            const player_t* pstPlayer);

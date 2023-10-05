@@ -26,12 +26,14 @@ typedef struct player_t {
     playing_digimon_t* pstPet;
     uint8_t uiPosition, uiFlipped;
     uint8_t uiCurrentFrame;
-    uint16_t uiDeltaTimeLib, uiDeltaTimeStep, uiCurrentStep;
+    uint16_t uiDeltaTimeStep, uiCurrentStep;
     uint16_t uiIndexBeforeEvolve;
     player_state_e eState;
 } player_t;
 
 int DIGIVICE_initPlayer(player_t* pstPlayer);
+
+int DIGIVICE_updatePlayerLib(player_t* pstPlayer, uint8_t uiMinutes);
 
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime);
 

@@ -23,9 +23,13 @@ uint8_t DIGIVICE_canBattle(const player_t* pstPlayer) {
 uint8_t DIGIVICE_tryBattle(player_t* pstPlayer,
                            battle_animation_t* pstBattleAnimation) {
     uint8_t uiRet = DIGIVICE_canBattle(pstPlayer);
-
     if (uiRet != DIGIBATTLE_RET_OK) {
         LOG("No longer can battle -> %d", uiRet);
+        return DIGIVICE_CANCEL_BATTLE;
+    }
+
+    if (DIGIVICE_isButtonPressed(BUTTON_C)) {
+        LOG("User cancelled");
         return DIGIVICE_CANCEL_BATTLE;
     }
 
@@ -40,7 +44,8 @@ uint8_t DIGIVICE_tryBattle(player_t* pstPlayer,
             return DIGIVICE_POLL_BATTLE;
         case DIGIBATTLE_RET_ERROR:
             LOG("Error during battle -> %d", uiRet);
-            return uiRet;
+            pstBattleAnimation->fShownError = 1;
+            return DIGIVICE_POLL_BATTLE;
     }
 
     LOG("Finished battle, result -> %d", uiRet);
@@ -53,7 +58,8 @@ uint8_t DIGIVICE_tryBattle(player_t* pstPlayer,
                                .uiOffset = 0,
                                .iProjectileDirection = -1,
                                .uiProjectilePos = 4,
-                               .uiCurrentProjectile = 0};
+                               .uiCurrentProjectile = 0,
+                               .fShownError = 0};
     *pstBattleAnimation = data;
 
     return uiRet;
@@ -182,8 +188,11 @@ uint8_t DIGIVICE_updateBattle(battle_animation_t* pstBattleAnimation,
     return uiFinished;
 }
 
-void DIGIVICE_renderBattleBanner() {
-    DIGIVICE_drawPopup(guiBattlePopupSprite);
+void DIGIVICE_renderBattleBanner(const battle_animation_t* pstBattleAnimation) {
+    if (!pstBattleAnimation->fShownError)
+        DIGIVICE_drawPopup(guiBattlePopupSprite);
+    else
+        DIGIVICE_drawText("ERROR!", 4, 3, EFFECT_NONE);
 }
 
 inline static void renderShooting(const battle_animation_t* pstBattleAnimation,

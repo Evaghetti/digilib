@@ -180,24 +180,22 @@ static uint8_t handleEvents(player_t* pstPlayer, uint8_t uiEvents) {
     return uiEvents ? DIGIVICE_EVENT_HAPPENED : DIGIVICE_RET_OK;
 }
 
+int DIGIVICE_updatePlayerLib(player_t* pstPlayer, uint8_t uiMinutes) {
+    uint8_t uiEvents, uiRet = DIGI_updateEventsDeltaTime(pstPlayer->pstPet,
+                                                         uiMinutes, &uiEvents);
+    if (uiRet) {
+        LOG("Error on update lib -> %d", uiRet);
+        return uiRet;
+    }
+
+    uiRet = handleEvents(pstPlayer, uiEvents);
+    return uiRet;
+}
+
 int DIGIVICE_updatePlayer(player_t* pstPlayer, uint32_t uiDeltaTime) {
     uint8_t uiRet = DIGI_RET_OK;
 
-    pstPlayer->uiDeltaTimeLib += uiDeltaTime;
     pstPlayer->uiDeltaTimeStep += uiDeltaTime;
-
-    if (pstPlayer->uiDeltaTimeLib >= ONE_MINUTE) {
-        pstPlayer->uiDeltaTimeLib = 0;
-
-        uint8_t uiEvents;
-        uiRet = DIGI_updateEventsDeltaTime(pstPlayer->pstPet, 1, &uiEvents);
-        if (uiRet) {
-            LOG("Error on update lib -> %d", uiRet);
-            return uiRet;
-        }
-
-        uiRet = handleEvents(pstPlayer, uiEvents);
-    }
 
     if (pstPlayer->uiDeltaTimeStep >= pstPlayer->uiCurrentStep) {
         player_state_e eCurrentState = pstPlayer->eState;
@@ -467,9 +465,11 @@ uint8_t DIGIVICE_changeStatePlayer(player_t* pstPlayer,
             break;
         case SLEEPING:
             DIGI_putSleep(pstPlayer->pstPet, 1);
+            DIGIVICE_updatePlayerLib(pstPlayer, 0);
             pstPlayer->uiPosition = LCD_CENTER_SPRITE;
             pstPlayer->uiFlipped = 0;
             pstPlayer->eState = eNewState;
+            uiEffectFrame = 0;
             return DIGIVICE_RET_OK;
         case CLEANING:
             pstPlayer->eState = eNewState;

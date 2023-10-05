@@ -1,5 +1,6 @@
 #include "render.h"
 
+#include "digitype.h"
 #include "digivice_hal.h"
 #include "sprites.h"
 
@@ -73,40 +74,38 @@ void DIGIVICE_drawNumber(uint8_t uiNumber, uint8_t x, uint8_t y,
     uint8_t uiShift = 0;
     uint8_t uiBcdResult = 0;
 
-    if (uiNumber == 0) {
-        DIGIVICE_drawText("0", x, y, uiEffects);
-        return;
-    }
-
     while (uiNumber > 0) {
         uiBcdResult |= (uiNumber % 10) << (uiShift++ << 2);
         uiNumber /= 10;
     }
 
-    if (uiBcdResult & 0b11110000)
-        x -= 4;
-    uiBcdResult = ((uiBcdResult & 0x0F) << 4 | (uiBcdResult & 0xF0) >> 4);
+    uint8_t uiCurrentNumber = uiBcdResult >> 4;
+    if (uiCurrentNumber || (uiEffects & EFFECT_SHOW_LEADING_ZERO)) {
+        const uint16_t uiIndex = (('0' + uiCurrentNumber) - FIRST_CHARACTER)
+                                 << 3;
 
-    while (uiBcdResult) {
-        uint8_t uiCurrentNumber = uiBcdResult & 0b00001111;
-        if (uiCurrentNumber) {
-            const uint16_t uiIndex = (('0' + uiCurrentNumber) - FIRST_CHARACTER)
-                                     << 3;
-
-            DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiEffects);
-            x += 4;
-        }
-
-        uiBcdResult >>= 4;
+        DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiEffects);
+        x += 4;
     }
+
+    uiCurrentNumber = uiBcdResult & 0b1111;
+    const uint16_t uiIndex = (('0' + uiCurrentNumber) - FIRST_CHARACTER) << 3;
+    DIGIVICE_drawTile(&guiFontDatabase[uiIndex], x, y, uiEffects);
 }
 
-void DIGIVICE_drawPopup(const uint8_t* const* puiPopup) {
+void DIGIVICE_drawPopup(const uint16_t* puiPopup) {
     uint8_t i = 0;
 
     while (i < LCD_SCREEN_WIDTH) {
-        DIGIVICE_drawTile(*puiPopup, i, 0, EFFECT_NONE);
-        DIGIVICE_drawTile(*(puiPopup + 4), i, TILE_HEIGHT, EFFECT_NONE);
+        const uint16_t uiIndexUpper = GET_INDEX_TILE(*puiPopup);
+        const uint16_t uiIndexLower = GET_INDEX_TILE(*(puiPopup + 4));
+
+        DIGIVICE_drawTile(
+            guiTileDatabase + uiIndexUpper, i, 0,
+            IS_TILE_INVERTED(uiIndexUpper) ? EFFECT_REVERSE_TILE : EFFECT_NONE);
+        DIGIVICE_drawTile(
+            guiTileDatabase + uiIndexLower, i, 8,
+            IS_TILE_INVERTED(uiIndexLower) ? EFFECT_REVERSE_TILE : EFFECT_NONE);
 
         i += TILE_WIDTH;
         puiPopup++;
