@@ -10,6 +10,8 @@
 #include "digitype.h"
 #include "digivice.h"
 #include "digivice_hal.h"
+#include "enums_digivice.h"
+#include "wificom.h"
 
 #define WINDOW_WIDTH  640
 #define WINDOW_HEIGHT 480
@@ -144,6 +146,30 @@ size_t readGame(void* pData, size_t size) {
     return ret;
 }
 
+size_t readGameDigivice(void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save-digivice.data", "rb");
+    if (file == NULL) {
+        logLine("Erro lendo arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWread(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
+size_t saveGameDigivice(const void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save-digivice.data", "wb");
+    if (file == NULL) {
+        logLine("Erro criando arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWwrite(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
 size_t saveGame(const void* pData, size_t size) {
     SDL_RWops* file = SDL_RWFromFile("save.data", "wb");
     if (file == NULL) {
@@ -178,12 +204,12 @@ uint16_t recvCallback() {
 }
 
 int main() {
-    digivice_hal_t stDigiviceHal = {
-        .render = renderWindow,
-        .setLCDStatus = setLCDStatus,
-        .setIconStatus = setIconStatus,
-        .getTimeStamp = SDL_GetTicks64,  // teste
-    };
+    digivice_hal_t stDigiviceHal = {.render = renderWindow,
+                                    .setLCDStatus = setLCDStatus,
+                                    .setIconStatus = setIconStatus,
+                                    .getTimeStamp = SDL_GetTicks64,  // teste
+                                    .saveData = saveGameDigivice,
+                                    .readData = readGameDigivice};
 
     digihal_t stHal = {
         .malloc = SDL_malloc,
@@ -192,8 +218,8 @@ int main() {
         .readData = readGame,
         .saveData = saveGame,
         .randomNumber = getRandomNumber,
-        .send = sendCallback,
-        .recv = recvCallback,
+        .send = WIFICOM_send,
+        .recv = WIFICOM_recv,
     };
 
     if (DIGIVICE_init(&stHal, &stDigiviceHal, SDL_GetPerformanceFrequency()) !=
@@ -236,6 +262,15 @@ int main() {
     if (iconsTexture == NULL) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error init",
                                  "Error loading HUD", window);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_DestroyTexture(iconsTexture);
+        return 1;
+    }
+
+    if (WIFICOM_init() != DIGIVICE_RET_OK) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error init",
+                                 "Error initializing MQTT", window);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_DestroyTexture(iconsTexture);
