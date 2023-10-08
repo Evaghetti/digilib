@@ -255,8 +255,11 @@ uint8_t DIGIVICE_update() {
             }
         } break;
         case BATTLE_STATE:
-            if (DIGIVICE_isButtonPressed(BUTTON_B))
-                eCurrentState = PLAYER_STATE;
+            if (DIGIVICE_isButtonPressed(BUTTON_B)) {
+                stBattleAnimation.eCurrentState = POST_ANIMATION;
+                stBattleAnimation.uiPassedTime = 0;
+                stBattleAnimation.uiProjectilePos = 0;
+            }
             break;
         case CLOCK_RUNNING_STATE:
             if (DIGIVICE_isButtonPressed(BUTTON_B)) {

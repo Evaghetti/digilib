@@ -27,5 +27,6 @@ import-digimon.csv
 .cmake
 digitest
 save.data
+save-digivice.data
 build/
 mqtt-prefix/

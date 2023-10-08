@@ -193,7 +193,7 @@ uint16_t sendCallback(uint16_t packet) {
 }
 
 uint16_t recvCallback() {
-    static const uint16_t possiblePackets[] = {0xff00, 0x00ff};
+    static const uint16_t possiblePackets[] = {0xB34C, 0xFD02};
     static size_t i = 0;
 
     const uint16_t currentPacket = possiblePackets[i];
@@ -208,8 +208,8 @@ int main() {
                                     .setLCDStatus = setLCDStatus,
                                     .setIconStatus = setIconStatus,
                                     .getTimeStamp = SDL_GetTicks64,  // teste
-                                    .saveData = saveGameDigivice,
-                                    .readData = readGameDigivice};
+                                    .readData = readGameDigivice,
+                                    .saveData = saveGameDigivice};
 
     digihal_t stHal = {
         .malloc = SDL_malloc,
