@@ -156,6 +156,30 @@ size_t saveGame(const void* pData, size_t size) {
     return ret;
 }
 
+size_t readGameDigivice(void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save-digivice.data", "rb");
+    if (file == NULL) {
+        logLine("Erro lendo arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWread(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
+size_t saveGameDigivice(const void* pData, size_t size) {
+    SDL_RWops* file = SDL_RWFromFile("save-digivice.data", "wb");
+    if (file == NULL) {
+        logLine("Erro criando arquivo -> %s", SDL_GetError());
+        return 0;
+    }
+
+    size_t ret = SDL_RWwrite(file, pData, 1, size);
+    SDL_RWclose(file);
+    return ret;
+}
+
 uint8_t getRandomNumber() {
     srand(time(NULL));
     return rand() % 16;
@@ -167,7 +191,7 @@ uint16_t sendCallback(uint16_t packet) {
 }
 
 uint16_t recvCallback() {
-    static const uint16_t possiblePackets[] = {0xff00, 0x00ff};
+    static const uint16_t possiblePackets[] = {0xB34C, 0xFD02};
     static size_t i = 0;
 
     const uint16_t currentPacket = possiblePackets[i];
@@ -178,12 +202,12 @@ uint16_t recvCallback() {
 }
 
 int main() {
-    digivice_hal_t stDigiviceHal = {
-        .render = renderWindow,
-        .setLCDStatus = setLCDStatus,
-        .setIconStatus = setIconStatus,
-        .getTimeStamp = SDL_GetTicks64,  // teste
-    };
+    digivice_hal_t stDigiviceHal = {.render = renderWindow,
+                                    .setLCDStatus = setLCDStatus,
+                                    .setIconStatus = setIconStatus,
+                                    .getTimeStamp = SDL_GetTicks64,  // teste
+                                    .readData = readGameDigivice,
+                                    .saveData = saveGameDigivice};
 
     digihal_t stHal = {
         .malloc = SDL_malloc,
