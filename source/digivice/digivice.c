@@ -35,6 +35,7 @@ static battle_animation_t stBattleAnimation;
 static uint16_t uiTimePassedSinceLastInput = 0;
 static uint8_t uiCurrentControllerState;
 static uint8_t uiPreviousControllerState;
+static uint8_t fConfiguringTimeFromBoot = 0;
 static int8_t iCurrentIcon = -1;
 
 static size_t guiFrequency;
@@ -79,6 +80,11 @@ uint8_t DIGIVICE_init(const digihal_t* pstHal,
     if (DIGIVICE_readData(&uiCurrentTime, sizeof(uiCurrentTime)) ==
         DIGIVICE_RET_OK)
         DIGIVICE_setTime(uiCurrentTime);
+    else {
+        DIGIVICE_toggleSetTime();
+        eCurrentState = CLOCK_SETTING_STATE;
+        fConfiguringTimeFromBoot = 1;
+    }
     return uiRet;
 }
 
@@ -282,7 +288,12 @@ uint8_t DIGIVICE_update() {
             if (DIGIVICE_isButtonPressed(BUTTON_C)) {
                 DIGIVICE_toggleSetTime();
                 DIGIVICE_updatePlayerLib(&stPlayer, 0);
-                eCurrentState = CLOCK_RUNNING_STATE;
+                if (!fConfiguringTimeFromBoot)
+                    eCurrentState = CLOCK_RUNNING_STATE;
+                else {
+                    fConfiguringTimeFromBoot = 0;
+                    eCurrentState = PLAYER_STATE;
+                }
             }
             break;
         default:
@@ -291,7 +302,7 @@ uint8_t DIGIVICE_update() {
     }
 
     uint8_t uiCalling = (stPlayer.pstPet->uiStats & MASK_CALLED) >> 2;
-    if (stPlayer.eState > HATCHING)
+    if (stPlayer.eState > HATCHING && eCurrentState != CLOCK_SETTING_STATE)
         gpstDigiviceHal->setIconStatus(CALL, uiCalling);
 
     uiPreviousControllerState = uiCurrentControllerState;
