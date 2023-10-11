@@ -162,11 +162,14 @@ static void parseDigirom(const char* pszDigiRom, battle_request_t* pstOut) {
 static battle_request_t parseRequest(const char* pszPayload) {
     struct json_value_s* root = json_parse(pszPayload, strlen(pszPayload));
 
-    struct json_object_element_s* field =
-        ((struct json_object_s*)root->payload)->start;
-
     battle_request_t stNewBattleRequest;
     memset(&stNewBattleRequest, 0, sizeof(stNewBattleRequest));
+
+    if (root == NULL)
+        return stNewBattleRequest;
+
+    struct json_object_element_s* field =
+        ((struct json_object_s*)root->payload)->start;
 
     while (field != NULL) {
         struct json_value_s* fieldValue = field->value;
@@ -217,7 +220,11 @@ static void freeState() {
 
 static void recvCallback(void** unused,
                          struct mqtt_response_publish* published) {
-    const char* pszPayload = (char*)published->application_message;
+    char pszPayload[256] = {0};
+    strncpy(pszPayload, (char*)published->application_message,
+            sizeof(pszPayload) <= published->application_message_size
+                ? sizeof(pszPayload)
+                : published->application_message_size);
     LOG("Received battle payload %s", pszPayload);
 
     if (stCurrentBattleRequest.pviPackets != NULL) {
@@ -225,8 +232,15 @@ static void recvCallback(void** unused,
     }
 
     stCurrentBattleRequest = parseRequest(pszPayload);
+    if (stCurrentBattleRequest.iPacketCount == 0)
+        return;
+
     stCurrentBattleResult.iPacketCount =
         stCurrentBattleRequest.iPacketCount * 2;
+
+    if (stCurrentBattleRequest.iPacketCount % 2 != 0)
+        stCurrentBattleResult.iPacketCount++;
+
     stCurrentBattleResult.pviPackets =
         calloc(stCurrentBattleResult.iPacketCount, sizeof(uint16_t));
 }
@@ -290,7 +304,7 @@ char* generatePayloadResponse(const battle_result_t* pstCurrentBattleResult,
     size_t uiResultSize = strlen(pszResultBattle) + 200;
     char* pszResult = calloc(uiResultSize, sizeof(char));
     snprintf(pszResult, uiResultSize,
-             "{\"application_uuid\":\"%s\", \"device_uuid\":\"%s\",\"output\":"
+             "{\"application_uuid\":%s, \"device_uuid\":\"%s\",\"output\":"
              "\"%s\",\"ack_id\":\"%s\"}",
              pstCurrentBattleRequest->szApplicationId, DEVICE_UUID,
              pszResultBattle, pstCurrentBattleRequest->szAckId);
@@ -322,6 +336,8 @@ static uint8_t handleFinalPacket() {
 }
 
 uint16_t WIFICOM_send(uint16_t uiPacket) {
+    if (stCurrentBattleResult.iPacketCount == 0)
+        return DIGIBATTLE_RET_ERROR;
     stCurrentBattleResult.pviPackets[stCurrentBattleResult.iCurrentPacket] =
         uiPacket;
     stCurrentBattleResult.iCurrentPacket++;
@@ -355,10 +371,6 @@ uint16_t WIFICOM_recv() {
 
     stCurrentBattleRequest.iCurrentPacket++;
     stCurrentBattleResult.iCurrentPacket++;
-
-    uint8_t uiRetHandle = handleFinalPacket();
-    if (uiRetHandle)
-        return uiRetHandle;
 
     LOG("Current packet recv: %04x", uiCurrentPacket);
     return uiCurrentPacket;
