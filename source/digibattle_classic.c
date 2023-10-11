@@ -26,7 +26,7 @@ uint16_t DIGIBATTLE_createFirstPacket(
 
     // TODO: Find out what affects the value of effort, using by default the max value
     uiPacket =
-        (0b0100 << 4) | pstPlayingDigimon->pstCurrentDigimon->uiSlotPower;
+        (0b0000 << 4) | pstPlayingDigimon->pstCurrentDigimon->uiSlotPower;
     uiPacket = (~uiPacket << 8) | uiPacket;
 
     LOG("First packet generated -> 0x%04x", uiPacket);
@@ -157,7 +157,8 @@ uint8_t DIGIBATTLE_continue(playing_digimon_t* pstPlayingDigimon) {
     uint16_t uiPacket = gpstHal->recv();
     if (isValidPacket(uiPacket) != DIGIBATTLE_RET_OK) {
         LOG("Challenged: Received packet %x isn't valid", uiPacket);
-        return uiPacket;
+        return uiPacket == DIGIBATTLE_RET_POLL ? DIGIBATTLE_RET_POLL
+                                               : DIGIBATTLE_RET_ERROR;
     }
 
     LOG("Challenged: Got data -> 0x%04x, Sending first packet", uiPacket);
