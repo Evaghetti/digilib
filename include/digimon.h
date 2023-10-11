@@ -89,7 +89,7 @@ typedef struct evolution_requirement_t {
 } evolution_requirement_t;
 
 typedef struct {
-    digimon_t* pstCurrentDigimon;
+    const digimon_t* pstCurrentDigimon;
     uint8_t uiHungerStrength;
     uint8_t uiStats;
     uint8_t uiWeight;

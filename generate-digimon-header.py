@@ -110,16 +110,22 @@ class EvolutionRequirement:
 
 if __name__ == "__main__":
     digimons = []
+    digitamaIndexes = []
     evolutionsRequirements = []
     evolutionRequirementsData = []
 
     with open(fileName, "r") as file:
         file.readline()
 
-        for line in file:
+        for index, line in enumerate(file):
             allData = line.split(';')
 
-            digimons.append(Digimon(allData[:END_DIGIMON]))
+            newDigimon = Digimon(allData[:END_DIGIMON])
+            digimons.append(newDigimon)
+            if newDigimon.stage == "DIGI_STAGE_EGG":
+                print(f"It an egg, appending {index}")
+                digitamaIndexes.append(index) 
+
             evolutionRequirementsData.append(allData[END_DIGIMON:])
         for i in range(len(digimons)):
             digimon = digimons[i]
@@ -147,6 +153,7 @@ if __name__ == "__main__":
         print("#include \"digimon.h\"", file=outFile)
 
         print(f"#define MAX_COUNT_DIGIMON {len(digimons)}", file=outFile)
+        print(f"#define MAX_COUNT_DIGITAMA {len(digitamaIndexes)}", file=outFile)
         print(
             f"#define MAX_COUNT_EVOLUTION_REQUIREMTNS {len(evolutionsRequirements)}\n", file=outFile)
 
@@ -155,6 +162,9 @@ if __name__ == "__main__":
 
         print(
             f"extern digimon_t vstPossibleDigimon[MAX_COUNT_DIGIMON];\n", file=outFile)
+
+        print(
+            f"extern const digimon_t *const vstPossibleDigitama[MAX_COUNT_DIGITAMA];\n", file=outFile)
 
         print("#endif\n", file=outFile)
 
@@ -167,3 +177,7 @@ if __name__ == "__main__":
             f"evolution_requirement_t vstPossibleRequirements[] = {{{', '.join([str(i) for i in evolutionsRequirements])}}};\n", file=outFile)
         print(
             f"digimon_t vstPossibleDigimon[] = {{{', '.join([str(i) for i in digimons])}}};\n", file=outFile)
+
+        variablesDigitama = [f"&vstPossibleDigimon[{i}]" for i in digitamaIndexes]
+        print(
+            f"const digimon_t *const vstPossibleDigitama[] = {{{', '.join(variablesDigitama)}}};\n", file=outFile)

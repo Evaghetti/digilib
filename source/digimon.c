@@ -20,7 +20,7 @@ static uint8_t checkIfValidParameter(const uint16_t uiRange,
 
 uint8_t DIGI_evolveDigimon(playing_digimon_t* pstPlayingDigimon) {
     int i;
-    digimon_t* pstDigimonRaised = pstPlayingDigimon->pstCurrentDigimon;
+    const digimon_t* pstDigimonRaised = pstPlayingDigimon->pstCurrentDigimon;
 
     for (i = 0; i < pstDigimonRaised->uiCountPossibleEvolutions; i++) {
         evolution_requirement_t* pstCurrentEvolution =

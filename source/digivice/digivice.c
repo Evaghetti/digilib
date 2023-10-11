@@ -5,6 +5,7 @@
 #include "digiapi.h"
 #include "digibattle_classic.h"
 #include "digivice_hal.h"
+#include "digiworld.h"
 #include "enums.h"
 #include "enums_digivice.h"
 
@@ -14,6 +15,8 @@
 #include "player.h"
 #include "render.h"
 #include "training.h"
+
+#include "sprites.h"
 
 #define MAXIMUM_TIME_IDLE 15000
 
@@ -26,6 +29,7 @@ typedef enum game_state_e {
     BATTLE_STATE,
     CLOCK_RUNNING_STATE,
     CLOCK_SETTING_STATE,
+    SELECTING_DIGITAMA_STATE
 } game_state_e;
 
 static player_t stPlayer;
@@ -35,7 +39,7 @@ static battle_animation_t stBattleAnimation;
 static uint16_t uiTimePassedSinceLastInput = 0;
 static uint8_t uiCurrentControllerState;
 static uint8_t uiPreviousControllerState;
-static uint8_t fConfiguringTimeFromBoot = 0;
+static uint8_t fConfiguringTimeFromBoot = 0, fSelectingDigitama = 0;
 static int8_t iCurrentIcon = -1;
 
 static size_t guiFrequency;
@@ -50,6 +54,36 @@ static const menu_item_t gstMenuItemsLights[] = {
     {.eType = MENU_ITEM_TEXT, .pDataItem = "ON"},
     {.eType = MENU_ITEM_TEXT, .pDataItem = "OFF"}};
 
+static menu_item_t gstMenuItemsDigitama[MAX_COUNT_DIGITAMA];
+
+static void setupItemsDigitama() {
+    static uint8_t fInitialized = 0;
+    if (fInitialized)
+        return;
+
+    uint8_t i, j;
+
+    for (i = 0; i < MAX_COUNT_DIGITAMA; i++) {
+        const digimon_t* pstCurrentDigitama = vstPossibleDigitama[i];
+        menu_item_t* pstCurrentMenuItem = gstMenuItemsDigitama + i;
+
+        for (j = 0;; j++) {
+            if (pstCurrentDigitama == vstPossibleDigimon + j)
+                break;
+        }
+
+        pstCurrentMenuItem->eType = MENU_ITEM_IMAGE;
+        pstCurrentMenuItem->pDataItem =
+            guiDigimonWalkingAnimationDatabase[j][0];
+    }
+
+    DIGIVICE_initMenu(
+        &gstMenu,
+        sizeof(gstMenuItemsDigitama) / sizeof(gstMenuItemsDigitama[0]),
+        gstMenuItemsDigitama);
+    fInitialized = 1;
+}
+
 uint8_t DIGIVICE_init(const digihal_t* pstHal,
                       const digivice_hal_t* pstDigiviceHal,
                       size_t uiFrequency) {
@@ -59,17 +93,21 @@ uint8_t DIGIVICE_init(const digihal_t* pstHal,
     }
 
     uint8_t uiRet = DIGI_init(pstHal, &stPlayer.pstPet);
-    if (uiRet == DIGI_RET_CHOOSE_DIGITAMA)
-        uiRet = DIGI_selectDigitama(stPlayer.pstPet, 0);
+    if (uiRet == DIGI_RET_CHOOSE_DIGITAMA) {
+        uiRet = DIGI_RET_OK;
+        fSelectingDigitama = 1;
+        eCurrentState = SELECTING_DIGITAMA_STATE;
+        setupItemsDigitama();
+    } else if (uiRet == DIGI_RET_OK) {
+        uiRet = DIGIVICE_initPlayer(&stPlayer);
+        if (uiRet) {
+            LOG("Error initializing player -> %d", uiRet);
+            return uiRet;
+        }
+    }
 
     if (uiRet) {
         LOG("Error initializing digilib -> %d", uiRet);
-        return uiRet;
-    }
-
-    uiRet = DIGIVICE_initPlayer(&stPlayer);
-    if (uiRet) {
-        LOG("Error initializing player -> %d", uiRet);
         return uiRet;
     }
 
@@ -181,21 +219,26 @@ static void handleButtonsMenu() {
     if (DIGIVICE_isButtonPressed(BUTTON_A)) {
         DIGIVICE_advanceMenu(&gstMenu, MENU_DIRECTION_FORWARD);
     } else if (DIGIVICE_isButtonPressed(BUTTON_B)) {
-        switch (iCurrentIcon) {
-            case 1:
-                DIGIVICE_changeStatePlayer(&stPlayer,
-                                           EATING + gstMenu.uiCurrentIndex);
-                eCurrentState = MENU_STATE;
-                break;
-            case 5:
-                DIGIVICE_changeStatePlayer(
-                    &stPlayer,
-                    gstMenu.uiCurrentIndex == 0 ? WALKING : SLEEPING);
-                break;
-            default:
-                break;
+        if (eCurrentState == SELECTING_DIGITAMA_STATE) {
+            fSelectingDigitama = 0;
+            DIGI_selectDigitama(stPlayer.pstPet, gstMenu.uiCurrentIndex);
+            DIGIVICE_initPlayer(&stPlayer);
+        } else {
+            switch (iCurrentIcon) {
+                case 1:
+                    DIGIVICE_changeStatePlayer(&stPlayer,
+                                               EATING + gstMenu.uiCurrentIndex);
+                    eCurrentState = MENU_STATE;
+                    break;
+                case 5:
+                    DIGIVICE_changeStatePlayer(
+                        &stPlayer,
+                        gstMenu.uiCurrentIndex == 0 ? WALKING : SLEEPING);
+                    break;
+                default:
+                    break;
+            }
         }
-
         gstMenu.fInUse = 0;
         eCurrentState = PLAYER_STATE;
     } else if (DIGIVICE_isButtonPressed(BUTTON_C)) {
@@ -232,6 +275,7 @@ uint8_t DIGIVICE_update() {
         case PLAYER_STATE:
             handleButtonsPlayerState();
             break;
+        case SELECTING_DIGITAMA_STATE:
         case MENU_STATE:
             handleButtonsMenu();
             break;
@@ -287,12 +331,17 @@ uint8_t DIGIVICE_update() {
             }
             if (DIGIVICE_isButtonPressed(BUTTON_C)) {
                 DIGIVICE_toggleSetTime();
-                DIGIVICE_updatePlayerLib(&stPlayer, 0);
                 if (!fConfiguringTimeFromBoot)
                     eCurrentState = CLOCK_RUNNING_STATE;
                 else {
                     fConfiguringTimeFromBoot = 0;
-                    eCurrentState = PLAYER_STATE;
+                    if (fSelectingDigitama) {
+                        eCurrentState = SELECTING_DIGITAMA_STATE;
+                        setupItemsDigitama();
+                    } else {
+                        DIGIVICE_updatePlayerLib(&stPlayer, 0);
+                        eCurrentState = PLAYER_STATE;
+                    }
                 }
             }
             break;
@@ -335,8 +384,11 @@ uint8_t DIGIVICE_update() {
 
             DIGIVICE_renderPlayer(&stPlayer);
             break;
+        case SELECTING_DIGITAMA_STATE:
+            DIGIVICE_drawMenuSprite(&gstMenu);
+            break;
         case MENU_STATE:
-            DIGIVICE_drawMenu(&gstMenu);
+            DIGIVICE_drawMenuTwoLines(&gstMenu);
             break;
         case INFO_STATE:
             DIGIVICE_updateInfoDisplay(uiDeltaTime);

@@ -1,9 +1,11 @@
 #include "digiapi.h"
 
 #include "digihal.h"
+#include "digimon.h"
 #include "digiworld.h"
 #include "enums.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,21 +58,20 @@ uint8_t DIGI_initDigimon(playing_digimon_t* pstPlayingDigimon) {
 uint8_t DIGI_selectDigitama(playing_digimon_t* pstPlayingDigimon,
                             uint8_t uiDigitamaIndex) {
     uint16_t i;
-    uint8_t uiCountDigitama;
 
-    digimon_t** pstPossibleDigitama = DIGI_possibleDigitama(&uiCountDigitama);
-    if (uiDigitamaIndex >= uiCountDigitama)
+    if (uiDigitamaIndex >= MAX_COUNT_DIGITAMA)
         return DIGI_RET_ERROR;
 
-    for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
-        if (memcmp(pstPossibleDigitama[uiDigitamaIndex], &vstPossibleDigimon[i],
-                   sizeof(digimon_t)) == 0)
+    const digimon_t* const pstSelectedDigitama =
+        vstPossibleDigitama[uiDigitamaIndex];
+    for (i = 0;; i++) {
+        if (vstPossibleDigimon + i == pstSelectedDigitama)
             break;
     }
 
     memset(pstPlayingDigimon, 0, sizeof(*pstPlayingDigimon));
     pstPlayingDigimon->uiIndexCurrentDigimon = i;
-    pstPlayingDigimon->pstCurrentDigimon = &vstPossibleDigimon[i];
+    pstPlayingDigimon->pstCurrentDigimon = pstSelectedDigitama;
     pstPlayingDigimon->uiTimedFlags =
         DIGI_TIMEDFLG_CAN_OVERFEED | DIGI_TIMEDFLG_CAN_DISTURB_SLEEP;
     DIGI_saveGame(pstPlayingDigimon);
@@ -175,23 +176,6 @@ uint8_t DIGI_updateEventsDeltaTime(playing_digimon_t* pstPlayingDigimon,
     return DIGI_RET_OK;
 }
 
-digimon_t** DIGI_possibleDigitama(uint8_t* puiCount) {
-    static digimon_t* vstDigitamas[MAX_COUNT_DIGIMON];
-    static uint8_t uiCountEgg = 0;
-
-    if (uiCountEgg == 0) {
-        int i;
-
-        for (i = 0; i < MAX_COUNT_DIGIMON; i++) {
-            if (vstPossibleDigimon[i].uiStage == DIGI_STAGE_EGG)
-                vstDigitamas[uiCountEgg++] = &vstPossibleDigimon[i];
-        }
-    }
-
-    *puiCount = uiCountEgg;
-    return vstDigitamas;
-}
-
 uint8_t DIGI_readGame(playing_digimon_t* pstPlayingDigimon) {
     if (gpstHal->readData == NULL)
         return DIGI_RET_ERROR;
@@ -206,7 +190,7 @@ void DIGI_saveGame(playing_digimon_t* pstPlayingDigimon) {
     if (gpstHal->saveData == NULL)
         return;
     // TODO: TLV
-    digimon_t* pstTemp = pstPlayingDigimon->pstCurrentDigimon;
+    const digimon_t* pstTemp = pstPlayingDigimon->pstCurrentDigimon;
     pstPlayingDigimon->pstCurrentDigimon = NULL;
     size_t iRet =
         gpstHal->saveData(pstPlayingDigimon, sizeof(*pstPlayingDigimon));

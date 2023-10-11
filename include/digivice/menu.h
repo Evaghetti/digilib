@@ -12,7 +12,7 @@ typedef enum direction_menu_e {
 
 typedef struct menu_item_t {
     item_type_e eType;
-    void* pDataItem;  // Pointer to tile or string
+    void const* pDataItem;  // Pointer to tile or string
 } menu_item_t;
 
 typedef struct menu_t {
@@ -25,6 +25,9 @@ typedef struct menu_t {
 void DIGIVICE_initMenu(menu_t* pstMenu, uint8_t uiCountItem,
                        const menu_item_t* pstItems);
 void DIGIVICE_advanceMenu(menu_t* pstMenu, direction_menu_e eDirection);
-void DIGIVICE_drawMenu(const menu_t* pstMenu);
+
+void DIGIVICE_drawMenuTwoLines(const menu_t* pstMenu);
+
+void DIGIVICE_drawMenuSprite(const menu_t* pstMenu);
 
 #endif
