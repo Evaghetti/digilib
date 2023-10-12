@@ -288,8 +288,7 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
     const uint8_t uiRealPosPlayer = pstPlayer->uiPosition -
                                     (uiCanShowPoop ? uiOffsetPoop : 0) -
                                     uiCameraOffset;
-    const uint16_t uiIndexDigimon =
-        pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+    const uint16_t uiIndexDigimon = pstPlayer->pstPet->uiIndexCurrentDigimon;
 
     switch (pstPlayer->eState) {
         case CLEANING: {
@@ -333,7 +332,7 @@ void DIGIVICE_renderPlayer(const player_t* pstPlayer) {
         } break;
         case EVOLVING: {
             uint8_t uiCurrentFrame = SHOULD_BE_SMILING(pstPlayer) ? 1 : 0;
-            uint8_t uiIndexOldDigimon = pstPlayer->uiIndexBeforeEvolve - 1;
+            uint8_t uiIndexOldDigimon = pstPlayer->uiIndexBeforeEvolve;
 
             DIGIVICE_drawSprite(guiDigimonAnimationDatabase[uiIndexOldDigimon]
                                                            [1][uiCurrentFrame],

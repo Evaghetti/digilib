@@ -202,22 +202,21 @@ inline static void renderShooting(const battle_animation_t* pstBattleAnimation,
     const uint8_t uiIndexDigimon = uiFlippedProjectile ? 1 : 0;
 
     DIGIVICE_drawTile(
-        guiDigimonProjectileSprites[pstPlayer->pstPet->uiIndexCurrentDigimon -
-                                    1],
+        guiDigimonProjectileSprites[pstPlayer->pstPet->uiIndexCurrentDigimon],
         pstBattleAnimation->uiProjectilePos, 0, !uiFlippedProjectile);
     if (pstBattleAnimation->uiCurrentProjectile == 3 &&
         ((uiFlippedProjectile && pstPlayer->eState == WIN_BATTLE) ||
          (!uiFlippedProjectile && pstPlayer->eState == LOSE_BATTLE))) {
 
-        DIGIVICE_drawTile(guiDigimonProjectileSprites
-                              [pstPlayer->pstPet->uiIndexCurrentDigimon - 1],
-                          pstBattleAnimation->uiProjectilePos, 8,
-                          !uiFlippedProjectile);
+        DIGIVICE_drawTile(
+            guiDigimonProjectileSprites[pstPlayer->pstPet
+                                            ->uiIndexCurrentDigimon],
+            pstBattleAnimation->uiProjectilePos, 8, !uiFlippedProjectile);
     }
 
     DIGIVICE_drawSprite(
-        guiDigimonAnimationDatabase[pstPlayer->pstPet->uiIndexCurrentDigimon -
-                                    1][2][uiIndexDigimon],
+        guiDigimonAnimationDatabase[pstPlayer->pstPet->uiIndexCurrentDigimon][2]
+                                   [uiIndexDigimon],
         16, 0, EFFECT_NONE);
 }
 
@@ -248,8 +247,8 @@ inline static void renderPostAnimation(
     }
 
     DIGIVICE_drawSprite(
-        guiDigimonAnimationDatabase[pstPlayer->pstPet->uiIndexCurrentDigimon -
-                                    1][uiAnimation]
+        guiDigimonAnimationDatabase[pstPlayer->pstPet->uiIndexCurrentDigimon]
+                                   [uiAnimation]
                                    [pstBattleAnimation->uiProjectilePos >= 1],
         8 - pstBattleAnimation->uiOffset, 0, EFFECT_NONE);
 }
@@ -259,8 +258,8 @@ void DIGIVICE_renderBattle(const battle_animation_t* pstBattleAnimation,
     switch (pstBattleAnimation->eCurrentState) {
         case WAITING:
             DIGIVICE_drawSprite(
-                guiDigimonAnimationDatabase
-                    [pstPlayer->pstPet->uiIndexCurrentDigimon - 1][2][0],
+                guiDigimonAnimationDatabase[pstPlayer->pstPet
+                                                ->uiIndexCurrentDigimon][2][0],
                 16, 0, pstBattleAnimation->uiCurrentProjectile >= 4);
             break;
         case SHOOTING:

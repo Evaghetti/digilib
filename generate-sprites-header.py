@@ -359,16 +359,17 @@ def main():
 
         print("\nconst uint16_t *const guiDigimonAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_ANIMATIONS][MAX_FRAMES_ANIMATION] = {", file=outSource)
         for i, digimonName in enumerate(spriteDataBase.keys()):
+            animations = animationDatabase[i]
             if len(spriteDataBase[digimonName]) <= 3:
-                continue
+                animations = ["NULL"] * 20 
 
             print("{", file=outSource) # Digimon
-            writeAnimation(animationDatabase[i], ANIMATION_SLEEP_BEGIN, ANIMATION_SLEEP_END, outSource)
-            writeAnimation(animationDatabase[i], ANIMATION_HAPPY_BEGIN, ANIMATION_HAPPY_END, outSource)
-            writeAnimation(animationDatabase[i], ANIMATION_ANGRY_BEGIN, ANIMATION_ANGRY_END, outSource)
-            writeAnimation(animationDatabase[i], ANIMATION_SHOOTING_BEGIN, ANIMATION_SHOOTING_END, outSource)
-            writeAnimation(animationDatabase[i], ANIMATION_EATING_BEGIN, ANIMATION_EATING_END, outSource)
-            writeAnimation(animationDatabase[i], ANIMATION_SICK_BEGIN, ANIMATION_SICK_END, outSource)
+            writeAnimation(animations, ANIMATION_SLEEP_BEGIN, ANIMATION_SLEEP_END, outSource)
+            writeAnimation(animations, ANIMATION_HAPPY_BEGIN, ANIMATION_HAPPY_END, outSource)
+            writeAnimation(animations, ANIMATION_ANGRY_BEGIN, ANIMATION_ANGRY_END, outSource)
+            writeAnimation(animations, ANIMATION_SHOOTING_BEGIN, ANIMATION_SHOOTING_END, outSource)
+            writeAnimation(animations, ANIMATION_EATING_BEGIN, ANIMATION_EATING_END, outSource)
+            writeAnimation(animations, ANIMATION_SICK_BEGIN, ANIMATION_SICK_END, outSource)
             
             print("}", end=",\n", file=outSource)
         print("};", file=outSource)
@@ -376,9 +377,11 @@ def main():
         print("\nconst uint8_t *const guiDigimonProjectileSprites[MAX_COUNT_DIGIMON] = {", file=outSource)
         for i, digimonName in enumerate(spriteDataBase.keys()):
             if len(spriteDataBase[digimonName]) <= 3:
-                continue
+                index = 0
+            else:
+                index = spriteDataBase[digimonName][16][0]
             
-            index = getTransformedIndex(spriteDataBase[digimonName][16][0])
+            index = getTransformedIndex(index)
             print(f"&guiTileDatabase[{index}],\n", file=outSource)
         print("};", file=outSource)
 
@@ -389,11 +392,12 @@ def main():
 
         print("\nconst uint16_t *const guiDigimonSingleFrameAnimationDatabase[MAX_COUNT_DIGIMON][MAX_COUNT_SINGLE_FRAME_ANIMATION] = {", file=outSource)
         for i, digimonName in enumerate(spriteDataBase.keys()):
+            animations = animationDatabase[i]
             if len(spriteDataBase[digimonName]) <= 3:
-                continue
+                animations = ["NULL"] * 20 
 
             print("{", end="", file=outSource)
-            print(animationDatabase[i][ANIMATION_REFUSAL_BEGIN], sep=",", end="", file=outSource)            
+            print(animations[ANIMATION_REFUSAL_BEGIN], sep=",", end="", file=outSource)            
             print("},", end="\n", file=outSource)
         print("};", file=outSource)
 

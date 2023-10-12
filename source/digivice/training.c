@@ -209,8 +209,7 @@ void DIGIVICE_renderTraining() {
         return;
     }
 
-    const uint16_t uiIndexDigimon =
-        pstPlayer->pstPet->uiIndexCurrentDigimon - 1;
+    const uint16_t uiIndexDigimon = pstPlayer->pstPet->uiIndexCurrentDigimon;
     const uint16_t* const puiSprite =
         guiDigimonAnimationDatabase[uiIndexDigimon][3][uiFrame];
     const uint8_t* puiProjectileTile =
