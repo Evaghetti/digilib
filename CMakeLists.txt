@@ -73,8 +73,20 @@ if (${BUILD_DIGIVICE})
         COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate-sprites-header.py ${CMAKE_CURRENT_SOURCE_DIR}/import-digimon.csv ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/resource
         DEPENDS import-digimon.csv
     )
-    add_executable(digitest digitest.c source/digivice/digivice.c source/digivice/animation.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c source/digivice/player.c source/digivice/menu.c source/digivice/info.c source/digivice/training.c source/digivice/battle.c source/digivice/clock.c)
-    target_link_libraries(digitest digilib SDL2::Main SDL2::Image)
+
+    add_library(digivice SHARED)
+    target_sources(digivice PRIVATE  source/digivice/digivice.c source/digivice/animation.c source/digivice/render.c source/digivice/digivice_hal.c ${PROJECT_BINARY_DIR}/source/digivice/sprites.c source/digivice/sprites.c source/digivice/player.c source/digivice/menu.c source/digivice/info.c source/digivice/training.c source/digivice/battle.c source/digivice/clock.c)
+    target_link_libraries(digivice digilib)
+    target_include_directories(
+        digivice 
+        PRIVATE include
+        PRIVATE include/digivice
+        PRIVATE ${PROJECT_BINARY_DIR}/include
+        PRIVATE ${PROJECT_BINARY_DIR}/include/digivice
+    )
+
+    add_executable(digitest digitest.c)
+    target_link_libraries(digitest digivice SDL2::Main SDL2::Image)
     target_include_directories(
         digitest 
         PRIVATE include

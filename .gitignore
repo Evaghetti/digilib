@@ -11,9 +11,10 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 /digivice
-digivice.exe
 digilib.so
+digivice.so
 digilib.dll
+digivice.dll
 libdigilib.dll.a
 libdigivice.dll.a
 *.save*
